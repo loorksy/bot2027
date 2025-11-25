@@ -42,7 +42,7 @@ module.exports = ({ bot }) => {
 
       const text = bulkState.messages[bulkState.index];
       try {
-        await bot.client.sendMessage(bulkState.groupId, text);
+        await bot.sendTextMessage(bulkState.groupId, text);
         bulkState.index += 1;
         bulkState.lastMinute.count += 1;
         saveBulk();

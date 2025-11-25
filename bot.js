@@ -1,10 +1,16 @@
-// bot.js — FIFO صارم + lastChecked per group + backlog + منع تكرار + تطبيع عربي قوي
+// bot.js — Baileys powered bot service
 
 const EventEmitter = require('events');
 const fs = require('fs');
 const path = require('path');
 const qrcode = require('qrcode');
-const { Client, LocalAuth, DisconnectReason } = require('whatsapp-web.js');
+const pino = require('pino');
+const {
+  default: makeWASocket,
+  useMultiFileAuthState,
+  DisconnectReason,
+  fetchLatestBaileysVersion,
+} = require('@whiskeysockets/baileys');
 
 class SimpleStore {
   constructor(filePath) {
@@ -64,11 +70,11 @@ class SimpleStore {
   }
 }
 
-class Bot {
+class WhatsAppBotService {
   constructor({ sessionsDir }) {
     this.emitter = new EventEmitter();
     this.sessionsDir = sessionsDir;
-    this.client = null;
+    this.socket = null;
 
     this.qrDataUrl = null;
     this.isReady = false;
@@ -77,85 +83,128 @@ class Bot {
     this.reconnectTimer = null;
 
     this.selectedGroupIds = [];
-    this.clients = []; // [{name, emoji, _norm, _rx}]
+    this.clients = [];
     this.settings = {
       emoji: '✅',
       replyText: 'تم ✅',
-      mode: 'emoji',                 // 'emoji' | 'text'
-      ratePerMinute: 20,             // حد عام/دقيقة
-      cooldownSec: 3,                // مهلة لكل جروب (ثواني)
-      normalizeArabic: true
+      mode: 'emoji',
+      ratePerMinute: 20,
+      cooldownSec: 3,
+      normalizeArabic: true,
     };
 
-    // تخزين دائم
-    const stateFile = path.join(this.sessionsDir || process.cwd(), 'bot-state.json');
-    this.state = new SimpleStore(stateFile);
+    this.state = new SimpleStore(path.join(this.sessionsDir || process.cwd(), 'bot-state.json'));
 
     this.queue = [];
     this.workerRunning = false;
 
     this.minuteCount = 0;
     setInterval(() => (this.minuteCount = 0), 60_000);
+
+    this.logger = pino({ level: 'silent' });
+    this.messageHistory = new Map(); // chatId -> [{ key, tsMs, text, message }]
+    this.groupNameCache = new Map();
   }
 
   // ========= Utilities =========
-  onLog(cb) { this.emitter.on('log', cb); }
-  log(line) { try { this.emitter.emit('log', line); } catch {} }
-  wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+  onLog(cb) {
+    this.emitter.on('log', cb);
+  }
+
+  log(line, level = 'info') {
+    try {
+      this.emitter.emit('log', { line, level, ts: Date.now() });
+    } catch {}
+  }
+
+  wait(ms) {
+    return new Promise((r) => setTimeout(r, ms));
+  }
 
   normalizeArabic(s = '') {
     if (!s) return '';
     let t = s;
-    t = t.replace(/[\u200c\u200d\u200e\u200f\u202a-\u202e]/g, ''); // محارف خفية/اتجاه
-    t = t.replace(/[\u064B-\u0652\u0670]/g, '').replace(/\u0640/g, ''); // تشكيل+ألف خنجرية+تطويل
+    t = t.replace(/[\u200c-\u200f\u202a-\u202e]/g, '');
+    t = t.replace(/[\u064B-\u0652\u0670]/g, '').replace(/\u0640/g, '');
     t = t.replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/ؤ/g, 'و').replace(/ئ/g, 'ي');
     const ar = '٠١٢٣٤٥٦٧٨٩', en = '0123456789';
-    t = t.replace(/[٠-٩]/g, d => en[ar.indexOf(d)]);
+    t = t.replace(/[٠-٩]/g, (d) => en[ar.indexOf(d)]);
     t = t.replace(/[^\p{L}\p{N}\s]/gu, ' ');
     t = t.replace(/\s+/g, ' ').trim().toLowerCase();
     return t;
   }
-  escapeRegex(s=''){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
-  buildNameRegex(normName) {
-    const tokens = (normName || '').split(' ').filter(w => w.length >= 2);
-    if (!tokens.length) return null;
-    const pattern = tokens.map(tok => this.escapeRegex(tok)).join('[\\s\\p{P}]*');
-    try { return new RegExp(`(?:^|\\s)${pattern}(?:\\s|$)`, 'u'); } catch { return null; }
+
+  escapeRegex(s = '') {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
-  _msgId(m){
-    try { return m?.id?._serialized || m?.id?.id || null; } catch { return null; }
+  buildNameRegex(normName) {
+    const tokens = (normName || '').split(' ').filter((w) => w.length >= 2);
+    if (!tokens.length) return null;
+    const pattern = tokens.map((tok) => this.escapeRegex(tok)).join('[\\s\\p{P}]*');
+    try {
+      return new RegExp(`(?:^|\\s)${pattern}(?:\\s|$)`, 'u');
+    } catch {
+      return null;
+    }
   }
-  _isDone(msgId){ return !!(msgId && this.state.get(`done.${msgId}`)); }
-  _markDone(msgId){ if (msgId) this.state.set(`done.${msgId}`, Date.now()); }
+
+  _msgId(m) {
+    try {
+      return m?.key?.id || null;
+    } catch {
+      return null;
+    }
+  }
+
+  _isDone(msgId) {
+    return !!(msgId && this.state.get(`done.${msgId}`));
+  }
+
+  _markDone(msgId) {
+    if (msgId) this.state.set(`done.${msgId}`, Date.now());
+  }
 
   setClients(arr = []) {
     const list = Array.isArray(arr) ? arr : [];
-    this.clients = list.map(c => {
-      const name = typeof c === 'string' ? c : (c.name || '');
-      const emoji = typeof c === 'string' ? '✅' : (c.emoji || '✅');
-      const norm = this.settings.normalizeArabic ? this.normalizeArabic(name) : (name || '').toLowerCase();
-      const rx = this.buildNameRegex(norm);
-      return { name, emoji, _norm: norm, _rx: rx };
-    }).filter(x => x.name && x._rx);
+    this.clients = list
+      .map((c) => {
+        const name = typeof c === 'string' ? c : c.name || '';
+        const emoji = typeof c === 'string' ? '✅' : c.emoji || '✅';
+        const norm = this.settings.normalizeArabic ? this.normalizeArabic(name) : (name || '').toLowerCase();
+        const rx = this.buildNameRegex(norm);
+        return { name, emoji, _norm: norm, _rx: rx };
+      })
+      .filter((x) => x.name && x._rx);
     this.log(`clients loaded: ${this.clients.length}`);
   }
 
   setSettings(s = {}) {
     this.settings = Object.assign({}, this.settings, s);
-    this.log(`[settings] mode=${this.settings.mode} rpm=${this.settings.ratePerMinute} cooldown=${this.settings.cooldownSec}s normalize=${!!this.settings.normalizeArabic}`);
-    const raw = this.clients.map(({name, emoji}) => ({name, emoji}));
-    this.setClients(raw); // إعادة بناء Regex لو تغيّر normalize
+    this.log(
+      `[settings] mode=${this.settings.mode} rpm=${this.settings.ratePerMinute} cooldown=${this.settings.cooldownSec}s normalize=${!!this.settings.normalizeArabic}`
+    );
+    const raw = this.clients.map(({ name, emoji }) => ({ name, emoji }));
+    this.setClients(raw);
   }
 
-  setSelectedGroups(ids = []) { this.selectedGroupIds = Array.isArray(ids) ? ids : []; }
-  getSelectedGroups() { return this.selectedGroupIds; }
+  setSelectedGroups(ids = []) {
+    this.selectedGroupIds = Array.isArray(ids) ? ids : [];
+  }
 
-  getLastChecked(chatId) { return this.state.get(`lastChecked.${chatId}`, 0); }
+  getSelectedGroups() {
+    return this.selectedGroupIds;
+  }
+
+  getLastChecked(chatId) {
+    return this.state.get(`lastChecked.${chatId}`, 0);
+  }
+
   setLastChecked(chatId, tsMs) {
     const prev = this.getLastChecked(chatId) || 0;
     if (tsMs > prev) this.state.set(`lastChecked.${chatId}`, tsMs);
   }
+
   getLastCheckedMap() {
     const out = {};
     const all = this.state.store?.lastChecked || {};
@@ -166,87 +215,158 @@ class Bot {
   // ========= WhatsApp init =========
   async init() {
     if (!fs.existsSync(this.sessionsDir)) fs.mkdirSync(this.sessionsDir, { recursive: true });
+    if (this.socket) return this.socket;
+    this.connectionStatus = 'connecting';
+    await this._createSocket();
+    return this.socket;
+  }
 
-    this.connectionStatus = this.connectionStatus === 'connected' ? 'connected' : 'connecting';
+  async _createSocket() {
+    const { state, saveCreds } = await useMultiFileAuthState(this.sessionsDir);
+    const { version } = await fetchLatestBaileysVersion();
 
-    this.client = new Client({
-      authStrategy: new LocalAuth({ dataPath: this.sessionsDir }),
-      puppeteer: { headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] }
+    this.socket = makeWASocket({
+      auth: state,
+      version,
+      printQRInTerminal: false,
+      logger: this.logger,
+      browser: ['Desktop', 'Chrome', '1.0.0'],
+      syncFullHistory: false,
     });
 
-    this.client.on('qr', async (qr) => {
+    this.socket.ev.on('creds.update', saveCreds);
+    this.socket.ev.on('connection.update', (update) => this._handleConnectionUpdate(update));
+    this.socket.ev.on('messages.upsert', (m) => this._handleMessagesUpsert(m));
+    this.socket.ev.on('messages.update', ({
+      messages = [],
+    }) => messages.forEach((msg) => this._recordMessage(msg)));
+  }
+
+  async _handleConnectionUpdate(update) {
+    const { connection, lastDisconnect, qr } = update;
+
+    if (qr) {
       this.qrDataUrl = await qrcode.toDataURL(qr);
       this.isReady = false;
-      this.connectionStatus = 'connecting';
+      this.connectionStatus = 'qr';
       this.log('[QR] جاهز — امسحه من WhatsApp');
-      try { this.emitter.emit('qr', this.qrDataUrl); } catch {}
-    });
+      try {
+        this.emitter.emit('qr', this.qrDataUrl);
+        this.emitter.emit('status', this.getStatus());
+      } catch {}
+    }
 
-    this.client.on('ready', () => {
+    if (connection === 'open') {
       this.isReady = true;
       this.qrDataUrl = null;
       this.connectionStatus = 'connected';
       this.log('✅ WhatsApp جاهز');
-      try { this.emitter.emit('ready'); } catch {}
-    });
-
-    this.client.on('disconnected', (r) => {
+      try {
+        this.emitter.emit('ready');
+        this.emitter.emit('status', this.getStatus());
+      } catch {}
+    } else if (connection === 'close') {
+      const reason = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.error?.message || 'unknown';
+      const isLogout = lastDisconnect?.error?.output?.statusCode === DisconnectReason.loggedOut;
       this.isReady = false;
       this.running = false;
-
-      const reason = typeof r === 'object' && r !== null && 'reason' in r ? r.reason : r;
-      const isLogout = reason === DisconnectReason?.loggedOut || reason === 'LOGOUT' || reason === 'loggedOut';
-
       if (isLogout) {
-        this.connectionStatus = 'loggedOut';
-        this.log('⚠️ مسجّل الخروج: ' + reason);
+        this.connectionStatus = 'logged_out';
+        this.log('⚠️ تم تسجيل الخروج من واتساب');
       } else {
         this.connectionStatus = 'reconnecting';
-        this.log('❌ تم قطع الاتصال: ' + reason + ' — إعادة الاتصال…');
+        this.log(`❌ انقطع الاتصال: ${reason} — إعادة المحاولة…`);
         this._scheduleReconnect();
       }
-
-      try { this.emitter.emit('disconnected', r); } catch {}
-    });
-
-    // رسائل حيّة → ادفع للـ FIFO queue
-    this.client.on('message', async (msg) => {
       try {
-        if (!this.running) return;
-        if (msg.fromMe) return;
+        this.emitter.emit('disconnected', update);
+        this.emitter.emit('status', this.getStatus());
+      } catch {}
+    }
+  }
 
-        const chat = await msg.getChat();
-        if (!chat.isGroup) return;
-        const chatId = chat.id._serialized;
-        if (this.selectedGroupIds.length && !this.selectedGroupIds.includes(chatId)) return;
+  _scheduleReconnect() {
+    if (this.reconnectTimer || this.connectionStatus === 'logged_out') return;
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.init().catch(() => {});
+    }, 2000);
+  }
 
-        const tsMs = (msg.timestamp ? msg.timestamp * 1000 : Date.now());
-        const text = (msg.body || msg.caption || '').trim();
-        const mid  = this._msgId(msg);
+  _recordMessage(msg) {
+    try {
+      const jid = msg?.key?.remoteJid;
+      if (!jid) return;
+      const tsMs = Number(msg.messageTimestamp || 0) * 1000;
+      const text = this._extractText(msg) || '';
+      const arr = this.messageHistory.get(jid) || [];
+      arr.push({ key: msg.key, tsMs, text, message: msg });
+      if (arr.length > 1200) arr.splice(0, arr.length - 1200);
+      this.messageHistory.set(jid, arr);
+    } catch {}
+  }
 
-        // لو مُعالَجة سابقاً، حدث lastChecked فقط وتجاهل
+  async _handleMessagesUpsert({ messages, type }) {
+    const msgs = messages || [];
+    for (const msg of msgs) {
+      this._recordMessage(msg);
+      try {
+        if (!this.running) continue;
+        if (type !== 'notify' && type !== 'append') continue;
+        const fromMe = msg.key?.fromMe;
+        const chatId = msg.key?.remoteJid;
+        if (!chatId || !chatId.endsWith('@g.us')) continue;
+        if (fromMe) continue;
+        if (this.selectedGroupIds.length && !this.selectedGroupIds.includes(chatId)) continue;
+
+        const tsMs = Number(msg.messageTimestamp || Date.now()) * 1000;
+        const text = (this._extractText(msg) || '').trim();
+        const mid = this._msgId(msg);
+
         if (this._isDone(mid)) {
           this.setLastChecked(chatId, tsMs);
-          return;
+          continue;
         }
 
+        const chatName = await this._getGroupName(chatId);
         this.queue.push({
-          kind: 'live',
+          kind: type === 'append' ? 'backlog' : 'live',
           chatId,
-          chatName: chat.name,
+          chatName,
           tsMs,
           exec: async () => {
-            await this._processOneMessage({ msgObj: msg, chatId, chatName: chat.name, tsMs, text, mid });
-          }
+            await this._processOneMessage({ msgObj: msg, chatId, chatName, tsMs, text, mid });
+          },
         });
-
         this._runWorker();
       } catch (e) {
         this.log('⚠️ live message error: ' + (e.message || e));
       }
-    });
+    }
+  }
 
-    await this.client.initialize();
+  async _getGroupName(jid) {
+    if (this.groupNameCache.has(jid)) return this.groupNameCache.get(jid);
+    try {
+      const meta = await this.socket?.groupMetadata(jid);
+      const name = meta?.subject || jid;
+      this.groupNameCache.set(jid, name);
+      return name;
+    } catch {
+      return jid;
+    }
+  }
+
+  _extractText(msg) {
+    const m = msg?.message || {};
+    if (m.conversation) return m.conversation;
+    if (m.extendedTextMessage?.text) return m.extendedTextMessage.text;
+    if (m.imageMessage?.caption) return m.imageMessage.caption;
+    if (m.videoMessage?.caption) return m.videoMessage.caption;
+    if (m.buttonsResponseMessage?.selectedButtonId) return m.buttonsResponseMessage.selectedButtonId;
+    if (m.listResponseMessage?.singleSelectReply?.selectedRowId) return m.listResponseMessage.singleSelectReply.selectedRowId;
+    if (m.templateButtonReplyMessage?.selectedId) return m.templateButtonReplyMessage.selectedId;
+    return '';
   }
 
   // ========= العامل: يضمن FIFO صارم =========
@@ -267,7 +387,6 @@ class Bot {
   }
 
   async _processOneMessage({ msgObj, chatId, chatName, tsMs, text, mid }) {
-    // كوول داون لكل جروب
     const cd = Math.max(0, Number(this.settings.cooldownSec || 0));
     const lastCool = this.state.get(`cool.${chatId}`, 0);
     const since = Date.now() - lastCool;
@@ -275,24 +394,27 @@ class Bot {
       await this.wait(cd * 1000 - since);
     }
 
-    // حد/دقيقة عام
     const rpm = Math.max(1, Number(this.settings.ratePerMinute || 1));
     if (this.minuteCount >= rpm) {
       this.log('⏳ امتلأ حد الرد بالدقيقة — انتظار قصير…');
       await this.wait(4000);
     }
 
-    // مطابقة اسم عميل
     const normBody = this.settings.normalizeArabic ? this.normalizeArabic(text) : (text || '').toLowerCase();
     let matched = null;
-    for (const c of this.clients) { if (c._rx && c._rx.test(normBody)) { matched = c; break; } }
+    for (const c of this.clients) {
+      if (c._rx && c._rx.test(normBody)) {
+        matched = c;
+        break;
+      }
+    }
 
     if (matched) {
       try {
         if (this.settings.mode === 'text' && this.settings.replyText) {
-          await msgObj.reply(this.settings.replyText);
+          await this.socket.sendMessage(chatId, { text: this.settings.replyText }, { quoted: msgObj });
         } else {
-          await msgObj.react(matched.emoji || this.settings.emoji || '✅');
+          await this.socket.sendMessage(chatId, { react: { text: matched.emoji || this.settings.emoji || '✅', key: msgObj.key } });
         }
         this.minuteCount += 1;
         this.state.set(`cool.${chatId}`, Date.now());
@@ -303,20 +425,23 @@ class Bot {
       }
     }
 
-    // ✅ دوّن آخر نقطة دائماً
     this.setLastChecked(chatId, tsMs);
   }
 
   // ========= API =========
   async start() {
+    if (!this.socket) await this.init();
     if (!this.isReady) throw new Error('WhatsApp not ready');
     this.running = true;
     this.log('🚀 بدأ التفاعل');
     this._runWorker();
+    try { this.emitter.emit('status', this.getStatus()); } catch {}
   }
+
   async stop() {
     this.running = false;
     this.log('🛑 تم الإيقاف');
+    try { this.emitter.emit('status', this.getStatus()); } catch {}
   }
 
   getStatus() {
@@ -325,128 +450,109 @@ class Bot {
       running: this.running,
       connectionStatus: this.connectionStatus,
       selectedGroupIds: this.selectedGroupIds,
-      clients: this.clients.map(({name, emoji}) => ({name, emoji})),
+      clients: this.clients.map(({ name, emoji }) => ({ name, emoji })),
       settings: this.settings,
-      queueSize: this.queue.length
+      queueSize: this.queue.length,
     };
   }
+
+  getCurrentQr() {
+    return this.qrDataUrl || null;
+  }
+
   async getQR() {
     if (this.qrDataUrl) return { qr: this.qrDataUrl };
     if (this.isReady) return { message: 'Already connected' };
     return { error: 'QR not available yet' };
   }
+
   async fetchGroups() {
     if (!this.isReady) throw new Error('WhatsApp not ready');
-    const chats = await this.client.getChats();
-    const groups = chats.filter(c => c.isGroup).map(c => ({
-      id: c.id._serialized,
-      name: c.name,
-      count: Array.isArray(c.participants) ? c.participants.length : 0
+    const groupsMap = await this.socket.groupFetchAllParticipating();
+    const groups = Object.values(groupsMap || {}).map((g) => ({
+      id: g.id,
+      name: g.subject,
+      count: Array.isArray(g.participants) ? g.participants.length : 0,
     }));
     this.log(`📥 تم جلب المجموعات: ${groups.length}`);
+    groups.forEach((g) => this.groupNameCache.set(g.id, g.name));
     return groups;
   }
 
-  // أرشيف: نحترم since + نتجنب الرسائل المعالجة سابقاً + FIFO
   async processBacklog({ startAtMs = null, limitPerChat = 800 } = {}) {
-    if (!this.client || !this.isReady) throw new Error('WhatsApp not ready');
-
-    const chats = await this.client.getChats();
-    const groups = chats.filter(
-      c => c.isGroup && (this.selectedGroupIds.length ? this.selectedGroupIds.includes(c.id._serialized) : true)
+    if (!this.socket || !this.isReady) throw new Error('WhatsApp not ready');
+    const groups = await this.fetchGroups();
+    const target = groups.filter((g) =>
+      this.selectedGroupIds.length ? this.selectedGroupIds.includes(g.id) : true
     );
 
-    for (const chat of groups) {
-      const chatId = chat.id._serialized;
+    for (const chat of target) {
+      const chatId = chat.id;
       const since = startAtMs ?? this.getLastChecked(chatId) ?? 0;
       this.log(`[backlog] ${chat.name} since ${since ? new Date(since).toLocaleString() : '—'}`);
+      const msgs = (this.messageHistory.get(chatId) || [])
+        .filter((m) => m.tsMs > since && !m.message?.key?.fromMe && !!m.text)
+        .sort((a, b) => a.tsMs - b.tsMs)
+        .slice(0, limitPerChat);
 
-      let fetched = 0;
-      let cursor = null;
-      const batch = 200;
-
-      while (fetched < limitPerChat) {
-        const msgs = await chat.fetchMessages({ limit: Math.min(batch, limitPerChat - fetched), before: cursor || undefined });
-        if (!msgs.length) break;
-
-        const ordered = msgs.slice().reverse(); // أقدم → أحدث
-        for (const m of ordered) {
-          const tsMs = (m.timestamp || 0) * 1000;
-          if (tsMs <= since) continue;
-          if (m.fromMe) continue;
-          const mid = this._msgId(m);
-          if (this._isDone(mid)) { this.setLastChecked(chatId, tsMs); continue; }
-
-          const text = (m.body || m.caption || '').trim();
-          this.queue.push({
-            kind: 'backlog',
-            chatId,
-            chatName: chat.name,
-            tsMs,
-            exec: async () => {
-              await this._processOneMessage({ msgObj: m, chatId, chatName: chat.name, tsMs, text, mid });
-            }
-          });
+      for (const m of msgs) {
+        const text = (m.text || '').trim();
+        const mid = m.key?.id;
+        if (this._isDone(mid)) {
+          this.setLastChecked(chatId, m.tsMs);
+          continue;
         }
-
-        fetched += msgs.length;
-        cursor = msgs[msgs.length - 1];
-        if (msgs.length < batch) break;
+        this.queue.push({
+          kind: 'backlog',
+          chatId,
+          chatName: chat.name,
+          tsMs: m.tsMs,
+          exec: async () => {
+            await this._processOneMessage({
+              msgObj: m.message,
+              chatId,
+              chatName: chat.name,
+              tsMs: m.tsMs,
+              text,
+              mid,
+            });
+          },
+        });
       }
     }
 
     this._runWorker();
   }
 
-  // فحص الأرشيف: عدد الرسائل "المطابقة" فقط (إن ما في عملاء، يرجّع 0)
   async countBacklog({ startAtMs = null, limitPerChat = 800 } = {}) {
-    if (!this.client || !this.isReady) throw new Error('WhatsApp not ready');
-
-    const chats = await this.client.getChats();
-    const groups = chats.filter(
-      c => c.isGroup && (this.selectedGroupIds.length ? this.selectedGroupIds.includes(c.id._serialized) : true)
+    if (!this.socket || !this.isReady) throw new Error('WhatsApp not ready');
+    const groups = await this.fetchGroups();
+    const target = groups.filter((g) =>
+      this.selectedGroupIds.length ? this.selectedGroupIds.includes(g.id) : true
     );
 
     let total = 0;
     const byGroup = [];
 
-    for (const chat of groups) {
-      const chatId = chat.id._serialized;
+    for (const chat of target) {
+      const chatId = chat.id;
       const since = startAtMs ?? this.getLastChecked(chatId) ?? 0;
-
-      let fetched = 0;
-      let cursor = null;
-      const batch = 200;
+      const msgs = (this.messageHistory.get(chatId) || [])
+        .filter((m) => m.tsMs > since && !m.message?.key?.fromMe && !!m.text)
+        .sort((a, b) => a.tsMs - b.tsMs)
+        .slice(0, limitPerChat);
       let count = 0;
-
-      while (fetched < limitPerChat) {
-        const msgs = await chat.fetchMessages({ limit: Math.min(batch, limitPerChat - fetched), before: cursor || undefined });
-        if (!msgs.length) break;
-
-        const ordered = msgs.slice().reverse(); // أقدم → أحدث
-        for (const m of ordered) {
-          const tsMs = (m.timestamp || 0) * 1000;
-          if (tsMs <= since) continue;
-          if (m.fromMe) continue;
-
-          const mid = this._msgId(m);
-          if (this._isDone(mid)) continue;
-
-          const text = (m.body || m.caption || '').trim();
-          if (!text) continue;
-
-          if (this.clients && this.clients.length) {
-            const normBody = this.settings.normalizeArabic ? this.normalizeArabic(text) : text.toLowerCase();
-            const match = this.clients.some(c => c._rx && c._rx.test(normBody));
-            if (match) count++;
-          }
+      for (const m of msgs) {
+        const mid = m.key?.id;
+        if (this._isDone(mid)) continue;
+        const text = (m.text || '').trim();
+        if (!text) continue;
+        if (this.clients && this.clients.length) {
+          const normBody = this.settings.normalizeArabic ? this.normalizeArabic(text) : text.toLowerCase();
+          const match = this.clients.some((c) => c._rx && c._rx.test(normBody));
+          if (match) count++;
         }
-
-        fetched += msgs.length;
-        cursor = msgs[msgs.length - 1];
-        if (msgs.length < batch) break;
       }
-
       byGroup.push({ id: chatId, name: chat.name, count });
       total += count;
     }
@@ -455,47 +561,70 @@ class Bot {
   }
 
   async restart() {
-    try { await this.stop(); } catch {}
+    try {
+      await this.stop();
+    } catch {}
     this.running = false;
+    try {
+      await this.socket?.end?.();
+    } catch {}
+    this.socket = null;
+    await this.init();
     return this.start();
   }
 
   async clearSession() {
     this.running = false;
-    if (this.reconnectTimer) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null; }
-    try { await this.client?.destroy(); } catch {}
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    try {
+      await this.socket?.end?.();
+    } catch {}
+    this.socket = null;
+    this.messageHistory.clear();
+    this.groupNameCache.clear();
     try {
       if (fs.existsSync(this.sessionsDir)) {
         fs.rmSync(this.sessionsDir, { recursive: true, force: true });
       }
     } catch {}
-    this.connectionStatus = 'connecting';
-    return this.init();
+    this.connectionStatus = 'disconnected';
+    this.isReady = false;
+    this.qrDataUrl = null;
+    try { this.emitter.emit('status', this.getStatus()); } catch {}
+    return { ok: true };
   }
 
-  _scheduleReconnect() {
-    if (this.reconnectTimer) return;
-    this.reconnectTimer = setTimeout(() => {
-      this.reconnectTimer = null;
-      try {
-        this.connectionStatus = 'reconnecting';
-        this.client?.initialize();
-      } catch {}
-    }, 2000);
+  async sendTextMessage(number, message) {
+    if (!this.socket || !this.isReady) throw new Error('WhatsApp not ready');
+    const jid = this._normalizeJid(number);
+    const res = await this.socket.sendMessage(jid, { text: message });
+    return res?.key?.id || null;
+  }
+
+  _normalizeJid(input) {
+    if (!input) throw new Error('رقم غير صالح');
+    if (input.endsWith('@g.us') || input.endsWith('@s.whatsapp.net')) return input;
+    const num = String(input).replace(/[^0-9]/g, '');
+    if (!num) throw new Error('رقم غير صالح');
+    return `${num}@s.whatsapp.net`;
   }
 }
+
 let singleton;
 
 function getBotInstance(opts = {}) {
   if (!singleton) {
-    singleton = new Bot(opts);
+    singleton = new WhatsAppBotService(opts);
   }
   return singleton;
 }
 
 async function startBot(opts = {}) {
   const bot = getBotInstance(opts);
-  if (!bot.client) await bot.init();
+  if (!bot.socket) await bot.init();
   await bot.start();
   return bot.getStatus();
 }
@@ -508,7 +637,7 @@ async function stopBot() {
 
 async function restartBot(opts = {}) {
   const bot = getBotInstance(opts);
-  if (!bot.client) await bot.init();
+  if (!bot.socket) await bot.init();
   await bot.restart();
   return bot.getStatus();
 }
@@ -519,7 +648,15 @@ async function clearSession(opts = {}) {
 }
 
 function getStatus() {
-  return singleton ? singleton.getStatus() : { isReady: false, running: false };
+  return singleton ? singleton.getStatus() : { isReady: false, running: false, connectionStatus: 'disconnected' };
 }
 
-module.exports = { Bot, startBot, stopBot, restartBot, clearSession, getStatus, getBotInstance };
+module.exports = {
+  WhatsAppBotService,
+  startBot,
+  stopBot,
+  restartBot,
+  clearSession,
+  getStatus,
+  getBotInstance,
+};

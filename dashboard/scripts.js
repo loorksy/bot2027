@@ -67,15 +67,21 @@ function fmtTs(ts){ if (!ts) return '—'; try { return new Date(ts).toLocaleStr
 function ensureAuth(){ if (!api.token()) { clearToken(); window.location.href='/dashboard/login.html'; } }
 
 function createLogger(box){
-  return function(line, ts = Date.now()){
+  return function(payload, tsOverride){
     if (!box) return;
+    const data = typeof payload === 'string' ? { line: payload, ts: Date.now(), level: 'info' } : (payload || {});
+    const ts = tsOverride || data.ts || Date.now();
     const row = document.createElement('div');
-    row.className='log-entry';
+    row.className = `log-entry level-${data.level || 'info'}`;
     const tm = document.createElement('time');
     tm.textContent = new Date(ts).toLocaleTimeString();
+    const badge = document.createElement('span');
+    badge.className = 'log-level';
+    badge.textContent = (data.level || 'info').toUpperCase();
     const text = document.createElement('div');
-    text.textContent = line;
-    row.append(tm, text);
+    text.className = 'log-text';
+    text.textContent = data.line || '';
+    row.append(tm, badge, text);
     box.appendChild(row);
     box.scrollTop = box.scrollHeight;
   };
@@ -107,7 +113,7 @@ async function initDashboard(){
   const logBulk = createLogger($('log-bulk'));
 
   const socket = io({ auth: { token: api.token() } });
-  socket.on('log', ({ line, ts }) => logMain(line, ts));
+  socket.on('log', (entry) => logMain(entry));
   socket.on('qr', ({ qr }) => {
     const box = $('qr-box');
     if (box){
@@ -122,7 +128,7 @@ async function initDashboard(){
 
   $('btn-logout').onclick = async ()=>{ await api.logout(); clearToken(); window.location.href='/dashboard/login.html'; };
   $('btn-clear-log').onclick = ()=>{ $('log').innerHTML=''; };
-  $('btn-clear-session').onclick = async ()=>{ await api.clearSession(); logMain('تم مسح الجلسة'); };
+  $('btn-clear-session').onclick = async ()=>{ await api.clearSession(); logMain({ line:'تم مسح الجلسة', level:'warning' }); refreshStatus(); };
 
   $('btn-show-qr').onclick = async () => {
     const r = await api.showQR();
@@ -164,10 +170,16 @@ function updateStatusPills(status){
   if (!status) return;
   const ready = $('pill-ready');
   const running = $('pill-running');
-  const readyLabel = status.connectionStatus === 'connected' ? 'متصل'
-    : status.connectionStatus === 'reconnecting' ? 'إعادة الاتصال...'
-    : status.connectionStatus === 'loggedOut' ? 'مسجّل الخروج'
-    : 'غير متصل';
+  const map = {
+    connected: 'متصل',
+    reconnecting: 'إعادة الاتصال...',
+    connecting: 'جاري الاتصال...',
+    qr: 'في انتظار QR',
+    logged_out: 'مسجّل الخروج',
+    loggedOut: 'مسجّل الخروج',
+    disconnected: 'غير متصل'
+  };
+  const readyLabel = map[status.connectionStatus] || 'غير متصل';
   if (ready) ready.textContent = readyLabel;
   if (running) running.textContent = status.running ? 'شغّال' : 'متوقف';
   const runningBulk = status.bulk?.running;
