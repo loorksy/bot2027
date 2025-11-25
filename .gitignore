@@ -1,0 +1,13 @@
+node_modules/
+sessions/
+.wwebjs_cache/
+*.zip
+npm-debug.log
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Env files
+.env
