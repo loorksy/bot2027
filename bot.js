@@ -2,9 +2,67 @@
 
 const EventEmitter = require('events');
 const fs = require('fs');
+const path = require('path');
 const qrcode = require('qrcode');
-const Store = require('electron-store');
-const { Client, LocalAuth } = require('whatsapp-web.js');
+const { Client, LocalAuth, DisconnectReason } = require('whatsapp-web.js');
+
+class SimpleStore {
+  constructor(filePath) {
+    this.filePath = filePath;
+    this.store = {};
+    this._load();
+  }
+
+  _load() {
+    try {
+      if (fs.existsSync(this.filePath)) {
+        this.store = JSON.parse(fs.readFileSync(this.filePath, 'utf8')) || {};
+      }
+    } catch {
+      this.store = {};
+    }
+  }
+
+  _save() {
+    try {
+      fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
+      fs.writeFileSync(this.filePath, JSON.stringify(this.store, null, 2));
+    } catch {}
+  }
+
+  _setByPath(obj, key, value) {
+    const parts = String(key).split('.');
+    let cur = obj;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const p = parts[i];
+      if (!cur[p] || typeof cur[p] !== 'object') cur[p] = {};
+      cur = cur[p];
+    }
+    cur[parts[parts.length - 1]] = value;
+  }
+
+  get(key, defVal = undefined) {
+    try {
+      const parts = String(key).split('.');
+      let cur = this.store;
+      for (const p of parts) {
+        if (cur && Object.prototype.hasOwnProperty.call(cur, p)) {
+          cur = cur[p];
+        } else {
+          return defVal;
+        }
+      }
+      return cur;
+    } catch {
+      return defVal;
+    }
+  }
+
+  set(key, value) {
+    this._setByPath(this.store, key, value);
+    this._save();
+  }
+}
 
 class Bot {
   constructor({ sessionsDir }) {
@@ -15,6 +73,8 @@ class Bot {
     this.qrDataUrl = null;
     this.isReady = false;
     this.running = false;
+    this.connectionStatus = 'disconnected';
+    this.reconnectTimer = null;
 
     this.selectedGroupIds = [];
     this.clients = []; // [{name, emoji, _norm, _rx}]
@@ -28,7 +88,8 @@ class Bot {
     };
 
     // تخزين دائم
-    this.state = new Store.default({ name: 'wbot-state' });
+    const stateFile = path.join(this.sessionsDir || process.cwd(), 'bot-state.json');
+    this.state = new SimpleStore(stateFile);
 
     this.queue = [];
     this.workerRunning = false;
@@ -106,6 +167,8 @@ class Bot {
   async init() {
     if (!fs.existsSync(this.sessionsDir)) fs.mkdirSync(this.sessionsDir, { recursive: true });
 
+    this.connectionStatus = this.connectionStatus === 'connected' ? 'connected' : 'connecting';
+
     this.client = new Client({
       authStrategy: new LocalAuth({ dataPath: this.sessionsDir }),
       puppeteer: { headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] }
@@ -114,20 +177,36 @@ class Bot {
     this.client.on('qr', async (qr) => {
       this.qrDataUrl = await qrcode.toDataURL(qr);
       this.isReady = false;
+      this.connectionStatus = 'connecting';
       this.log('[QR] جاهز — امسحه من WhatsApp');
+      try { this.emitter.emit('qr', this.qrDataUrl); } catch {}
     });
 
     this.client.on('ready', () => {
       this.isReady = true;
       this.qrDataUrl = null;
+      this.connectionStatus = 'connected';
       this.log('✅ WhatsApp جاهز');
+      try { this.emitter.emit('ready'); } catch {}
     });
 
     this.client.on('disconnected', (r) => {
       this.isReady = false;
       this.running = false;
-      this.log('❌ تم قطع الاتصال: ' + r);
-      try { this.client.initialize(); } catch {}
+
+      const reason = typeof r === 'object' && r !== null && 'reason' in r ? r.reason : r;
+      const isLogout = reason === DisconnectReason?.loggedOut || reason === 'LOGOUT' || reason === 'loggedOut';
+
+      if (isLogout) {
+        this.connectionStatus = 'loggedOut';
+        this.log('⚠️ مسجّل الخروج: ' + reason);
+      } else {
+        this.connectionStatus = 'reconnecting';
+        this.log('❌ تم قطع الاتصال: ' + reason + ' — إعادة الاتصال…');
+        this._scheduleReconnect();
+      }
+
+      try { this.emitter.emit('disconnected', r); } catch {}
     });
 
     // رسائل حيّة → ادفع للـ FIFO queue
@@ -244,6 +323,7 @@ class Bot {
     return {
       isReady: this.isReady,
       running: this.running,
+      connectionStatus: this.connectionStatus,
       selectedGroupIds: this.selectedGroupIds,
       clients: this.clients.map(({name, emoji}) => ({name, emoji})),
       settings: this.settings,
@@ -373,6 +453,73 @@ class Bot {
 
     return { total, byGroup };
   }
+
+  async restart() {
+    try { await this.stop(); } catch {}
+    this.running = false;
+    return this.start();
+  }
+
+  async clearSession() {
+    this.running = false;
+    if (this.reconnectTimer) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null; }
+    try { await this.client?.destroy(); } catch {}
+    try {
+      if (fs.existsSync(this.sessionsDir)) {
+        fs.rmSync(this.sessionsDir, { recursive: true, force: true });
+      }
+    } catch {}
+    this.connectionStatus = 'connecting';
+    return this.init();
+  }
+
+  _scheduleReconnect() {
+    if (this.reconnectTimer) return;
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      try {
+        this.connectionStatus = 'reconnecting';
+        this.client?.initialize();
+      } catch {}
+    }, 2000);
+  }
+}
+let singleton;
+
+function getBotInstance(opts = {}) {
+  if (!singleton) {
+    singleton = new Bot(opts);
+  }
+  return singleton;
 }
 
-module.exports = { Bot };
+async function startBot(opts = {}) {
+  const bot = getBotInstance(opts);
+  if (!bot.client) await bot.init();
+  await bot.start();
+  return bot.getStatus();
+}
+
+async function stopBot() {
+  if (!singleton) return null;
+  await singleton.stop();
+  return singleton.getStatus();
+}
+
+async function restartBot(opts = {}) {
+  const bot = getBotInstance(opts);
+  if (!bot.client) await bot.init();
+  await bot.restart();
+  return bot.getStatus();
+}
+
+async function clearSession(opts = {}) {
+  const bot = getBotInstance(opts);
+  return bot.clearSession(opts);
+}
+
+function getStatus() {
+  return singleton ? singleton.getStatus() : { isReady: false, running: false };
+}
+
+module.exports = { Bot, startBot, stopBot, restartBot, clearSession, getStatus, getBotInstance };

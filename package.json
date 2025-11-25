@@ -2,10 +2,9 @@
   "name": "whatsappdesktopbot",
   "version": "1.0.1",
   "description": "WhatsApp Desktop Bot (Electron + whatsapp-web.js)",
-  "main": "main.js",
+  "main": "server/app.js",
   "scripts": {
-    "start": "electron .",
-    "dist": "electron-builder --win nsis"
+    "start": "node server/app.js"
   },
   "build": {
     "appId": "com.ahmad.whatsappbot",
@@ -40,13 +39,14 @@
     }
   },
   "dependencies": {
-    "electron-store": "^10.0.0",
+    "body-parser": "^1.20.2",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
     "qrcode": "^1.5.4",
+    "socket.io": "^4.7.5",
     "whatsapp-web.js": "^1.23.0",
     "puppeteer": "^21.3.8"
-  },
-  "devDependencies": {
-    "electron": "^38.1.0",
-    "electron-builder": "^26.0.12"
   }
 }
