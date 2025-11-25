@@ -1,5 +1,26 @@
+const TOKEN_KEY = 'token';
+const LOGIN_FLAG_KEY = 'loggedIn';
+
+function getStoredToken(){
+  return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
+}
+
+function persistToken(token, remember){
+  clearToken();
+  const storage = remember ? localStorage : sessionStorage;
+  storage.setItem(TOKEN_KEY, token);
+  storage.setItem(LOGIN_FLAG_KEY, 'true');
+}
+
+function clearToken(){
+  [localStorage, sessionStorage].forEach((store)=>{
+    store.removeItem(TOKEN_KEY);
+    store.removeItem(LOGIN_FLAG_KEY);
+  });
+}
+
 const api = {
-  token: () => localStorage.getItem('token'),
+  token: () => getStoredToken(),
   headers() {
     const h = { 'Content-Type': 'application/json' };
     const t = this.token();
@@ -9,14 +30,14 @@ const api = {
   async request(path, options = {}) {
     const res = await fetch(path, { ...options, headers: { ...(options.headers || {}), ...this.headers() } });
     if (res.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login.html';
+      clearToken();
+      window.location.href = '/dashboard/login.html';
       return null;
     }
     if (!res.ok) throw new Error((await res.json()).error || 'خطأ في الطلب');
     return res.json();
   },
-  login(email, password) { return this.request('/login', { method:'POST', body: JSON.stringify({ email, password }) }); },
+  login(email, password, remember) { return this.request('/login', { method:'POST', body: JSON.stringify({ email, password, remember }) }); },
   logout() { return this.request('/logout', { method:'POST' }); },
   status() { return this.request('/api/bot/status'); },
   showQR() { return this.request('/api/bot/qr'); },
@@ -43,7 +64,7 @@ const api = {
 
 function $(id){ return document.getElementById(id); }
 function fmtTs(ts){ if (!ts) return '—'; try { return new Date(ts).toLocaleString(); } catch { return '—'; } }
-function ensureAuth(){ if (!api.token()) window.location.href='/login.html'; }
+function ensureAuth(){ if (!api.token()) { clearToken(); window.location.href='/dashboard/login.html'; } }
 
 function createLogger(box){
   return function(line, ts = Date.now()){
@@ -70,17 +91,14 @@ async function initLogin(){
     try{
       const email = $('login-email').value.trim();
       const password = $('login-password').value.trim();
-      const r = await api.login(email, password);
+      const remember = $('login-remember')?.checked;
+      const r = await api.login(email, password, remember);
       if (r?.token){
-        localStorage.setItem('token', r.token);
-        window.location.href = '/index.html';
+        persistToken(r.token, remember);
+        window.location.href = '/dashboard/index.html';
       }
     }catch(e){ err.textContent = e.message || 'خطأ'; }
   };
-
-  if (api.token()){
-    try{ await api.status(); window.location.href='/index.html'; }catch{}
-  }
 }
 
 async function initDashboard(){
@@ -102,7 +120,7 @@ async function initDashboard(){
   const savedUi = loadLocal('ui-state', {});
   restoreUI(savedUi);
 
-  $('btn-logout').onclick = async ()=>{ await api.logout(); localStorage.removeItem('token'); window.location.href='/login.html'; };
+  $('btn-logout').onclick = async ()=>{ await api.logout(); clearToken(); window.location.href='/dashboard/login.html'; };
   $('btn-clear-log').onclick = ()=>{ $('log').innerHTML=''; };
   $('btn-clear-session').onclick = async ()=>{ await api.clearSession(); logMain('تم مسح الجلسة'); };
 

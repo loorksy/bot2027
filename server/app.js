@@ -28,11 +28,11 @@ app.use(bodyParser.json({ limit: '2mb' }));
 app.use(cookieParser());
 
 const authMiddleware = (req, res, next) => {
-  const publicPaths = ['/login', '/api/login', '/login.html', '/styles.css', '/scripts.js'];
+  const publicPaths = ['/login', '/api/login', '/dashboard/login.html', '/dashboard/styles.css', '/dashboard/scripts.js'];
   if (publicPaths.includes(req.path) || req.path.startsWith('/socket.io')) return next();
   const token = req.cookies.token || (req.headers.authorization || '').replace('Bearer ', '');
   if (!token) {
-    if (req.method === 'GET') return res.redirect('/login.html');
+    if (req.method === 'GET') return res.redirect('/dashboard/login.html');
     return res.status(401).json({ error: 'unauthorized' });
   }
   try {
@@ -60,10 +60,10 @@ app.use('/api', settingsRoutes({ bot }));
 app.use('/api', bulkRoutes({ bot }));
 app.use('/', authRoutes({ jwt, JWT_SECRET }));
 
-app.use(express.static(DASHBOARD_DIR));
-app.get('*', (req, res) => {
-  res.sendFile(path.join(DASHBOARD_DIR, 'index.html'));
-});
+app.use('/dashboard', express.static(DASHBOARD_DIR));
+app.get('/dashboard', (_req, res) => res.sendFile(path.join(DASHBOARD_DIR, 'index.html')));
+app.get('/dashboard/*', (_req, res) => res.sendFile(path.join(DASHBOARD_DIR, 'index.html')));
+app.get('/', (_req, res) => res.redirect('/dashboard/login.html'));
 
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token;
