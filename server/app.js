@@ -7,7 +7,7 @@ const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
-const { Bot, getBotInstance } = require('../bot');
+const { getBotInstance } = require('../bot');
 const botRoutes = require('./routes/bot');
 const settingsRoutes = require('./routes/settings');
 const authRoutes = require('./routes/auth');
@@ -78,7 +78,8 @@ io.use((socket, next) => {
 iobotAttach(bot, io);
 io.on('connection', (socket) => {
   socket.emit('status', bot.getStatus());
-  if (bot.qrDataUrl) socket.emit('qr', { qr: bot.qrDataUrl });
+  const qr = bot.getCurrentQr?.() || bot.qrDataUrl;
+  if (qr) socket.emit('qr', { qr });
 });
 
 const PORT = process.env.PORT || 3000;
@@ -87,10 +88,11 @@ server.listen(PORT, () => {
 });
 
 function iobotAttach(botInstance, ioInstance) {
-  botInstance.onLog((line) => ioInstance.emit('log', { line, ts: Date.now() }));
+  botInstance.onLog(({ line, level = 'info', ts = Date.now() }) => ioInstance.emit('log', { line, level, ts }));
   botInstance.emitter.on('qr', (qr) => ioInstance.emit('qr', { qr }));
   botInstance.emitter.on('ready', () => ioInstance.emit('status', botInstance.getStatus()));
   botInstance.emitter.on('disconnected', () => ioInstance.emit('status', botInstance.getStatus()));
+  botInstance.emitter.on('status', (status) => ioInstance.emit('status', status));
 }
 
 module.exports = app;

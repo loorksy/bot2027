@@ -1,7 +1,7 @@
 {
   "name": "whatsappdesktopbot",
   "version": "1.0.1",
-  "description": "WhatsApp Desktop Bot (Electron + whatsapp-web.js)",
+  "description": "WhatsApp Desktop Bot (Electron + Baileys)",
   "main": "server/app.js",
   "scripts": {
     "start": "node server/app.js"
@@ -18,15 +18,9 @@
       "preload.js",
       "bot.js",
       "renderer/**/*",
-      "sessions/**/*",
-      "node_modules/puppeteer/.local-chromium/**/*"
+      "sessions/**/*"
     ],
-    "extraResources": [
-      {
-        "from": "node_modules/puppeteer/.local-chromium",
-        "to": "local-chromium"
-      }
-    ],
+    "extraResources": [],
     "win": {
       "icon": "build/icon.png",
       "target": ["nsis"]
@@ -44,9 +38,9 @@
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
+    "@whiskeysockets/baileys": "^6.7.8",
+    "pino": "^9.4.0",
     "qrcode": "^1.5.4",
-    "socket.io": "^4.7.5",
-    "whatsapp-web.js": "^1.23.0",
-    "puppeteer": "^21.3.8"
+    "socket.io": "^4.7.5"
   }
 }
