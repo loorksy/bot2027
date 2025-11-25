@@ -12,9 +12,12 @@
       <h2>تسجيل الدخول</h2>
       <p class="muted">الرجاء إدخال بيانات الاعتماد للوصول إلى اللوحة</p>
       <label>البريد الإلكتروني</label>
-      <input type="email" id="login-email" placeholder="email@example.com" value="loorksy@gmail.com">
+      <input type="email" id="login-email" placeholder="email@example.com" autocomplete="username">
       <label>كلمة المرور</label>
-      <input type="password" id="login-password" placeholder="••••••••" value="lork0009">
+      <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+      <label class="remember-row">
+        <input type="checkbox" id="login-remember"> تذكرني لمدة 30 يومًا
+      </label>
       <div class="btns" style="margin-top:12px">
         <button id="btn-login" class="primary" style="width:100%">دخول</button>
       </div>
