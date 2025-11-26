@@ -27,7 +27,7 @@ textarea{min-height:120px;resize:vertical}
 .qr-box img{max-width:100%;height:auto;border-radius:10px;border:1px solid var(--border)}
 .status{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
 .pill{padding:4px 10px;border-radius:999px;border:1px solid var(--border);background:#0b1220}
-.log{background:#0b1220;color:#e2e8f0;font-family:ui-monospace,Consolas,monospace;padding:10px;border-radius:10px;height:220px;overflow:auto;border:1px solid #1f2937;white-space:pre-wrap;line-height:1.4;}
+.log{background:#0b1220;color:#e2e8f0;font-family:ui-monospace,Consolas,monospace;padding:10px;border-radius:10px;height:220px;overflow:auto;border:1px solid #1f2937;white-space:pre-wrap;line-height:1.4;display:flex;flex-direction:column;gap:6px;}
 .log strong{color:#22d3ee}
 .row3{display:grid;gap:12px;grid-template-columns:1fr}
 @media(min-width:900px){ .row3{grid-template-columns:1fr 1fr 1fr;} }
@@ -53,9 +53,14 @@ label{display:block;margin-bottom:6px;font-size:13px;color:#cbd5e1}
   .list{max-height:260px;}
   .log{height:180px;}
 }
-.log-entry{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid #1f2937}
-.log-entry time{color:var(--muted);font-size:12px;min-width:110px;text-align:right}
+.log-entry{display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-bottom:1px solid #1f2937;flex-wrap:wrap}
+.log-entry time{color:var(--muted);font-size:12px;min-width:90px;text-align:right;flex:0 0 auto}
+.log-level{padding:2px 8px;border-radius:999px;border:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;flex:0 0 auto}
+.log-text{flex:1 1 200px;min-width:200px}
 .log-entry:last-child{border-bottom:0}
+.log-entry.level-warning .log-level{color:#f59e0b;border-color:#f59e0b33;background:#f59e0b11}
+.log-entry.level-error .log-level{color:#f87171;border-color:#f8717133;background:#f8717111}
+.log-entry.level-info .log-level{color:#38bdf8;border-color:#38bdf833;background:#38bdf811}
 .list::-webkit-scrollbar,.log::-webkit-scrollbar{width:8px}
 .list::-webkit-scrollbar-thumb,.log::-webkit-scrollbar-thumb{background:#1f2937;border-radius:10px}
 
