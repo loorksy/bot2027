@@ -410,6 +410,7 @@ class WhatsAppBotService {
 
     this.socket.ev.on('creds.update', saveCreds);
     this.socket.ev.on('connection.update', (update) => this._handleConnectionUpdate(update));
+    this.socket.ev.on('messaging-history.set', (payload) => this._handleMessagingHistorySet(payload));
     this.socket.ev.on('messages.upsert', (m) => this._handleMessagesUpsert(m));
     this.socket.ev.on('messages.update', ({
       messages = [],
@@ -483,9 +484,21 @@ class WhatsAppBotService {
     } catch {}
   }
 
+  _handleMessagingHistorySet(payload) {
+    try {
+      // Ignore history sync payloads to avoid decrypting or processing old messages
+      const count = Array.isArray(payload?.messages) ? payload.messages.length : 0;
+      if (count > 0) {
+        // intentionally no processing
+      }
+    } catch {}
+  }
+
   async _handleMessagesUpsert({ messages, type }) {
     const msgs = messages || [];
     for (const msg of msgs) {
+      if (!msg?.message) continue;
+      if (msg?.key?.fromMe) continue;
       this._recordMessage(msg);
       try {
         if (!this.running) continue;
