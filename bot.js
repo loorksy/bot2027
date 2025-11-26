@@ -10,7 +10,6 @@ const {
   useMultiFileAuthState,
   DisconnectReason,
   fetchLatestBaileysVersion,
-  makeInMemoryStore,
 } = require('@whiskeysockets/baileys');
 
 class SimpleStore {
@@ -76,7 +75,7 @@ class WhatsAppBotService {
     this.emitter = new EventEmitter();
     this.sessionsDir = sessionsDir;
     this.socket = null;
-    this.store = makeInMemoryStore({ logger: pino({ level: 'silent' }) });
+    this.chats = new Map();
 
     this.qrDataUrl = null;
     this.isReady = false;
@@ -123,6 +122,8 @@ class WhatsAppBotService {
     this.messageHistory = new Map(); // chatId -> [{ key, tsMs, text, message }]
     this.groupNameCache = new Map();
     this.archivesCache = [];
+
+    this._boundChatHandlers = false;
   }
 
   // ========= Utilities =========
@@ -140,7 +141,7 @@ class WhatsAppBotService {
     return new Promise((r) => setTimeout(r, ms));
   }
 
-   getQueueDelayMs() {
+  _getQueueDelayMs() {
     const cfg = this.queueConfig || {};
     const d = Number(cfg.delayMsBetweenMessages);
     if (d && d > 0) return d;
@@ -191,6 +192,31 @@ class WhatsAppBotService {
 
   _markDone(msgId) {
     if (msgId) this.state.set(`done.${msgId}`, Date.now());
+  }
+
+  _upsertChat(chat) {
+    if (!chat || !chat.id) return;
+    const prev = this.chats.get(chat.id) || {};
+    this.chats.set(chat.id, { ...prev, ...chat });
+  }
+
+  _wireChatCache() {
+    if (!this.socket?.ev || this._boundChatHandlers) return;
+    this._boundChatHandlers = true;
+
+    const upsertMany = (items = []) => {
+      try {
+        (Array.isArray(items) ? items : []).forEach((c) => this._upsertChat(c));
+      } catch {}
+    };
+
+    this.socket.ev.on('chats.set', ({ chats }) => upsertMany(chats));
+    this.socket.ev.on('chats.upsert', (chats) => upsertMany(chats));
+    this.socket.ev.on('chats.update', (updates) => {
+      try {
+        (Array.isArray(updates) ? updates : []).forEach((u) => this._upsertChat(u));
+      } catch {}
+    });
   }
 
   setClients(arr = []) {
@@ -250,6 +276,7 @@ class WhatsAppBotService {
   }
 
   async _createSocket() {
+    this._boundChatHandlers = false;
     const { state, saveCreds } = await useMultiFileAuthState(this.sessionsDir);
     let version = undefined;
     try {
@@ -274,7 +301,7 @@ class WhatsAppBotService {
       markOnlineOnConnect: false,
     });
 
-    if (this.store) this.store.bind(this.socket.ev);
+    this._wireChatCache();
 
     this.socket.ev.on('creds.update', saveCreds);
     this.socket.ev.on('connection.update', (update) => this._handleConnectionUpdate(update));
@@ -590,7 +617,7 @@ class WhatsAppBotService {
 
   async fetchArchives() {
     if (!this.isReady) throw new Error('WhatsApp not ready');
-    const chats = this.store?.chats?.all?.() || [];
+    const chats = Array.from(this.chats.values());
     const archives = chats
       .filter((c) => c?.id && (c.archive === true || c.archived === true))
       .map((c) => ({ id: c.id, name: c.name || c.subject || c.id }));
