@@ -97,6 +97,47 @@
       </div>
       <div class="log" id="log"></div>
     </section>
+
+    <section class="card" id="queue-card" style="margin-top:12px">
+      <h3>نظام الطابور</h3>
+      <div class="row" style="grid-template-columns:1fr 1fr">
+        <div>
+          <label>الإعدادات</label>
+          <div class="row" style="grid-template-columns:1fr 1fr; gap:8px">
+            <div>
+              <label>تأخير (مللي ثانية)</label>
+              <input type="number" id="queue-delay" min="0" value="1000">
+            </div>
+            <div>
+              <label>رسائل/دقيقة</label>
+              <input type="number" id="queue-mpm" min="0" value="0">
+            </div>
+          </div>
+          <div class="btns" style="margin-top:8px">
+            <button id="btn-save-queue-config">حفظ إعدادات الطابور</button>
+          </div>
+          <div class="muted" style="margin-top:6px">يمكن ترك أحد الحقلين فارغاً للاعتماد على الآخر.</div>
+        </div>
+        <div>
+          <label>التحكم</label>
+          <div class="btns wrap-mobile">
+            <button id="btn-queue-pause">إيقاف مؤقت</button>
+            <button id="btn-queue-resume">استئناف</button>
+            <button id="btn-queue-clear" class="danger">مسح الطابور</button>
+          </div>
+          <div class="muted" style="margin-top:6px">
+            الحالة: <span id="queue-running-state">—</span> — الطابور: <span id="queue-length">0</span>
+          </div>
+          <div class="muted" style="margin-top:4px">
+            المرسلة: <span id="queue-sent">0</span> — الفاشلة: <span id="queue-failed">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="list" id="queue-history" style="margin-top:10px">
+        <div class="muted">لا توجد رسائل في السجل بعد.</div>
+      </div>
+    </section>
   </main>
 
   <section class="wrap" id="bulk">

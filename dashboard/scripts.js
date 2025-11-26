@@ -62,7 +62,13 @@ const api = {
   bulkSaveSettings(d){ return this.request('/api/bulk/save-settings', { method:'POST', body: JSON.stringify(d||{}) }); },
   bulkLoadSettings(){ return this.request('/api/bulk/load-settings'); },
   bulkGroups(){ return this.request('/api/bulk/groups'); },
-  queueStatus(){ return this.request('/api/queue/status'); }
+  queueStatus(){ return this.request('/api/queue/status'); },
+  queueConfig(){ return this.request('/api/queue/config'); },
+  updateQueueConfig(data){ return this.request('/api/queue/config', { method:'POST', body: JSON.stringify(data||{}) }); },
+  pauseQueue(){ return this.request('/api/queue/pause', { method:'POST' }); },
+  resumeQueue(){ return this.request('/api/queue/resume', { method:'POST' }); },
+  clearQueue(){ return this.request('/api/queue/clear', { method:'POST' }); },
+  queueHistory(){ return this.request('/api/queue/history'); }
 };
 
 function $(id){ return document.getElementById(id); }
@@ -140,7 +146,15 @@ async function initDashboard(){
     renderArchives(list);
   });
   socket.on('queue:update', (payload = {}) => {
-    renderQueueStatus({ length: payload.length || 0, running: !!payload.running });
+    renderQueueStatus({
+      length: payload.length || 0,
+      running: !!payload.running,
+      paused: !!payload.paused,
+      sentCount: payload.sentCount,
+      failedCount: payload.failedCount,
+      config: payload.config,
+    });
+    refreshQueueHistory();
   });
 
   const savedUi = loadLocal('ui-state', {});
@@ -186,12 +200,28 @@ async function initDashboard(){
   $('btn-resume').onclick = async ()=>{ await api.bulkResume(); logBulk('استئناف'); pollStatus(); };
   $('btn-cancel').onclick = async ()=>{ await api.bulkCancel(); logBulk('تم الإلغاء'); };
 
+  $('btn-save-queue-config').onclick = async () => {
+    try {
+      const delay = Number($('queue-delay').value || 0);
+      const mpm = Number($('queue-mpm').value || 0);
+      await api.updateQueueConfig({ delayMsBetweenMessages: delay, messagesPerMinute: mpm });
+      logMain('تم حفظ إعدادات الطابور');
+      refreshQueueStatus();
+    } catch (e) {
+      logMain({ line: e.message || 'تعذر حفظ الإعدادات', level: 'error' });
+    }
+  };
+  $('btn-queue-pause').onclick = async () => { await api.pauseQueue(); logMain('تم إيقاف الطابور مؤقتاً'); refreshQueueStatus(); };
+  $('btn-queue-resume').onclick = async () => { await api.resumeQueue(); logMain('تم استئناف الطابور'); refreshQueueStatus(); };
+  $('btn-queue-clear').onclick = async () => { await api.clearQueue(); logMain('تم مسح الطابور'); refreshQueueStatus(); refreshQueueHistory(); };
+
   await loadRemoteState();
   fetchGroups(savedUi, false);
   loadBulkGroups({ savedId: savedBulkId });
   refreshStatus();
   pollStatus();
   refreshQueueStatus();
+  refreshQueueHistory();
 }
 
 function updateStatusPills(status){
@@ -222,7 +252,16 @@ function updateStatusPills(status){
     const saved = loadLocal('ui-state', {})?.bulk?.draft?.groupId || '';
     loadBulkGroups({ savedId: saved, force: true });
   }
-  if (typeof status.queueSize !== 'undefined') {
+  if (status.queue){
+    renderQueueStatus({
+      length: status.queue.length,
+      running: status.queue.running,
+      paused: status.queue.paused,
+      sentCount: status.queue.sentCount,
+      failedCount: status.queue.failedCount,
+      config: status.queue.config,
+    });
+  } else if (typeof status.queueSize !== 'undefined') {
     renderQueueStatus({ length: status.queueSize, running: status.running });
   }
 }
@@ -331,21 +370,82 @@ function ensureQueueBox(){
   return box;
 }
 
-function renderQueueStatus({ length = 0, running = false } = {}){
+function renderQueueStatus({ length = 0, running = false, paused = false, sentCount = 0, failedCount = 0, config = {} } = {}){
   const box = ensureQueueBox();
-  if (!box) return;
-  if (!length) {
-    box.textContent = 'الطابور فارغ';
-    return;
+  if (box) {
+    if (!length) box.textContent = 'الطابور فارغ';
+    else if (paused) box.textContent = `الطابور متوقف مؤقتاً (${length})`;
+    else box.textContent = running ? `الطابور يعمل (${length})` : `الطابور متوقف (${length})`;
   }
-  box.textContent = running ? `الطابور يعمل (${length})` : `الطابور متوقف (${length})`;
+
+  const lenEl = $('queue-length');
+  if (lenEl) lenEl.textContent = length ?? 0;
+  const stateEl = $('queue-running-state');
+  if (stateEl) stateEl.textContent = paused ? 'متوقف مؤقتاً' : (running ? 'يعمل' : 'متوقف');
+  const sentEl = $('queue-sent');
+  if (sentEl) sentEl.textContent = sentCount ?? 0;
+  const failedEl = $('queue-failed');
+  if (failedEl) failedEl.textContent = failedCount ?? 0;
+
+  const delayInput = $('queue-delay');
+  const mpmInput = $('queue-mpm');
+  if (delayInput && typeof config.delayMsBetweenMessages !== 'undefined') {
+    delayInput.value = Number(config.delayMsBetweenMessages || 0);
+  }
+  if (mpmInput && typeof config.messagesPerMinute !== 'undefined') {
+    mpmInput.value = Number(config.messagesPerMinute || 0);
+  }
 }
 
 async function refreshQueueStatus(){
   try {
     const q = await api.queueStatus();
-    renderQueueStatus({ length: q.length || 0, running: !!q.running });
+    renderQueueStatus({
+      length: q.length || 0,
+      running: !!q.running,
+      paused: !!q.paused,
+      sentCount: q.sentCount,
+      failedCount: q.failedCount,
+      config: q.config || {},
+    });
   } catch {}
+}
+
+async function refreshQueueHistory(){
+  try {
+    const res = await api.queueHistory();
+    renderQueueHistory(res.history || []);
+  } catch {}
+}
+
+function renderQueueHistory(list = []){
+  const box = $('queue-history');
+  if (!box) return;
+  box.innerHTML = '';
+  if (!list.length){
+    const empty = document.createElement('div');
+    empty.className = 'muted';
+    empty.textContent = 'لا توجد رسائل في السجل بعد.';
+    box.appendChild(empty);
+    return;
+  }
+
+  list.forEach((item) => {
+    const row = document.createElement('div');
+    row.className = 'group';
+    const title = document.createElement('div');
+    title.style.fontWeight = 'bold';
+    title.textContent = item.to || 'غير معروف';
+    const preview = document.createElement('div');
+    preview.className = 'muted';
+    preview.textContent = (item.messagePreview || '').slice(0, 120) || '—';
+    const meta = document.createElement('div');
+    meta.className = 'muted';
+    const err = item.lastError ? ` — آخر خطأ: ${item.lastError}` : '';
+    meta.textContent = `الحالة: ${item.status || 'pending'} — المحاولات: ${item.attempts || 0}${err}`;
+    row.append(title, preview, meta);
+    box.appendChild(row);
+  });
 }
 
 function ensureArchivesBox(){

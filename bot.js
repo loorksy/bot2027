@@ -99,7 +99,22 @@ class WhatsAppBotService {
 
     this.queue = [];
     this.workerRunning = false;
+    this.queuePaused = false;
     this.queueDelayMs = 1000;
+    this.queueHistory = [];
+    this.queueHistoryLimit = 100;
+    this.queueConfigStore = new SimpleStore(path.join(this.sessionsDir || process.cwd(), 'queue-config.json'));
+    this.queueConfig = Object.assign(
+      {
+        delayMsBetweenMessages: 1000,
+        messagesPerMinute: null,
+        maxRetries: 3,
+      },
+      this.queueConfigStore.get('config', {})
+    );
+    this.sentCount = 0;
+    this.failedCount = 0;
+    this.jobSeq = 0;
 
     this.minuteCount = 0;
     setInterval(() => (this.minuteCount = 0), 60_000);
@@ -123,6 +138,15 @@ class WhatsAppBotService {
 
   wait(ms) {
     return new Promise((r) => setTimeout(r, ms));
+  }
+
+   getQueueDelayMs() {
+    const cfg = this.queueConfig || {};
+    const d = Number(cfg.delayMsBetweenMessages);
+    if (d && d > 0) return d;
+    const mpm = Number(cfg.messagesPerMinute);
+    if (mpm && mpm > 0) return Math.max(250, Math.floor(60_000 / mpm));
+    return this.queueDelayMs;
   }
 
   normalizeArabic(s = '') {
@@ -350,17 +374,16 @@ class WhatsAppBotService {
         }
 
         const chatName = await this._getGroupName(chatId);
-        this.queue.push({
+        this._enqueueJob({
           kind: type === 'append' ? 'backlog' : 'live',
           chatId,
           chatName,
           tsMs,
+          messagePreview: text?.slice?.(0, 120) || '',
           exec: async () => {
             await this._processOneMessage({ msgObj: msg, chatId, chatName, tsMs, text, mid });
           },
         });
-        this._emitQueueUpdate();
-        this._runWorker();
       } catch (e) {
         this.log('⚠️ live message error: ' + (e.message || e));
       }
@@ -391,21 +414,81 @@ class WhatsAppBotService {
     return '';
   }
 
+  _enqueueJob(payload = {}) {
+    const job = Object.assign(
+      {
+        id: ++this.jobSeq,
+        status: 'pending',
+        attempts: 0,
+        maxRetries: Number(this.queueConfig?.maxRetries || 3),
+        lastError: null,
+        createdAt: Date.now(),
+        messagePreview: '',
+      },
+      payload
+    );
+    this.queue.push(job);
+    this._emitQueueUpdate();
+    this._runWorker();
+    return job;
+  }
+
+  _pushQueueHistory(job) {
+    const snapshot = {
+      id: job.id,
+      to: job.chatId || job.to || '',
+      messagePreview: job.messagePreview || '',
+      status: job.status,
+      attempts: job.attempts,
+      lastError: job.lastError || null,
+      sentAt: job.sentAt || null,
+      createdAt: job.createdAt || Date.now(),
+    };
+    this.queueHistory.unshift(snapshot);
+    if (this.queueHistory.length > this.queueHistoryLimit) this.queueHistory.length = this.queueHistoryLimit;
+  }
+
   // ========= العامل: يضمن FIFO صارم =========
   async _runWorker() {
     if (this.workerRunning) return;
     this.workerRunning = true;
     this._emitQueueUpdate();
 
-    while (this.running && this.queue.length > 0) {
-      const item = this.queue.shift();
+    while (this.running && !this.queuePaused && this.queue.length > 0) {
+      const job = this.queue.shift();
+      job.status = 'sending';
+      job.attempts += 1;
       this._emitQueueUpdate();
+
+      let success = false;
       try {
-        await item.exec();
+        await job.exec();
+        success = true;
       } catch (e) {
-        this.log(`[worker-error] ${e.message || e}`);
+        job.lastError = e?.message || e;
+        this.log(`[worker-error] ${job.lastError}`);
       }
-      if (this.queueDelayMs > 0) await this.wait(this.queueDelayMs);
+
+      if (success) {
+        job.status = 'sent';
+        job.sentAt = Date.now();
+        this.sentCount += 1;
+        this._pushQueueHistory(job);
+      } else {
+        if (job.attempts < job.maxRetries) {
+          job.status = 'pending';
+          this.queue.unshift(job);
+        } else {
+          job.status = 'failed';
+          this.failedCount += 1;
+          this._pushQueueHistory(job);
+        }
+      }
+
+      this._emitQueueUpdate();
+      if (this.queuePaused) break;
+      const delay = this._getQueueDelayMs();
+      if (delay > 0) await this.wait(delay);
     }
 
     this.workerRunning = false;
@@ -461,6 +544,7 @@ class WhatsAppBotService {
       await this.waitForReady();
     }
     this.running = true;
+    this.queuePaused = false;
     this.log('🚀 بدأ التفاعل');
     this._emitQueueUpdate();
     this._runWorker();
@@ -483,6 +567,14 @@ class WhatsAppBotService {
       clients: this.clients.map(({ name, emoji }) => ({ name, emoji })),
       settings: this.settings,
       queueSize: this.queue.length,
+      queue: {
+        length: this.queue.length,
+        running: this.workerRunning && !this.queuePaused,
+        paused: this.queuePaused,
+        sentCount: this.sentCount,
+        failedCount: this.failedCount,
+        config: this.queueConfig,
+      },
     };
   }
 
@@ -537,7 +629,46 @@ class WhatsAppBotService {
   }
 
   getQueueStatus() {
-    return { length: this.queue.length, running: this.workerRunning };
+    return {
+      length: this.queue.length,
+      running: this.workerRunning && !this.queuePaused,
+      paused: this.queuePaused,
+      sentCount: this.sentCount,
+      failedCount: this.failedCount,
+      config: this.queueConfig,
+    };
+  }
+
+  getQueueConfig() {
+    return Object.assign({}, this.queueConfig);
+  }
+
+  updateQueueConfig(cfg = {}) {
+    const merged = Object.assign({}, this.queueConfig, cfg);
+    this.queueConfig = merged;
+    this.queueConfigStore.set('config', merged);
+    this._emitQueueUpdate();
+    return merged;
+  }
+
+  pauseQueue() {
+    this.queuePaused = true;
+    this._emitQueueUpdate();
+  }
+
+  resumeQueue() {
+    this.queuePaused = false;
+    this._emitQueueUpdate();
+    this._runWorker();
+  }
+
+  clearQueue() {
+    this.queue = [];
+    this._emitQueueUpdate();
+  }
+
+  getQueueHistory() {
+    return this.queueHistory.slice();
   }
 
   async processBacklog({ startAtMs = null, limitPerChat = 800 } = {}) {
@@ -563,11 +694,12 @@ class WhatsAppBotService {
           this.setLastChecked(chatId, m.tsMs);
           continue;
         }
-        this.queue.push({
+        this._enqueueJob({
           kind: 'backlog',
           chatId,
           chatName: chat.name,
           tsMs: m.tsMs,
+          messagePreview: text?.slice?.(0, 120) || '',
           exec: async () => {
             await this._processOneMessage({
               msgObj: m.message,
@@ -579,7 +711,6 @@ class WhatsAppBotService {
             });
           },
         });
-        this._emitQueueUpdate();
       }
     }
 
@@ -685,7 +816,15 @@ class WhatsAppBotService {
 
   _emitQueueUpdate() {
     try {
-      this.emitter.emit('queue:update', { type: 'queue:update', length: this.queue.length, running: this.workerRunning });
+      this.emitter.emit('queue:update', {
+        type: 'queue:update',
+        length: this.queue.length,
+        running: this.workerRunning && !this.queuePaused,
+        paused: this.queuePaused,
+        sentCount: this.sentCount,
+        failedCount: this.failedCount,
+        config: this.queueConfig,
+      });
     } catch {}
   }
 }
