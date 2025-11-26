@@ -42,7 +42,7 @@ module.exports = ({ bot }) => {
 
       const text = bulkState.messages[bulkState.index];
       try {
-        await bot.client.sendMessage(bulkState.groupId, text);
+        await bot.sendTextMessage(bulkState.groupId, text);
         bulkState.index += 1;
         bulkState.lastMinute.count += 1;
         saveBulk();
@@ -59,6 +59,17 @@ module.exports = ({ bot }) => {
   }
 
   const waitMs = (ms) => new Promise(r => setTimeout(r, ms));
+
+  router.get('/bulk/groups', async (_req, res) => {
+    try {
+      const groups = (await (bot.listBulkGroups ? bot.listBulkGroups() : bot.fetchGroups())) || [];
+      const shaped = groups.map((g) => ({ id: g.id, name: g.name || g.subject || 'مجموعة' }));
+      try { bot.log(`📥 تم جلب المجموعات: ${shaped.length}`); } catch {}
+      res.json({ success: true, groups: shaped });
+    } catch (e) {
+      res.status(400).json({ success: false, error: e.message || e });
+    }
+  });
 
   router.post('/bulk/start', async (req, res) => {
     const { groupId, messages, delaySec = 3, rpm = 20 } = req.body || {};

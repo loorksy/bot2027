@@ -49,6 +49,7 @@ const api = {
   getQR() { return this.request('/api/bot/status'); },
   processBacklog(opts) { return this.request('/api/bot/process-backlog', { method:'POST', body: JSON.stringify(opts||{}) }); },
   checkBacklog(opts) { return this.request('/api/bot/check-backlog', { method:'POST', body: JSON.stringify(opts||{}) }); },
+  archives() { return this.request('/api/archives'); },
   saveSettings(payload) { return this.request('/api/settings/save', { method:'POST', body: JSON.stringify(payload) }); },
   loadSettings() { return this.request('/api/settings/load'); },
   bulkStart(data){ return this.request('/api/bulk/start', { method:'POST', body: JSON.stringify(data||{}) }); },
@@ -59,7 +60,9 @@ const api = {
   bulkSaveDraft(d){ return this.request('/api/bulk/save-draft', { method:'POST', body: JSON.stringify(d||{}) }); },
   bulkLoadDraft(){ return this.request('/api/bulk/load-draft'); },
   bulkSaveSettings(d){ return this.request('/api/bulk/save-settings', { method:'POST', body: JSON.stringify(d||{}) }); },
-  bulkLoadSettings(){ return this.request('/api/bulk/load-settings'); }
+  bulkLoadSettings(){ return this.request('/api/bulk/load-settings'); },
+  bulkGroups(){ return this.request('/api/bulk/groups'); },
+  queueStatus(){ return this.request('/api/queue/status'); }
 };
 
 function $(id){ return document.getElementById(id); }
@@ -67,15 +70,21 @@ function fmtTs(ts){ if (!ts) return '—'; try { return new Date(ts).toLocaleStr
 function ensureAuth(){ if (!api.token()) { clearToken(); window.location.href='/dashboard/login.html'; } }
 
 function createLogger(box){
-  return function(line, ts = Date.now()){
+  return function(payload, tsOverride){
     if (!box) return;
+    const data = typeof payload === 'string' ? { line: payload, ts: Date.now(), level: 'info' } : (payload || {});
+    const ts = tsOverride || data.ts || Date.now();
     const row = document.createElement('div');
-    row.className='log-entry';
+    row.className = `log-entry level-${data.level || 'info'}`;
     const tm = document.createElement('time');
     tm.textContent = new Date(ts).toLocaleTimeString();
+    const badge = document.createElement('span');
+    badge.className = 'log-level';
+    badge.textContent = (data.level || 'info').toUpperCase();
     const text = document.createElement('div');
-    text.textContent = line;
-    row.append(tm, text);
+    text.className = 'log-text';
+    text.textContent = data.line || '';
+    row.append(tm, badge, text);
     box.appendChild(row);
     box.scrollTop = box.scrollHeight;
   };
@@ -83,6 +92,10 @@ function createLogger(box){
 
 function saveLocal(key, data){ localStorage.setItem(key, JSON.stringify(data)); }
 function loadLocal(key, fallback){ try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } }
+
+let lastConnectionStatus = null;
+let bulkGroupsLoaded = false;
+let queueBoxInitialized = false;
 
 async function initLogin(){
   const btn = $('btn-login');
@@ -107,7 +120,7 @@ async function initDashboard(){
   const logBulk = createLogger($('log-bulk'));
 
   const socket = io({ auth: { token: api.token() } });
-  socket.on('log', ({ line, ts }) => logMain(line, ts));
+  socket.on('log', (entry) => logMain(entry));
   socket.on('qr', ({ qr }) => {
     const box = $('qr-box');
     if (box){
@@ -116,13 +129,27 @@ async function initDashboard(){
     }
   });
   socket.on('status', (s) => updateStatusPills(s));
+  socket.on('bulk:groups', (payload = {}) => {
+    const list = Array.isArray(payload) ? payload : (payload.groups || []);
+    console.log('Groups from socket:', list);
+    renderBulkGroups(list, $('groupSelect')?.value || $('groupSelect')?.dataset?.pendingSelection || '');
+  });
+  socket.on('archives', (payload = {}) => {
+    const list = payload?.archives || [];
+    logMain(`تم جلب الأرشيف: ${list.length}`);
+    renderArchives(list);
+  });
+  socket.on('queue:update', (payload = {}) => {
+    renderQueueStatus({ length: payload.length || 0, running: !!payload.running });
+  });
 
   const savedUi = loadLocal('ui-state', {});
+  const savedBulkId = savedUi?.bulk?.draft?.groupId || savedUi?.bulk?.groupId || '';
   restoreUI(savedUi);
 
   $('btn-logout').onclick = async ()=>{ await api.logout(); clearToken(); window.location.href='/dashboard/login.html'; };
   $('btn-clear-log').onclick = ()=>{ $('log').innerHTML=''; };
-  $('btn-clear-session').onclick = async ()=>{ await api.clearSession(); logMain('تم مسح الجلسة'); };
+  $('btn-clear-session').onclick = async ()=>{ await api.clearSession(); logMain({ line:'تم مسح الجلسة', level:'warning' }); refreshStatus(); };
 
   $('btn-show-qr').onclick = async () => {
     const r = await api.showQR();
@@ -139,10 +166,15 @@ async function initDashboard(){
 
   $('btn-start').onclick = async ()=>{ await api.startBot(); const s = await api.status(); updateStatusPills(s); logMain('بدء التفاعل'); };
   $('btn-stop').onclick  = async ()=>{ await api.stopBot();  const s = await api.status(); updateStatusPills(s); logMain('إيقاف التفاعل'); };
-  $('btn-check-backlog').onclick = async ()=>{ const res = await api.checkBacklog({ startAtMs: getBacklogStartTs() }); logMain(`نتيجة الفحص: ${res.total} رسالة`); (res.byGroup||[]).forEach(g=>logMain(`- ${g.name}: ${g.count}`)); };
+  $('btn-check-backlog').onclick = async ()=>{
+    await refreshArchives(logMain);
+    const res = await api.checkBacklog({ startAtMs: getBacklogStartTs() });
+    logMain(`نتيجة الفحص: ${res.total} رسالة`);
+    (res.byGroup||[]).forEach(g=>logMain(`- ${g.name}: ${g.count}`));
+  };
   $('btn-backlog').onclick = async ()=>{ await api.processBacklog({ startAtMs: getBacklogStartTs() }); logMain('✓ تم دفع الأرشيف للطابور'); };
 
-  $('btn-refresh-groups').onclick = ()=> fetchGroups(savedUi, true);
+  $('btn-refresh-groups').onclick = ()=> { fetchGroups(savedUi, true); loadBulkGroups({ savedId: $('groupSelect').value, force: true }); };
   $('btn-save-bulk-settings').onclick = async ()=>{ await api.bulkSaveSettings(getBulkSettings()); await saveAll(); logBulk('حُفظت إعدادات الإرسال الجماعي'); };
   $('btn-save-draft').onclick = async ()=>{ await api.bulkSaveDraft(getBulkDraft()); logBulk('حُفظت المسودة'); await saveAll(); };
   $('btn-load-draft').onclick = async ()=>{ const d = await api.bulkLoadDraft(); if (d){ applyBulkDraft(d); logBulk('تم تحميل المسودة'); await saveAll(); } else { logBulk('لا توجد مسودة'); } };
@@ -156,18 +188,28 @@ async function initDashboard(){
 
   await loadRemoteState();
   fetchGroups(savedUi, false);
+  loadBulkGroups({ savedId: savedBulkId });
   refreshStatus();
   pollStatus();
+  refreshQueueStatus();
 }
 
 function updateStatusPills(status){
   if (!status) return;
+  const prev = lastConnectionStatus;
+  lastConnectionStatus = status.connectionStatus;
   const ready = $('pill-ready');
   const running = $('pill-running');
-  const readyLabel = status.connectionStatus === 'connected' ? 'متصل'
-    : status.connectionStatus === 'reconnecting' ? 'إعادة الاتصال...'
-    : status.connectionStatus === 'loggedOut' ? 'مسجّل الخروج'
-    : 'غير متصل';
+  const map = {
+    connected: 'متصل',
+    reconnecting: 'إعادة الاتصال...',
+    connecting: 'جاري الاتصال...',
+    qr: 'في انتظار QR',
+    logged_out: 'مسجّل الخروج',
+    loggedOut: 'مسجّل الخروج',
+    disconnected: 'غير متصل'
+  };
+  const readyLabel = map[status.connectionStatus] || 'غير متصل';
   if (ready) ready.textContent = readyLabel;
   if (running) running.textContent = status.running ? 'شغّال' : 'متوقف';
   const runningBulk = status.bulk?.running;
@@ -176,6 +218,13 @@ function updateStatusPills(status){
   const readyBulk = document.querySelector('#bulk #pill-ready');
   if (readyBulk) readyBulk.textContent = readyLabel;
   if (status.bulk){ $('progress').textContent = `${status.bulk.index||0} / ${status.bulk.total||0}`; }
+  if (status.connectionStatus === 'connected' && prev !== 'connected'){
+    const saved = loadLocal('ui-state', {})?.bulk?.draft?.groupId || '';
+    loadBulkGroups({ savedId: saved, force: true });
+  }
+  if (typeof status.queueSize !== 'undefined') {
+    renderQueueStatus({ length: status.queueSize, running: status.running });
+  }
 }
 
 function renderGroups(list, selectedSet, lastMap){
@@ -197,6 +246,155 @@ async function fetchGroups(savedUi = {}, force = false){
     const lastMap = savedUi.lastChecked || local.lastChecked || {};
     renderGroups(list, new Set(saved), lastMap);
   }catch(e){ const box=$('groups'); if(box) box.innerHTML='تعذر الجلب'; }
+}
+
+function getBulkGroupsMessageBox(select){
+  if (!select || !select.parentElement) return null;
+  let box = document.getElementById('bulk-groups-message');
+  if (!box){
+    box = document.createElement('div');
+    box.id = 'bulk-groups-message';
+    box.className = 'muted';
+    box.style.marginTop = '6px';
+    select.parentElement.appendChild(box);
+  }
+  return box;
+}
+
+function renderBulkGroups(list = [], preferredId){
+  const select = $('groupSelect');
+  if (!select) return;
+  select.innerHTML = '';
+  const messageBox = getBulkGroupsMessageBox(select);
+  if (!list.length){
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.disabled = true;
+    opt.selected = true;
+    opt.textContent = 'لا توجد مجموعات متاحة حالياً';
+    select.appendChild(opt);
+    if (messageBox) messageBox.textContent = 'لا توجد مجموعات متاحة حالياً.';
+    return;
+  }
+
+  if (messageBox) messageBox.textContent = '';
+  list.forEach((g) => {
+    const opt = document.createElement('option');
+    opt.value = g.id;
+    opt.textContent = g.name || g.subject || g.id;
+    select.appendChild(opt);
+  });
+
+  const targetId = preferredId || select.dataset.pendingSelection;
+  if (targetId){
+    const found = [...select.options].find((o) => o.value === targetId);
+    if (found) found.selected = true;
+  }
+  select.dataset.pendingSelection = '';
+}
+
+async function loadBulkGroups({ savedId = '', force = false } = {}){
+  const select = $('groupSelect');
+  if (!select) return;
+  if (!force && bulkGroupsLoaded && select.options.length) return;
+  const preferred = savedId || select.value || select.dataset.pendingSelection || '';
+  select.dataset.pendingSelection = preferred;
+  try {
+    const response = await api.bulkGroups();
+    const list = Array.isArray(response) ? response : (response?.groups || []);
+    console.log("Groups from API:", list);
+    bulkGroupsLoaded = true;
+    renderBulkGroups(list, preferred);
+  } catch (e) {
+    select.innerHTML = '';
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.disabled = true;
+    opt.selected = true;
+    opt.textContent = 'تعذر جلب المجموعات (تأكد من الاتصال)';
+    select.appendChild(opt);
+    const messageBox = getBulkGroupsMessageBox(select);
+    if (messageBox) messageBox.textContent = 'لا توجد مجموعات متاحة حالياً.';
+  }
+}
+
+function ensureQueueBox(){
+  if (queueBoxInitialized) return $('queue-info');
+  const status = document.querySelector('.status');
+  if (!status) return null;
+  const box = document.createElement('div');
+  box.id = 'queue-info';
+  box.className = 'muted';
+  box.style.marginTop = '6px';
+  status.appendChild(box);
+  queueBoxInitialized = true;
+  return box;
+}
+
+function renderQueueStatus({ length = 0, running = false } = {}){
+  const box = ensureQueueBox();
+  if (!box) return;
+  if (!length) {
+    box.textContent = 'الطابور فارغ';
+    return;
+  }
+  box.textContent = running ? `الطابور يعمل (${length})` : `الطابور متوقف (${length})`;
+}
+
+async function refreshQueueStatus(){
+  try {
+    const q = await api.queueStatus();
+    renderQueueStatus({ length: q.length || 0, running: !!q.running });
+  } catch {}
+}
+
+function ensureArchivesBox(){
+  let box = $('archives-list');
+  if (box) return box;
+  const logCard = $('log')?.parentElement;
+  if (!logCard) return null;
+  const title = document.createElement('div');
+  title.id = 'archives-title';
+  title.className = 'muted';
+  title.style.marginTop = '8px';
+  title.textContent = 'المحادثات المؤرشفة';
+  box = document.createElement('div');
+  box.id = 'archives-list';
+  box.className = 'list';
+  box.style.marginTop = '6px';
+  logCard.insertBefore(box, $('log'));
+  logCard.insertBefore(title, box);
+  return box;
+}
+
+function renderArchives(list = []){
+  const box = ensureArchivesBox();
+  if (!box) return;
+  box.innerHTML = '';
+  if (!list.length){
+    const empty = document.createElement('div');
+    empty.className = 'muted';
+    empty.textContent = 'لا توجد محادثات مؤرشفة.';
+    box.appendChild(empty);
+    return;
+  }
+  list.forEach((item) => {
+    const row = document.createElement('div');
+    row.className = 'group';
+    row.textContent = `${item.name || item.id} (${item.id})`;
+    box.appendChild(row);
+  });
+}
+
+async function refreshArchives(logger){
+  try {
+    const res = await api.archives();
+    const list = res?.archives || [];
+    renderArchives(list);
+    if (logger) logger(`تم جلب الأرشيف: ${list.length}`);
+  } catch (e) {
+    if (logger) logger('تعذر جلب الأرشيف');
+  }
 }
 
 function parseClients(raw, fallbackEmoji){
@@ -255,7 +453,21 @@ function parseInput(txt){ txt = (txt||'').replace(/\r/g,'').trim(); if (!txt) re
 function renderPreview(items){ const preview = $('preview'); if(!preview) return; preview.innerHTML=''; if (!items.length){ preview.innerHTML='<div class="muted">المعاينة فارغة</div>'; return; } items.forEach((t,i)=>{ const div=document.createElement('div'); div.style.borderBottom='1px dashed #1e293b'; div.style.padding='6px'; div.innerHTML = `<strong>#${i+1}</strong><br>${t.replace(/\n/g,'<br>')}`; preview.appendChild(div); }); }
 function getBulkSettings(){ return { delaySec: Math.max(0, Number($('delaySec').value || 0)), rpm: Math.max(1, Number($('rpmBulk').value || 1)) }; }
 function getBulkDraft(){ return { groupId: $('groupSelect').value || '', raw: $('bulkInput').value || '', splitMode }; }
-function applyBulkDraft(d){ if (!d) return; $('bulkInput').value = d.raw || ''; splitMode = d.splitMode || 'blank'; $('splitModeName').textContent = (splitMode === 'blank') ? 'تقسيم بالفراغات' : 'كل سطر رسالة'; if (d.groupId) { const opt = [...$('groupSelect').options].find(o=>o.value===d.groupId); if (opt) opt.selected = true; } $('btn-parse').click(); }
+function applyBulkDraft(d){
+  if (!d) return;
+  $('bulkInput').value = d.raw || '';
+  splitMode = d.splitMode || 'blank';
+  $('splitModeName').textContent = (splitMode === 'blank') ? 'تقسيم بالفراغات' : 'كل سطر رسالة';
+  if (d.groupId) {
+    const select = $('groupSelect');
+    if (select){
+      const opt = [...select.options].find(o=>o.value===d.groupId);
+      if (opt) opt.selected = true;
+      else select.dataset.pendingSelection = d.groupId;
+    }
+  }
+  $('btn-parse').click();
+}
 function applyBulkSettings(b){ if (!b) return; if (typeof b.delaySec !== 'undefined') $('delaySec').value = b.delaySec; if (typeof b.rpm !== 'undefined') $('rpmBulk').value = b.rpm; if (b.draft) applyBulkDraft(b.draft); }
 function loadClients(saved){ if (!saved?.clients) return; applyClients(saved.clients); }
 function restoreUI(saved){ if (!saved) return; if (saved.settings) applySettings(saved.settings); if (saved.clients) applyClients(saved.clients); if (saved.selectedGroupIds) applyGroups(saved.selectedGroupIds); if (saved.bulk) applyBulkSettings(saved.bulk); if (saved.bulkInput) $('bulkInput').value = saved.bulkInput; if (saved.backlogDate) $('backlogDate').value = saved.backlogDate; if (saved.splitMode) { splitMode = saved.splitMode; $('splitModeName').textContent = (splitMode === 'blank') ? 'تقسيم بالفراغات' : 'كل سطر رسالة'; }
