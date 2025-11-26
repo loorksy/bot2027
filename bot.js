@@ -140,7 +140,7 @@ class WhatsAppBotService {
     return new Promise((r) => setTimeout(r, ms));
   }
 
-  _getQueueDelayMs() {
+   getQueueDelayMs() {
     const cfg = this.queueConfig || {};
     const d = Number(cfg.delayMsBetweenMessages);
     if (d && d > 0) return d;
