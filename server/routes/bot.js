@@ -49,10 +49,9 @@ module.exports = ({ bot, io }) => {
   router.post('/bot/send', async (req, res) => {
     const { to, message } = req.body || {};
     try {
-      if (!bot.client) await bot.init();
-      if (!bot.client) throw new Error('client not ready');
-      const msg = await bot.client.sendMessage(to, message);
-      res.json({ ok: true, id: msg.id._serialized });
+      await bot.init();
+      const id = await bot.sendTextMessage(to, message);
+      res.json({ ok: true, id });
     } catch (e) {
       res.status(400).json({ error: e.message || e });
     }
