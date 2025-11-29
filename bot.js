@@ -8,6 +8,7 @@ class WhatsAppBot extends EventEmitter {
   constructor() {
     super();
     this.connected = false;
+    this.clientReady = false;
     this.running = false;
     this.linkState = 'not_linked';
     this.queue = [];
@@ -88,6 +89,7 @@ class WhatsAppBot extends EventEmitter {
     this.client.on('qr', async (qr) => {
       const qrImage = await qrcode.toDataURL(qr);
       this.lastQr = qrImage;
+      this.clientReady = false;
       this.linkState = 'qr';
       this.emit('qr', qrImage);
       this.emitLog('QR code generated.');
@@ -96,19 +98,36 @@ class WhatsAppBot extends EventEmitter {
 
     this.client.on('ready', () => {
       this.connected = true;
+      this.clientReady = true;
       this.linkState = 'ready';
       this.emitStatus();
       this.emitLog('WhatsApp client ready.');
+      if (this.queue.length > 0 && this.running) {
+        this.processQueue();
+      }
+      if (this.forwardQueue.length > 0) {
+        this.flushForwardBatch(true);
+      }
     });
 
     this.client.on('authenticated', () => {
+      this.clientReady = false;
       this.linkState = 'linking';
       this.emitLog('Authenticated with WhatsApp.');
       this.emitStatus();
     });
 
+    this.client.on('authenticated_failure', (msg) => {
+      this.connected = false;
+      this.clientReady = false;
+      this.linkState = 'not_linked';
+      this.emitStatus();
+      this.emitLog(`Authenticated failure: ${msg}`);
+    });
+
     this.client.on('auth_failure', (msg) => {
       this.connected = false;
+      this.clientReady = false;
       this.linkState = 'not_linked';
       this.emitStatus();
       this.emitLog(`Auth failure: ${msg}`);
@@ -116,6 +135,7 @@ class WhatsAppBot extends EventEmitter {
 
     this.client.on('disconnected', (reason) => {
       this.connected = false;
+      this.clientReady = false;
       this.linkState = 'disconnected';
       this.emitStatus();
       this.emitLog(`Disconnected: ${reason}`);
@@ -139,6 +159,15 @@ class WhatsAppBot extends EventEmitter {
       lastChecked: this.lastChecked,
       forward: this.getForwardState(),
     });
+  }
+
+  assertClientReady(action = 'operation') {
+    if (!this.clientReady) {
+      this.emitLog(`Cannot ${action}: WhatsApp not ready.`);
+      const err = new Error('WA_NOT_READY');
+      err.code = 'WA_NOT_READY';
+      throw err;
+    }
   }
 
   getBulkPublicState() {
@@ -200,6 +229,10 @@ class WhatsAppBot extends EventEmitter {
     this.processing = true;
     while (this.queue.length > 0) {
       if (!this.running) break;
+      if (!this.clientReady) {
+        this.emitLog('WhatsApp not ready, queue paused.');
+        break;
+      }
       if (this.forwardFlushing) break;
       const msg = this.queue.shift();
       try {
@@ -357,6 +390,10 @@ class WhatsAppBot extends EventEmitter {
     if (!this.settings.forwardEnabled || !this.settings.forwardTargetChatId) return;
     const batchSize = this.settings.forwardBatchSize || 10;
     if (!force && this.forwardQueue.length < batchSize) return;
+    if (!this.clientReady) {
+      this.emitLog('Cannot flush forward queue: WhatsApp not ready.');
+      return;
+    }
     this.forwardFlushing = true;
     this.emitLog('Flushing forward queue...');
     try {
@@ -439,6 +476,7 @@ class WhatsAppBot extends EventEmitter {
   }
 
   async refreshGroups() {
+    this.assertClientReady('refresh groups');
     const chats = await this.client.getChats();
     const groups = chats
       .filter((c) => c.isGroup)
@@ -485,11 +523,15 @@ class WhatsAppBot extends EventEmitter {
   }
 
   async scanBacklog({ sinceTimestamp, hours, limitCap, process }) {
+    this.assertClientReady('scan backlog');
     const now = Date.now();
     const targetSince = sinceTimestamp || (hours ? now - hours * 3600000 : null);
     const response = [];
 
     for (const groupId of this.selectedGroups) {
+      if (!this.clientReady) {
+        this.assertClientReady('scan backlog');
+      }
       const since = targetSince || this.lastChecked[groupId] || 0;
       let limit = 50;
       let done = false;
@@ -547,6 +589,7 @@ class WhatsAppBot extends EventEmitter {
   }
 
   async startBulk({ groupId, messages, delaySeconds = 2, rpm = 10 }) {
+    this.assertClientReady('start bulk');
     if (!groupId || !Array.isArray(messages) || messages.length === 0) {
       throw new Error('Invalid bulk payload');
     }
@@ -586,6 +629,11 @@ class WhatsAppBot extends EventEmitter {
       if (this.bulkState.state !== 'running') return;
       if (this.bulkState.paused) {
         this.bulkTimer = setTimeout(loop, 1000);
+        return;
+      }
+      if (!this.clientReady) {
+        this.emitLog('Bulk waiting for WhatsApp readiness...');
+        this.bulkTimer = setTimeout(loop, 3000);
         return;
       }
       if (this.bulkState.sent >= this.bulkState.total) {

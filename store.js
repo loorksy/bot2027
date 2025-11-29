@@ -41,7 +41,18 @@ function filePath(name) {
 
 async function read(name) {
   await ensure();
-  return fs.readJSON(filePath(name));
+  const target = filePath(name);
+  const fallback = defaultFiles[name] !== undefined ? defaultFiles[name] : {};
+  try {
+    return await fs.readJSON(target);
+  } catch (err) {
+    if (err && (err.code === 'ENOENT' || err.name === 'SyntaxError')) {
+      const safeFallback = JSON.parse(JSON.stringify(fallback));
+      await fs.writeJSON(target, safeFallback, { spaces: 2 });
+      return safeFallback;
+    }
+    throw err;
+  }
 }
 
 async function write(name, data) {

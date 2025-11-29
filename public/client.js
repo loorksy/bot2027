@@ -1,7 +1,16 @@
 const api = {
   async request(path, options = {}) {
     const res = await fetch(path, { credentials: 'include', headers: { 'Content-Type': 'application/json' }, ...options });
-    return res.json();
+    let data = {};
+    try {
+      data = await res.json();
+    } catch (err) {
+      data = {};
+    }
+    if (!res.ok) {
+      return { error: data.error || 'Request failed', status: res.status };
+    }
+    return data;
   },
 };
 
@@ -9,6 +18,19 @@ const socket = io('/', { withCredentials: true, autoConnect: false });
 let statusState = { connected: false, running: false, linkState: 'not_linked', bulk: {}, lastChecked: {}, forward: {} };
 const isDashboard = window.location.pathname.includes('index.html') || window.location.pathname === '/';
 const isBulk = window.location.pathname.includes('bulk.html');
+
+function handleApiError(data, context) {
+  if (!data || typeof data !== 'object') return false;
+  if (data.error === 'WA_NOT_READY') {
+    addLog(`WhatsApp not ready${context ? `: ${context}` : ''}`);
+    return true;
+  }
+  if (data.error) {
+    addLog(`${context || 'Request'} failed: ${data.error}`);
+    return true;
+  }
+  return false;
+}
 
 function setStatusPill(id, text, cls) {
   const el = document.getElementById(id);
@@ -166,6 +188,7 @@ async function loadSettings() {
 
 async function loadForwardGroups() {
   const groups = await api.request('/api/groups');
+  if (handleApiError(groups, 'fetch groups')) return;
   updateForwardTargetOptions(groups);
 }
 
@@ -226,6 +249,7 @@ function bindDashboard() {
 
   document.getElementById('fetch-groups').addEventListener('click', async () => {
     const groups = await api.request('/api/groups');
+    if (handleApiError(groups, 'fetch groups')) return;
     renderGroups(groups);
   });
 
@@ -238,12 +262,14 @@ function bindDashboard() {
   document.getElementById('backlog-check').addEventListener('click', async () => {
     const payload = buildBacklogPayload();
     const result = await api.request('/api/backlog/check', { method: 'POST', body: JSON.stringify(payload) });
+    if (handleApiError(result, 'backlog check')) return;
     renderBacklog(result);
   });
 
   document.getElementById('backlog-process').addEventListener('click', async () => {
     const payload = buildBacklogPayload();
     const result = await api.request('/api/backlog/process', { method: 'POST', body: JSON.stringify(payload) });
+    if (handleApiError(result, 'backlog process')) return;
     renderBacklog(result);
   });
 
@@ -288,6 +314,7 @@ function buildBacklogPayload() {
 function renderGroups(groups) {
   const container = document.getElementById('groups-list');
   container.innerHTML = '';
+  if (!Array.isArray(groups)) return;
   groups.forEach((g) => {
     const item = document.createElement('div');
     item.className = 'group-item';
@@ -316,6 +343,7 @@ function renderBacklog(data) {
   const container = document.getElementById('backlog-output');
   if (!container) return;
   container.innerHTML = '';
+  if (!Array.isArray(data)) return;
   (data || []).forEach((row) => {
     const div = document.createElement('div');
     div.textContent = `${row.groupId}: ${row.found || 0} messages${row.processed ? ` | queued ${row.processed}` : ''} | last ${formatTs(row.lastChecked)}`;
@@ -340,6 +368,7 @@ async function initBulk() {
 
 async function loadBulkGroups() {
   const groups = await api.request('/api/groups');
+  if (handleApiError(groups, 'fetch groups')) return;
   const select = document.getElementById('bulk-group');
   select.innerHTML = '';
   groups.forEach((g) => {

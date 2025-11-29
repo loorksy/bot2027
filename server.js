@@ -22,6 +22,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 const bot = new WhatsAppBot();
 bot.init();
 
+function handleWaNotReady(res, err) {
+  if (err && (err.message === 'WA_NOT_READY' || err.code === 'WA_NOT_READY')) {
+    return res.status(409).json({ error: 'WA_NOT_READY' });
+  }
+  return false;
+}
+
 app.get('/api/status', (req, res) => {
   res.json({
     connected: bot.connected,
@@ -56,8 +63,13 @@ app.post('/api/session/clear', async (req, res) => {
 });
 
 app.get('/api/groups', async (req, res) => {
-  const groups = await bot.refreshGroups();
-  res.json(groups);
+  try {
+    const groups = await bot.refreshGroups();
+    res.json(groups);
+  } catch (err) {
+    if (handleWaNotReady(res, err)) return;
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/api/groups', async (req, res) => {
@@ -92,14 +104,24 @@ app.post('/api/settings', async (req, res) => {
 
 app.post('/api/backlog/check', async (req, res) => {
   const { sinceTimestamp, hours, limitCap } = req.body || {};
-  const result = await bot.checkBacklog({ sinceTimestamp, hours, limitCap });
-  res.json(result);
+  try {
+    const result = await bot.checkBacklog({ sinceTimestamp, hours, limitCap });
+    res.json(result);
+  } catch (err) {
+    if (handleWaNotReady(res, err)) return;
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/api/backlog/process', async (req, res) => {
   const { sinceTimestamp, hours, limitCap } = req.body || {};
-  const result = await bot.processBacklog({ sinceTimestamp, hours, limitCap });
-  res.json(result);
+  try {
+    const result = await bot.processBacklog({ sinceTimestamp, hours, limitCap });
+    res.json(result);
+  } catch (err) {
+    if (handleWaNotReady(res, err)) return;
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/api/bulk/start', async (req, res) => {
@@ -109,6 +131,7 @@ app.post('/api/bulk/start', async (req, res) => {
     await bot.startBulk({ groupId, messages: parsedMessages, delaySeconds, rpm });
     res.json({ success: true });
   } catch (err) {
+    if (handleWaNotReady(res, err)) return;
     res.status(400).json({ error: err.message });
   }
 });
