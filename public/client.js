@@ -18,6 +18,7 @@ const socket = io('/', { withCredentials: true, autoConnect: false });
 let statusState = { connected: false, running: false, linkState: 'not_linked', bulk: {}, lastChecked: {}, forward: {} };
 const isDashboard = window.location.pathname.includes('index.html') || window.location.pathname === '/';
 const isBulk = window.location.pathname.includes('bulk.html');
+let savingForward = false;
 
 function handleApiError(data, context) {
   if (!data || typeof data !== 'object') return false;
@@ -122,6 +123,27 @@ function renderForwardState(forward) {
   if (target && forward.targetChatId && target.value !== forward.targetChatId) {
     const match = Array.from(target.options).find((o) => o.value === forward.targetChatId);
     if (match) target.value = forward.targetChatId;
+  }
+}
+
+async function saveForwardSettings() {
+  if (savingForward) return;
+  savingForward = true;
+  try {
+    const payload = {
+      forwardEnabled: document.getElementById('forward-enabled')?.checked || false,
+      forwardTargetChatId: document.getElementById('forward-target')?.value || '',
+      forwardBatchSize: Number(document.getElementById('forward-batch')?.value) || 10,
+      forwardFlushOnIdle: document.getElementById('forward-flush-idle')?.checked || false,
+    };
+    const res = await api.request('/api/settings', { method: 'POST', body: JSON.stringify(payload) });
+    if (!handleApiError(res, 'save forwarding settings')) {
+      addLog('Forwarding settings saved');
+    }
+  } catch (err) {
+    console.error('Failed to save forwarding settings', err);
+  } finally {
+    savingForward = false;
   }
 }
 
@@ -289,6 +311,10 @@ function bindForwardingControls() {
     await api.request('/api/forward/clear', { method: 'POST' });
     addLog('Forward queue cleared');
   });
+  document.getElementById('forward-enabled')?.addEventListener('change', saveForwardSettings);
+  document.getElementById('forward-target')?.addEventListener('change', saveForwardSettings);
+  document.getElementById('forward-batch')?.addEventListener('change', saveForwardSettings);
+  document.getElementById('forward-flush-idle')?.addEventListener('change', saveForwardSettings);
 }
 
 function copyLog(id) {

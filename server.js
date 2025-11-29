@@ -98,8 +98,13 @@ app.get('/api/settings', async (req, res) => {
 });
 
 app.post('/api/settings', async (req, res) => {
-  await bot.setSettings(req.body);
-  res.json({ success: true });
+  try {
+    await bot.setSettings(req.body);
+    res.json({ success: true });
+  } catch (err) {
+    bot.emitLog(`Settings save failed: ${err.message}`);
+    res.status(500).json({ error: err.message || 'Failed to save settings' });
+  }
 });
 
 app.post('/api/backlog/check', async (req, res) => {

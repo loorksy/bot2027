@@ -9,7 +9,7 @@ const defaultFiles = {
     normalizeArabicEnabled: true,
     replyMode: false,
     defaultEmoji: '✅',
-    forwardEnabled: false,
+    forwardEnabled: true,
     forwardTargetChatId: '',
     forwardBatchSize: 10,
     forwardFlushOnIdle: true,

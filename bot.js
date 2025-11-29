@@ -36,6 +36,9 @@ class WhatsAppBot extends EventEmitter {
     await store.ensure();
     this.settings = await store.read('settings.json');
     this.applySettingsDefaults();
+    this.emitLog(
+      `Settings loaded (forwardEnabled=${this.settings.forwardEnabled}, target=${this.settings.forwardTargetChatId || 'none'})`
+    );
     this.clients = await store.read('clients.json');
     this.selectedGroups = await store.read('groups.json');
     this.processed = await store.read('processed.json');
@@ -77,7 +80,7 @@ class WhatsAppBot extends EventEmitter {
       normalizeArabicEnabled: true,
       replyMode: false,
       defaultEmoji: '✅',
-      forwardEnabled: false,
+      forwardEnabled: true,
       forwardTargetChatId: '',
       forwardBatchSize: 10,
       forwardFlushOnIdle: true,
@@ -505,9 +508,16 @@ class WhatsAppBot extends EventEmitter {
   async setSettings(newSettings) {
     this.settings = { ...this.settings, ...newSettings };
     this.applySettingsDefaults();
-    await store.write('settings.json', this.settings);
-    this.emitLog('Settings updated.');
-    this.emitStatus();
+    try {
+      await store.write('settings.json', this.settings);
+      this.emitLog(
+        `Settings updated (forwardEnabled=${this.settings.forwardEnabled}, target=${this.settings.forwardTargetChatId || 'none'})`
+      );
+      this.emitStatus();
+    } catch (err) {
+      this.emitLog(`Failed to save settings: ${err.message}`);
+      throw err;
+    }
   }
 
   async checkBacklog({ sinceTimestamp, hours, limitCap = 500 }) {
