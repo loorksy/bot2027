@@ -23,6 +23,7 @@ const defaultFiles = {
   'skippedLogs.json': [],
   'forwardQueue.json': [],
   'forwardMeta.json': { lastForwardedAt: null },
+  'groupDirectory.json': {},
 };
 
 function ensureDataDir() {

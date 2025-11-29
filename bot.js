@@ -18,6 +18,7 @@ class WhatsAppBot extends EventEmitter {
     this.selectedGroups = [];
     this.processed = [];
     this.lastChecked = {};
+    this.groupDirectory = {};
     this.interactedLogs = [];
     this.skippedLogs = [];
     this.rateWindow = [];
@@ -43,6 +44,7 @@ class WhatsAppBot extends EventEmitter {
     this.selectedGroups = await store.read('groups.json');
     this.processed = await store.read('processed.json');
     this.lastChecked = await store.read('lastChecked.json');
+    this.groupDirectory = await store.read('groupDirectory.json');
     this.bulkState = await store.read('bulkState.json');
     this.interactedLogs = await store.read('interactedLogs.json');
     this.skippedLogs = await store.read('skippedLogs.json');
@@ -88,6 +90,27 @@ class WhatsAppBot extends EventEmitter {
     };
   }
 
+  async refreshGroupDirectory() {
+    if (!this.clientReady || !this.client) return this.groupDirectory;
+    const chats = await this.client.getChats();
+    const groups = chats.filter((c) => c.isGroup);
+    const updated = { ...this.groupDirectory };
+    for (const g of groups) {
+      updated[g.id._serialized] = g.name || g.id._serialized;
+    }
+    this.groupDirectory = updated;
+    await store.write('groupDirectory.json', this.groupDirectory);
+    return this.groupDirectory;
+  }
+
+  async recordGroupMeta(id, name) {
+    if (!id || !id.endsWith('@g.us')) return;
+    if (this.groupDirectory[id] && !name) return;
+    const updated = { ...this.groupDirectory, [id]: name || this.groupDirectory[id] || id };
+    this.groupDirectory = updated;
+    await store.write('groupDirectory.json', this.groupDirectory);
+  }
+
   registerEvents() {
     this.client.on('qr', async (qr) => {
       const qrImage = await qrcode.toDataURL(qr);
@@ -105,6 +128,7 @@ class WhatsAppBot extends EventEmitter {
       this.linkState = 'ready';
       this.emitStatus();
       this.emitLog('WhatsApp client ready.');
+      this.refreshGroupDirectory();
       if (this.queue.length > 0 && this.running) {
         this.processQueue();
       }
@@ -144,7 +168,14 @@ class WhatsAppBot extends EventEmitter {
       this.emitLog(`Disconnected: ${reason}`);
     });
 
-    this.client.on('message', (message) => {
+    this.client.on('message', async (message) => {
+      if (message?.from?.endsWith('@g.us')) {
+        await this.recordGroupMeta(message.from, message._data?.notifyName || message._data?.sender?.pushname);
+        if (!this.lastChecked[message.from]) {
+          this.lastChecked[message.from] = (message.timestamp || Date.now() / 1000) * 1000;
+          await store.write('lastChecked.json', this.lastChecked);
+        }
+      }
       this.handleIncoming(message);
     });
   }
@@ -484,6 +515,9 @@ class WhatsAppBot extends EventEmitter {
     const groups = chats
       .filter((c) => c.isGroup)
       .map((c) => ({ id: c.id._serialized, name: c.name, selected: this.selectedGroups.includes(c.id._serialized) }));
+    for (const g of groups) {
+      await this.recordGroupMeta(g.id, g.name);
+    }
     await store.write('groups.json', this.selectedGroups);
     return groups;
   }
@@ -534,18 +568,27 @@ class WhatsAppBot extends EventEmitter {
 
   async scanBacklog({ sinceTimestamp, hours, limitCap, process }) {
     this.assertClientReady('scan backlog');
+    await this.refreshGroupDirectory();
     const now = Date.now();
     const targetSince = sinceTimestamp || (hours ? now - hours * 3600000 : null);
     const response = [];
 
-    for (const groupId of this.selectedGroups) {
+    const targetGroups = Array.from(new Set([...(this.selectedGroups || []), ...Object.keys(this.groupDirectory || {})]));
+
+    for (const groupId of targetGroups) {
       if (!this.clientReady) {
         this.assertClientReady('scan backlog');
       }
       const since = targetSince || this.lastChecked[groupId] || 0;
       let limit = 50;
       let done = false;
-      const chat = await this.client.getChatById(groupId);
+      let chat;
+      try {
+        chat = await this.client.getChatById(groupId);
+      } catch (err) {
+        this.emitLog(`Backlog: unable to load ${groupId} (${err.message})`);
+        continue;
+      }
       const collected = [];
       let newestTs = since;
 
@@ -592,7 +635,14 @@ class WhatsAppBot extends EventEmitter {
       }
       this.lastChecked[groupId] = newestTs || now;
       await store.write('lastChecked.json', this.lastChecked);
-      response.push({ groupId, found: eligibleCount, processed: process ? eligibleCount : 0, lastChecked: this.lastChecked[groupId] });
+      const groupName = this.groupDirectory[groupId] || groupId;
+      response.push({
+        groupId,
+        groupName,
+        found: eligibleCount,
+        processed: process ? eligibleCount : 0,
+        lastChecked: this.lastChecked[groupId],
+      });
     }
 
     return response;

@@ -1,6 +1,10 @@
 const api = {
   async request(path, options = {}) {
-    const res = await fetch(path, { credentials: 'include', headers: { 'Content-Type': 'application/json' }, ...options });
+    const res = await fetch(path, {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      ...options,
+    });
     let data = {};
     try {
       data = await res.json();
@@ -15,10 +19,79 @@ const api = {
 };
 
 const socket = io('/', { withCredentials: true, autoConnect: false });
-let statusState = { connected: false, running: false, linkState: 'not_linked', bulk: {}, lastChecked: {}, forward: {} };
 const isDashboard = window.location.pathname.includes('index.html') || window.location.pathname === '/';
 const isBulk = window.location.pathname.includes('bulk.html');
+let statusState = { connected: false, running: false, linkState: 'not_linked', bulk: {}, lastChecked: {}, forward: {} };
 let savingForward = false;
+
+const PENDING_KEY = 'wa_pending_names';
+const INTERACTED_KEY = 'wa_interacted_names';
+const INTERACTION_IDS_KEY = 'wa_interaction_ids';
+let pendingNames = new Set();
+let interactedEntries = [];
+let seenInteractionIds = new Set();
+
+function persistNameLists() {
+  localStorage.setItem(PENDING_KEY, JSON.stringify([...pendingNames]));
+  localStorage.setItem(INTERACTED_KEY, JSON.stringify(interactedEntries));
+  localStorage.setItem(INTERACTION_IDS_KEY, JSON.stringify([...seenInteractionIds]));
+}
+
+function loadNameLists(clients) {
+  const storedPending = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]');
+  const storedInteracted = JSON.parse(localStorage.getItem(INTERACTED_KEY) || '[]');
+  const storedIds = JSON.parse(localStorage.getItem(INTERACTION_IDS_KEY) || '[]');
+  pendingNames = new Set(storedPending || []);
+  interactedEntries = storedInteracted || [];
+  seenInteractionIds = new Set(storedIds || []);
+
+  const clientNames = (clients || []).map((c) => c.name).filter(Boolean);
+  if (pendingNames.size === 0 && interactedEntries.length === 0 && clientNames.length) {
+    pendingNames = new Set(clientNames);
+  } else {
+    clientNames.forEach((name) => {
+      if (!pendingNames.has(name) && !interactedEntries.includes(name)) {
+        pendingNames.add(name);
+      }
+    });
+  }
+  persistNameLists();
+  renderNameLists();
+}
+
+function resetNameLists() {
+  pendingNames = new Set();
+  interactedEntries = [];
+  seenInteractionIds = new Set();
+  persistNameLists();
+  renderNameLists();
+}
+
+function renderNameLists() {
+  const pendingEl = document.getElementById('pending-log');
+  const interactedEl = document.getElementById('interacted-log');
+  const pendingCount = document.getElementById('pending-count');
+  const interactedCount = document.getElementById('interacted-count');
+  if (pendingEl) {
+    pendingEl.innerHTML = [...pendingNames].map((n) => `<span class="pill-item">${n}</span>`).join('');
+  }
+  if (interactedEl) {
+    interactedEl.innerHTML = interactedEntries.map((n) => `<span class="pill-item">${n}</span>`).join('');
+  }
+  if (pendingCount) pendingCount.textContent = pendingNames.size;
+  if (interactedCount) interactedCount.textContent = interactedEntries.length;
+}
+
+function handleInteractionEntry(entry) {
+  const name = entry?.match || entry?.name || entry?.clientName;
+  const id = entry?.id;
+  if (!name || (id && seenInteractionIds.has(id))) return;
+  if (id) seenInteractionIds.add(id);
+  if (pendingNames.has(name)) pendingNames.delete(name);
+  interactedEntries.push(name);
+  persistNameLists();
+  renderNameLists();
+}
 
 function handleApiError(data, context) {
   if (!data || typeof data !== 'object') return false;
@@ -70,13 +143,11 @@ function renderStatus(status) {
   if (qrBtn) {
     const disableQr = statusState.linkState === 'ready';
     qrBtn.disabled = disableQr;
-    if (disableQr) {
-      document.getElementById('qr-modal')?.classList.add('hidden');
-    }
+    if (disableQr) document.getElementById('qr-modal')?.classList.add('hidden');
   }
-  if (statusState.bulk) renderBulkStatus(statusState.bulk);
-  renderCheckpoints(statusState.lastChecked || {});
   renderForwardState(statusState.forward || {});
+  renderCheckpoints(statusState.lastChecked || {});
+  if (statusState.bulk) renderBulkStatus(statusState.bulk);
 }
 
 function addLog(line, target = 'logs') {
@@ -87,14 +158,8 @@ function addLog(line, target = 'logs') {
 }
 
 function renderInteractionLogs(payload) {
-  const interacted = document.getElementById('interacted-log');
-  const skipped = document.getElementById('skipped-log');
-  if (interacted) {
-    interacted.textContent = (payload.interacted || []).map((e) => `${formatTs(e.ts)} | ${e.groupName || e.groupId} | ${e.match || ''} | ${e.action || ''} | ${e.snippet || ''} | ${e.id || ''}`).join('\n');
-  }
-  if (skipped) {
-    skipped.textContent = (payload.skipped || []).map((e) => `${formatTs(e.ts)} | ${e.groupName || e.groupId} | ${e.reason || ''} | ${e.snippet || ''} | ${e.id || ''}`).join('\n');
-  }
+  const interacted = payload?.interacted || [];
+  interacted.forEach((e) => handleInteractionEntry(e));
 }
 
 function renderCheckpoints(map) {
@@ -105,7 +170,9 @@ function renderCheckpoints(map) {
     el.textContent = 'No checkpoints yet.';
     return;
   }
-  el.innerHTML = entries.map(([id, ts]) => `<div>${id}: ${formatTs(ts)}</div>`).join('');
+  el.innerHTML = entries
+    .map(([id, ts]) => `<div>${id}: ${formatTs(ts)}</div>`)
+    .join('');
 }
 
 function renderForwardState(forward) {
@@ -124,6 +191,10 @@ function renderForwardState(forward) {
     const match = Array.from(target.options).find((o) => o.value === forward.targetChatId);
     if (match) target.value = forward.targetChatId;
   }
+  const forwardLabel = document.getElementById('forward-enabled-label');
+  if (forwardLabel) forwardLabel.textContent = forward.enabled ? 'On' : 'Off';
+  const forwardTargetLabel = document.getElementById('forward-target-label');
+  if (forwardTargetLabel) forwardTargetLabel.textContent = forward.targetChatId || 'Not set';
 }
 
 async function saveForwardSettings() {
@@ -188,7 +259,9 @@ async function init() {
 async function loadClients() {
   const clients = await api.request('/api/clients');
   const text = clients.map((c) => `${c.name || ''}${c.emoji ? `|${c.emoji}` : ''}`).join('\n');
-  document.getElementById('clients-text').value = text;
+  const textarea = document.getElementById('clients-text');
+  if (textarea) textarea.value = text;
+  loadNameLists(clients);
 }
 
 async function loadSettings() {
@@ -220,6 +293,7 @@ async function initDashboard() {
   await loadForwardGroups();
   await loadClients();
   await loadSettings();
+  updateHoursLabel();
 }
 
 function bindDashboard() {
@@ -245,10 +319,18 @@ function bindDashboard() {
   document.getElementById('save-clients').addEventListener('click', async () => {
     const rawText = document.getElementById('clients-text').value;
     await api.request('/api/clients', { method: 'POST', body: JSON.stringify({ rawText }) });
+    loadNameLists(
+      rawText
+        .split(/\n+/)
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .map((line) => ({ name: line.split('|')[0].trim() }))
+    );
     addLog('Clients saved');
   });
   document.getElementById('clear-clients').addEventListener('click', async () => {
     await api.request('/api/clients/clear', { method: 'POST' });
+    resetNameLists();
     await loadClients();
     addLog('Clients cleared');
   });
@@ -295,12 +377,13 @@ function bindDashboard() {
     renderBacklog(result);
   });
 
-  document.getElementById('qr-close')?.addEventListener('click', () => document.getElementById('qr-modal').classList.add('hidden'));
+  document.getElementById('copy-pending').addEventListener('click', () => copyList([...pendingNames]));
+  document.getElementById('copy-interacted').addEventListener('click', () => copyList(interactedEntries));
+  document.getElementById('copy-skipped').addEventListener('click', () => copyLog('logs'));
+  document.getElementById('clear-skipped').addEventListener('click', () => clearLog());
 
-  document.getElementById('copy-interacted').addEventListener('click', () => copyLog('interacted-log'));
-  document.getElementById('copy-skipped').addEventListener('click', () => copyLog('skipped-log'));
-  document.getElementById('clear-interacted').addEventListener('click', () => clearLog('interacted'));
-  document.getElementById('clear-skipped').addEventListener('click', () => clearLog('skipped'));
+  const hoursRange = document.getElementById('backlog-hours');
+  if (hoursRange) hoursRange.addEventListener('input', updateHoursLabel);
 }
 
 function bindForwardingControls() {
@@ -317,6 +400,11 @@ function bindForwardingControls() {
   document.getElementById('forward-flush-idle')?.addEventListener('change', saveForwardSettings);
 }
 
+function copyList(list) {
+  if (!Array.isArray(list)) return;
+  navigator.clipboard.writeText(list.join('\n'));
+}
+
 function copyLog(id) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -324,27 +412,38 @@ function copyLog(id) {
 }
 
 async function clearLog(type) {
-  await api.request('/api/logs/clear', { method: 'POST', body: JSON.stringify({ type }) });
+  if (!type) {
+    await api.request('/api/logs/clear', { method: 'POST', body: JSON.stringify({ type: 'interacted' }) });
+    await api.request('/api/logs/clear', { method: 'POST', body: JSON.stringify({ type: 'skipped' }) });
+  } else {
+    await api.request('/api/logs/clear', { method: 'POST', body: JSON.stringify({ type }) });
+  }
   const logs = await api.request('/api/logs');
   renderInteractionLogs(logs);
 }
 
 function buildBacklogPayload() {
+  const hoursVal = Number(document.getElementById('backlog-hours').value) || 0;
+  const sinceVal = document.getElementById('backlog-since').value;
+  const sinceTimestamp = sinceVal ? new Date(sinceVal).getTime() : undefined;
   return {
-    hours: Number(document.getElementById('backlog-hours').value) || undefined,
-    sinceTimestamp: Number(document.getElementById('backlog-since').value) || undefined,
+    hours: hoursVal > 0 ? hoursVal : undefined,
+    sinceTimestamp: sinceTimestamp || undefined,
     limitCap: Number(document.getElementById('backlog-limit').value) || 500,
   };
 }
 
 function renderGroups(groups) {
   const container = document.getElementById('groups-list');
+  if (!container) return;
   container.innerHTML = '';
   if (!Array.isArray(groups)) return;
   groups.forEach((g) => {
     const item = document.createElement('div');
     item.className = 'group-item';
-    item.innerHTML = `<label><input type="checkbox" value="${g.id}" ${g.selected ? 'checked' : ''}/> ${g.name}</label>`;
+    item.innerHTML = `<label>${g.name}</label><label class="switch"><input type="checkbox" value="${g.id}" ${
+      g.selected ? 'checked' : ''
+    }/><span class="slider"></span></label>`;
     container.appendChild(item);
   });
   updateForwardTargetOptions(groups);
@@ -372,7 +471,7 @@ function renderBacklog(data) {
   if (!Array.isArray(data)) return;
   (data || []).forEach((row) => {
     const div = document.createElement('div');
-    div.textContent = `${row.groupId}: ${row.found || 0} messages${row.processed ? ` | queued ${row.processed}` : ''} | last ${formatTs(row.lastChecked)}`;
+    div.textContent = `${row.groupName || row.groupId}: ${row.found || 0} Candidates${row.processed ? ` | queued ${row.processed}` : ''}`;
     container.appendChild(div);
   });
 }
@@ -381,7 +480,10 @@ function renderBulkStatus(state) {
   const status = document.getElementById('bulk-status');
   const progress = document.getElementById('bulk-progress');
   if (status) status.textContent = `${state.state}${state.paused ? ' (paused)' : ''}`;
-  if (progress) progress.textContent = `${state.sent} / ${state.total}`;
+  if (progress) {
+    const pct = state.total ? Math.min(100, Math.round((state.sent / state.total) * 100)) : 0;
+    progress.style.width = `${pct}%`;
+  }
 }
 
 async function initBulk() {
@@ -426,11 +528,9 @@ function parseNotifications(rawText, mode) {
 function analyzeNotifications() {
   const rawText = document.getElementById('bulk-messages').value;
   const mode = document.getElementById('bulk-parse-mode').value;
-  const lines = rawText.split('\n');
   const messages = parseNotifications(rawText, mode);
-  const preview = messages.slice(0, 3).map((m, idx) => `${idx + 1}) ${m}`).join('\n---\n');
   const analysis = document.getElementById('bulk-analysis');
-  analysis.textContent = `Total lines: ${lines.filter((l) => l.trim() !== '').length}\nNotifications: ${messages.length}\nPreview:\n${preview || 'N/A'}`;
+  analysis.textContent = `Notifications: ${messages.length}`;
   return messages;
 }
 
@@ -463,6 +563,14 @@ function bindBulk() {
   document.getElementById('bulk-pause').addEventListener('click', () => api.request('/api/bulk/pause', { method: 'POST' }));
   document.getElementById('bulk-resume').addEventListener('click', () => api.request('/api/bulk/resume', { method: 'POST' }));
   document.getElementById('bulk-stop').addEventListener('click', () => api.request('/api/bulk/stop', { method: 'POST' }));
+}
+
+function updateHoursLabel() {
+  const hoursRange = document.getElementById('backlog-hours');
+  const label = document.getElementById('backlog-hours-value');
+  if (hoursRange && label) {
+    label.textContent = `${hoursRange.value}h`;
+  }
 }
 
 init();
