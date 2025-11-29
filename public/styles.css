@@ -285,17 +285,22 @@ textarea {
 
 .pill-list {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 8px;
   min-height: 60px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 6px;
 }
 
 .pill-item {
-  padding: 8px 10px;
-  border-radius: 999px;
-  background: rgba(124, 58, 237, 0.15);
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(124, 58, 237, 0.12);
   border: 1px solid rgba(124, 58, 237, 0.35);
-  font-size: 13px;
+  font-size: 14px;
+  width: 100%;
+  display: block;
 }
 
 .badge {
@@ -311,6 +316,9 @@ textarea {
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .block-header {
@@ -425,6 +433,27 @@ textarea {
 
 #backlog-checkpoints {
   display: none;
+}
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(15, 17, 21, 0.9);
+  color: var(--text);
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 200;
+}
+
+.toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 @media (max-width: 720px) {

@@ -400,15 +400,35 @@ function bindForwardingControls() {
   document.getElementById('forward-flush-idle')?.addEventListener('change', saveForwardSettings);
 }
 
+function showToast(message) {
+  if (!message) return;
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  // Allow CSS transition
+  requestAnimationFrame(() => toast.classList.add('visible'));
+  setTimeout(() => {
+    toast.classList.remove('visible');
+    setTimeout(() => toast.remove(), 250);
+  }, 2000);
+}
+
 function copyList(list) {
-  if (!Array.isArray(list)) return;
-  navigator.clipboard.writeText(list.join('\n'));
+  if (!Array.isArray(list) || list.length === 0) return;
+  navigator.clipboard
+    .writeText(list.join('\n'))
+    .then(() => showToast('تم النسخ بنجاح'))
+    .catch(() => showToast('تعذر النسخ'));
 }
 
 function copyLog(id) {
   const el = document.getElementById(id);
   if (!el) return;
-  navigator.clipboard.writeText(el.textContent || '');
+  navigator.clipboard
+    .writeText(el.textContent || '')
+    .then(() => showToast('تم النسخ بنجاح'))
+    .catch(() => showToast('تعذر النسخ'));
 }
 
 async function clearLog(type) {
