@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bulk Sender</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Bulk Sender</h1>
+      <nav>
+        <a href="/index.html">Dashboard</a>
+        <a href="/bulk.html" class="active">Bulk Sender</a>
+      </nav>
+    </header>
+
+    <section class="card">
+      <label>Group
+        <select id="bulk-group"></select>
+      </label>
+      <label>Messages (one per line)
+        <textarea id="bulk-messages" rows="10" placeholder="Message 1\nMessage 2"></textarea>
+      </label>
+      <label>Delay Seconds
+        <input type="number" id="bulk-delay" value="2" min="1" />
+      </label>
+      <label>RPM
+        <input type="number" id="bulk-rpm" value="10" min="1" />
+      </label>
+      <div class="controls">
+        <button id="bulk-start">Start</button>
+        <button id="bulk-pause">Pause</button>
+        <button id="bulk-resume">Resume</button>
+        <button id="bulk-stop">Stop</button>
+      </div>
+      <div id="bulk-status">Idle</div>
+    </section>
+
+    <section class="card">
+      <h2>Progress</h2>
+      <div id="bulk-progress">0 / 0</div>
+      <pre id="bulk-logs" class="logs"></pre>
+    </section>
+  </div>
+
+  <div id="login-overlay" class="overlay hidden">
+    <div class="modal-content">
+      <h2>Login</h2>
+      <input type="text" id="login-user" placeholder="Email" />
+      <input type="password" id="login-pass" placeholder="Password" />
+      <button id="login-btn">Login</button>
+      <div id="login-error" class="error"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="/client.js"></script>
+</body>
+</html>
