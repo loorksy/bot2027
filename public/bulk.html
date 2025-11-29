@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bulk Sender</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Bulk Sender</h1>
+      <nav>
+        <a href="/index.html">Dashboard</a>
+        <a href="/bulk.html" class="active">Bulk Sender</a>
+      </nav>
+    </header>
+
+    <section class="card" id="status-card">
+      <div class="status-pill" id="connected-pill">Disconnected</div>
+      <div class="status-pill" id="running-pill">Stopped</div>
+      <div class="status-pill" id="link-pill">Not linked</div>
+      <div class="controls">
+        <button id="qr-btn">Get QR</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <label>Group
+        <select id="bulk-group"></select>
+      </label>
+      <label>Messages
+        <textarea id="bulk-messages" rows="10" placeholder="Paragraphs separated by blank lines"></textarea>
+      </label>
+      <div class="controls">
+        <label class="inline">Parse Mode
+          <select id="bulk-parse-mode">
+            <option value="paragraph">Paragraphs (blank line separated)</option>
+            <option value="fixed3">Fixed 3 lines</option>
+          </select>
+        </label>
+        <button id="bulk-analyze" class="secondary">Analyze Notifications</button>
+      </div>
+      <div id="bulk-analysis" class="list muted"></div>
+      <label>Delay Seconds
+        <input type="number" id="bulk-delay" value="2" min="1" />
+      </label>
+      <label>RPM
+        <input type="number" id="bulk-rpm" value="10" min="1" />
+      </label>
+      <div class="controls">
+        <button id="bulk-start">Start</button>
+        <button id="bulk-pause">Pause</button>
+        <button id="bulk-resume">Resume</button>
+        <button id="bulk-stop">Stop</button>
+      </div>
+      <div id="bulk-status">Idle</div>
+    </section>
+
+    <section class="card">
+      <h2>Progress</h2>
+      <div id="bulk-progress">0 / 0</div>
+      <pre id="bulk-logs" class="logs"></pre>
+    </section>
+  </div>
+
+  <div id="qr-modal" class="modal hidden">
+    <div class="modal-content">
+      <span id="qr-close" class="close">&times;</span>
+      <img id="qr-image" alt="QR Code" />
+    </div>
+  </div>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="/client.js"></script>
+</body>
+</html>
