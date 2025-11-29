@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WhatsApp Bot Dashboard</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>WhatsApp Bot Dashboard</h1>
+      <nav>
+        <a href="/index.html" class="active">Dashboard</a>
+        <a href="/bulk.html">Bulk Sender</a>
+      </nav>
+    </header>
+
+    <section class="card" id="status-card">
+      <div class="status-pill" id="connected-pill">Disconnected</div>
+      <div class="status-pill" id="running-pill">Stopped</div>
+      <div class="status-pill" id="link-pill">Not linked</div>
+      <div class="controls">
+        <button id="start-btn">Start Bot</button>
+        <button id="stop-btn">Stop Bot</button>
+        <button id="qr-btn">Get QR</button>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h2>Groups</h2>
+        <button id="fetch-groups">Fetch Groups</button>
+        <div id="groups-list" class="list"></div>
+        <button id="save-groups">Save Selected Groups</button>
+      </div>
+
+      <div class="card">
+        <h2>Clients (Name|Emoji)</h2>
+        <textarea id="clients-text" rows="10" placeholder="Ali|✅\nSara|🔥"></textarea>
+        <div class="controls">
+          <button id="save-clients">Save Clients</button>
+          <button id="clear-clients" class="secondary">Clear Clients</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Settings</h2>
+        <label>RPM <input id="rpm" type="number" min="1" /></label>
+        <label>Cooldown (seconds) <input id="cooldown" type="number" min="0" /></label>
+        <label><input type="checkbox" id="normalize" /> Normalize Arabic</label>
+        <label><input type="checkbox" id="replyMode" /> Reply Mode (otherwise react)</label>
+        <label>Default Emoji <input id="defaultEmoji" type="text" maxlength="4" /></label>
+        <button id="save-settings">Save Settings</button>
+      </div>
+
+      <div class="card">
+        <h2>Forwarding</h2>
+        <label><input type="checkbox" id="forward-enabled" /> Enable batch forwarding</label>
+        <label>Target Group
+          <select id="forward-target"></select>
+        </label>
+        <label>Batch Size
+          <input type="number" id="forward-batch" min="1" value="10" />
+        </label>
+        <label><input type="checkbox" id="forward-flush-idle" /> Flush remaining on idle</label>
+        <div class="muted">Queue: <span id="forward-queue">0</span> | Last: <span id="forward-last">N/A</span></div>
+        <div class="controls">
+          <button id="forward-flush">Forward now</button>
+          <button id="forward-clear" class="secondary">Clear forward queue</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Backlog</h2>
+      <div class="backlog-form">
+        <label>Hours Back <input id="backlog-hours" type="number" min="0" /></label>
+        <label>Since Timestamp (ms) <input id="backlog-since" type="number" min="0" /></label>
+        <label>Limit Cap <input id="backlog-limit" type="number" min="50" value="500" /></label>
+      </div>
+      <div class="controls">
+        <button id="backlog-check">Check Backlog</button>
+        <button id="backlog-process">Process Backlog</button>
+      </div>
+      <div id="backlog-checkpoints" class="list muted"></div>
+      <div id="backlog-output" class="list"></div>
+    </section>
+
+  <section class="card">
+    <h2>Logs</h2>
+    <div class="log-tabs">
+      <div class="log-pane">
+        <div class="log-pane-header">
+          <h3>Interacted</h3>
+          <div>
+            <button id="copy-interacted" class="secondary">Copy</button>
+            <button id="clear-interacted" class="secondary">Clear</button>
+          </div>
+        </div>
+        <pre id="interacted-log" class="logs"></pre>
+      </div>
+      <div class="log-pane">
+        <div class="log-pane-header">
+          <h3>Not Interacted</h3>
+          <div>
+            <button id="copy-skipped" class="secondary">Copy</button>
+            <button id="clear-skipped" class="secondary">Clear</button>
+          </div>
+        </div>
+        <pre id="skipped-log" class="logs"></pre>
+      </div>
+    </div>
+  </section>
+  </div>
+
+  <div id="qr-modal" class="modal hidden">
+    <div class="modal-content">
+      <span id="qr-close" class="close">&times;</span>
+      <img id="qr-image" alt="QR Code" />
+    </div>
+  </div>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="/client.js"></script>
+</body>
+</html>
