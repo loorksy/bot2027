@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>الإرسال الجماعي</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div>
+        <h1>إشعارات جماعية</h1>
+        <p class="muted">إنشاء وتحليل الدُفعات</p>
+      </div>
+      <nav class="header-actions">
+        <a class="pill" href="index.html">اللوحة الرئيسية</a>
+      </nav>
+    </header>
+
+    <section class="grid two">
+      <div class="card status-card">
+        <div class="card-header">
+          <h2>الحالة</h2>
+          <button id="qr-btn" class="ghost">إظهار رمز QR</button>
+        </div>
+        <div class="pill-row">
+          <span id="connected-pill" class="status-pill">غير متصل</span>
+          <span id="link-pill" class="status-pill">غير مرتبط</span>
+          <span id="running-pill" class="status-pill">متوقف</span>
+        </div>
+        <div class="bulk-progress">
+          <div class="progress-text" id="bulk-status">خامل</div>
+          <div class="progress">
+            <div id="bulk-progress" class="progress-fill" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>ملخص إعادة التوجيه</h2>
+        </div>
+        <div class="forward-meta">
+          <div>التفعيل: <span id="forward-enabled-label">—</span></div>
+          <div>الهدف: <span id="forward-target-label">—</span></div>
+          <div>قائمة الانتظار: <span id="forward-queue">0</span></div>
+          <div>آخر إعادة توجيه: <span id="forward-last">غير متوفر</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <h2>إنشاء الإشعارات</h2>
+        <div class="spacer"></div>
+        <button id="bulk-analyze" class="ghost">تحليل الإشعارات</button>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="bulk-group">المجموعة المستهدفة</label>
+          <select id="bulk-group"></select>
+        </div>
+        <div class="field">
+          <label for="bulk-parse-mode">وضع التقسيم</label>
+          <select id="bulk-parse-mode">
+            <option value="paragraph">فقرات (أسطر فارغة)</option>
+            <option value="fixed3">كل 3 أسطر</option>
+          </select>
+        </div>
+      </div>
+      <textarea id="bulk-messages" rows="10" placeholder="اكتب الإشعارات..."></textarea>
+      <div class="field-grid">
+        <div class="field">
+          <label for="bulk-delay">الفاصل (ثوانٍ)</label>
+          <input type="number" id="bulk-delay" min="1" value="2" />
+        </div>
+        <div class="field">
+          <label for="bulk-rpm">حد الـ RPM</label>
+          <input type="number" id="bulk-rpm" min="1" value="10" />
+        </div>
+      </div>
+      <div id="bulk-analysis" class="muted"></div>
+      <div class="stacked-actions">
+        <button id="bulk-start" class="primary">بدء</button>
+        <div class="inline-buttons">
+          <button id="bulk-pause" class="ghost">إيقاف مؤقت</button>
+          <button id="bulk-resume" class="ghost">استئناف</button>
+          <button id="bulk-stop" class="danger ghost">إيقاف</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <h2>نقاط التحقق من الأرشيف</h2>
+      </div>
+      <div id="backlog-checkpoints" class="muted small"></div>
+    </section>
+  </div>
+
+  <div id="qr-modal" class="modal hidden">
+    <div class="modal-content">
+      <button id="qr-close" class="ghost close">✕</button>
+      <img id="qr-image" alt="رمز الاستجابة السريعة" />
+    </div>
+  </div>
+
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script src="client.js"></script>
+</body>
+</html>
