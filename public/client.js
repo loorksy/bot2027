@@ -6,33 +6,53 @@ const api = {
 };
 
 const socket = io('/', { withCredentials: true, autoConnect: false });
+let statusState = { connected: false, running: false, linkState: 'not_linked', bulk: {}, lastChecked: {} };
+const isDashboard = window.location.pathname.includes('index.html') || window.location.pathname === '/';
+const isBulk = window.location.pathname.includes('bulk.html');
 
-let isDashboard = window.location.pathname.includes('index.html') || window.location.pathname === '/';
-let isBulk = window.location.pathname.includes('bulk.html');
-
-async function init() {
-  try {
-    await api.request('/api/status');
-    socket.connect();
-    if (isDashboard) initDashboard();
-    if (isBulk) initBulk();
-  } catch (err) {
-    console.error('Initialization failed', err);
+function setStatusPill(id, text, cls) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.textContent = text;
+    el.className = `status-pill ${cls}`;
   }
 }
 
-function updateStatus(status) {
-  const connected = document.getElementById('connected-pill');
-  const running = document.getElementById('running-pill');
-  if (connected) {
-    connected.textContent = status.connected ? 'Connected' : 'Disconnected';
-    connected.className = `status-pill ${status.connected ? 'ok' : 'bad'}`;
+function formatTs(ts) {
+  if (!ts) return 'N/A';
+  const d = new Date(ts);
+  return isNaN(d.getTime()) ? 'N/A' : d.toLocaleString();
+}
+
+function renderStatus(status) {
+  statusState = { ...statusState, ...status };
+  const linkLabelMap = {
+    ready: 'Ready (in WhatsApp)',
+    qr: 'Not linked / QR needed',
+    linking: 'Linking',
+    disconnected: 'Disconnected',
+    not_linked: 'Not linked',
+  };
+  const linkClassMap = {
+    ready: 'ok',
+    qr: 'warn',
+    linking: 'warn',
+    disconnected: 'bad',
+    not_linked: 'bad',
+  };
+  setStatusPill('connected-pill', statusState.connected ? 'Connected' : 'Disconnected', statusState.connected ? 'ok' : 'bad');
+  setStatusPill('running-pill', statusState.running ? 'Running' : 'Stopped', statusState.running ? 'ok' : 'bad');
+  setStatusPill('link-pill', linkLabelMap[statusState.linkState] || 'Not linked', linkClassMap[statusState.linkState] || 'bad');
+  const qrBtn = document.getElementById('qr-btn');
+  if (qrBtn) {
+    const disableQr = statusState.linkState === 'ready';
+    qrBtn.disabled = disableQr;
+    if (disableQr) {
+      document.getElementById('qr-modal')?.classList.add('hidden');
+    }
   }
-  if (running) {
-    running.textContent = status.running ? 'Running' : 'Stopped';
-    running.className = `status-pill ${status.running ? 'ok' : 'bad'}`;
-  }
-  if (status.bulk) renderBulkStatus(status.bulk);
+  if (statusState.bulk) renderBulkStatus(statusState.bulk);
+  renderCheckpoints(statusState.lastChecked || {});
 }
 
 function addLog(line, target = 'logs') {
@@ -42,24 +62,64 @@ function addLog(line, target = 'logs') {
   el.scrollTop = el.scrollHeight;
 }
 
+function renderInteractionLogs(payload) {
+  const interacted = document.getElementById('interacted-log');
+  const skipped = document.getElementById('skipped-log');
+  if (interacted) {
+    interacted.textContent = (payload.interacted || []).map((e) => `${formatTs(e.ts)} | ${e.groupName || e.groupId} | ${e.match || ''} | ${e.action || ''} | ${e.snippet || ''} | ${e.id || ''}`).join('\n');
+  }
+  if (skipped) {
+    skipped.textContent = (payload.skipped || []).map((e) => `${formatTs(e.ts)} | ${e.groupName || e.groupId} | ${e.reason || ''} | ${e.snippet || ''} | ${e.id || ''}`).join('\n');
+  }
+}
+
+function renderCheckpoints(map) {
+  const el = document.getElementById('backlog-checkpoints');
+  if (!el) return;
+  const entries = Object.entries(map || {});
+  if (!entries.length) {
+    el.textContent = 'No checkpoints yet.';
+    return;
+  }
+  el.innerHTML = entries.map(([id, ts]) => `<div>${id}: ${formatTs(ts)}</div>`).join('');
+}
+
 function initSocket() {
-  socket.on('status', updateStatus);
+  socket.on('status', renderStatus);
   socket.on('log', (msg) => addLog(msg));
   socket.on('qr', (qr) => {
     const modal = document.getElementById('qr-modal');
     const img = document.getElementById('qr-image');
     if (img) img.src = qr;
-    if (modal) modal.classList.remove('hidden');
+    if (modal && statusState.linkState !== 'ready') modal.classList.remove('hidden');
   });
   socket.on('bulk:update', renderBulkStatus);
   socket.on('backlog:update', renderBacklog);
+  socket.on('interaction:log', renderInteractionLogs);
 }
 
-async function initDashboard() {
-  initSocket();
-  bindDashboard();
-  await loadClients();
-  await loadSettings();
+function bindCommon() {
+  document.getElementById('qr-close')?.addEventListener('click', () => document.getElementById('qr-modal').classList.add('hidden'));
+}
+
+async function init() {
+  try {
+    bindCommon();
+    initSocket();
+    socket.connect();
+    const initialStatus = await api.request('/api/status');
+    renderStatus(initialStatus);
+    if (isDashboard) {
+      await initDashboard();
+    }
+    if (isBulk) {
+      await initBulk();
+    }
+    const logs = await api.request('/api/logs');
+    renderInteractionLogs(logs);
+  } catch (err) {
+    console.error('Initialization failed', err);
+  }
 }
 
 async function loadClients() {
@@ -77,26 +137,41 @@ async function loadSettings() {
   document.getElementById('defaultEmoji').value = settings.defaultEmoji || '';
 }
 
+async function initDashboard() {
+  bindDashboard();
+  await loadClients();
+  await loadSettings();
+}
+
 function bindDashboard() {
   document.getElementById('start-btn').addEventListener('click', () => api.request('/api/start', { method: 'POST' }));
   document.getElementById('stop-btn').addEventListener('click', () => api.request('/api/stop', { method: 'POST' }));
 
-  document.getElementById('qr-btn').addEventListener('click', async () => {
-    const res = await api.request('/api/qr');
-    if (res.qr) {
-      const modal = document.getElementById('qr-modal');
-      const img = document.getElementById('qr-image');
-      if (img) img.src = res.qr;
-      if (modal) modal.classList.remove('hidden');
-    } else {
-      addLog('No QR available yet');
-    }
-  });
+  const qrBtn = document.getElementById('qr-btn');
+  if (qrBtn) {
+    qrBtn.addEventListener('click', async () => {
+      if (statusState.linkState === 'ready') return;
+      const res = await api.request('/api/qr');
+      if (res.qr) {
+        const modal = document.getElementById('qr-modal');
+        const img = document.getElementById('qr-image');
+        if (img) img.src = res.qr;
+        if (modal) modal.classList.remove('hidden');
+      } else {
+        addLog('No QR available yet');
+      }
+    });
+  }
 
   document.getElementById('save-clients').addEventListener('click', async () => {
     const rawText = document.getElementById('clients-text').value;
     await api.request('/api/clients', { method: 'POST', body: JSON.stringify({ rawText }) });
     addLog('Clients saved');
+  });
+  document.getElementById('clear-clients').addEventListener('click', async () => {
+    await api.request('/api/clients/clear', { method: 'POST' });
+    await loadClients();
+    addLog('Clients cleared');
   });
 
   document.getElementById('save-settings').addEventListener('click', async () => {
@@ -134,7 +209,24 @@ function bindDashboard() {
     renderBacklog(result);
   });
 
-  document.getElementById('qr-close').addEventListener('click', () => document.getElementById('qr-modal').classList.add('hidden'));
+  document.getElementById('qr-close')?.addEventListener('click', () => document.getElementById('qr-modal').classList.add('hidden'));
+
+  document.getElementById('copy-interacted').addEventListener('click', () => copyLog('interacted-log'));
+  document.getElementById('copy-skipped').addEventListener('click', () => copyLog('skipped-log'));
+  document.getElementById('clear-interacted').addEventListener('click', () => clearLog('interacted'));
+  document.getElementById('clear-skipped').addEventListener('click', () => clearLog('skipped'));
+}
+
+function copyLog(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent || '');
+}
+
+async function clearLog(type) {
+  await api.request('/api/logs/clear', { method: 'POST', body: JSON.stringify({ type }) });
+  const logs = await api.request('/api/logs');
+  renderInteractionLogs(logs);
 }
 
 function buildBacklogPayload() {
@@ -160,9 +252,9 @@ function renderBacklog(data) {
   const container = document.getElementById('backlog-output');
   if (!container) return;
   container.innerHTML = '';
-  data.forEach((row) => {
+  (data || []).forEach((row) => {
     const div = document.createElement('div');
-    div.textContent = `${row.groupId}: ${row.found} messages${row.processed ? ` | queued ${row.processed}` : ''}`;
+    div.textContent = `${row.groupId}: ${row.found || 0} messages${row.processed ? ` | queued ${row.processed}` : ''} | last ${formatTs(row.lastChecked)}`;
     container.appendChild(div);
   });
 }
@@ -175,7 +267,6 @@ function renderBulkStatus(state) {
 }
 
 async function initBulk() {
-  initSocket();
   bindBulk();
   await loadBulkGroups();
 }
@@ -192,9 +283,54 @@ async function loadBulkGroups() {
   });
 }
 
+function parseNotifications(rawText, mode) {
+  if (mode === 'fixed3') {
+    const lines = rawText.split('\n').map((l) => l.trim()).filter(Boolean);
+    const blocks = [];
+    for (let i = 0; i < lines.length; i += 3) {
+      const slice = lines.slice(i, i + 3);
+      if (slice.length) blocks.push(slice.join('\n'));
+    }
+    return blocks;
+  }
+  const chunks = rawText
+    .split(/\n\s*\n+/)
+    .map((c) => c.trim())
+    .filter(Boolean);
+  return chunks;
+}
+
+function analyzeNotifications() {
+  const rawText = document.getElementById('bulk-messages').value;
+  const mode = document.getElementById('bulk-parse-mode').value;
+  const lines = rawText.split('\n');
+  const messages = parseNotifications(rawText, mode);
+  const preview = messages.slice(0, 3).map((m, idx) => `${idx + 1}) ${m}`).join('\n---\n');
+  const analysis = document.getElementById('bulk-analysis');
+  analysis.textContent = `Total lines: ${lines.filter((l) => l.trim() !== '').length}\nNotifications: ${messages.length}\nPreview:\n${preview || 'N/A'}`;
+  return messages;
+}
+
 function bindBulk() {
+  const qrBtn = document.getElementById('qr-btn');
+  if (qrBtn) {
+    qrBtn.addEventListener('click', async () => {
+      if (statusState.linkState === 'ready') return;
+      const res = await api.request('/api/qr');
+      if (res.qr) {
+        const modal = document.getElementById('qr-modal');
+        const img = document.getElementById('qr-image');
+        if (img) img.src = res.qr;
+        if (modal) modal.classList.remove('hidden');
+      }
+    });
+  }
+
+  document.getElementById('bulk-analyze').addEventListener('click', analyzeNotifications);
+
   document.getElementById('bulk-start').addEventListener('click', async () => {
-    const messages = document.getElementById('bulk-messages').value.split('\n').filter(Boolean);
+    const mode = document.getElementById('bulk-parse-mode').value;
+    const messages = parseNotifications(document.getElementById('bulk-messages').value, mode);
     const groupId = document.getElementById('bulk-group').value;
     const delaySeconds = Number(document.getElementById('bulk-delay').value) || 2;
     const rpm = Number(document.getElementById('bulk-rpm').value) || 10;

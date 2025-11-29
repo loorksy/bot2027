@@ -52,6 +52,9 @@ textarea, input, select {
 .list { max-height: 220px; overflow: auto; border: 1px solid #1f2937; padding: 8px; border-radius: 6px; background: #0b1324; }
 .group-item { margin-bottom: 6px; }
 .logs { background: #0b1324; border: 1px solid #1f2937; border-radius: 6px; padding: 10px; height: 220px; overflow: auto; }
+.log-tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.log-pane-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.log-pane h3 { margin: 0; }
 
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; }
 .modal-content { background: var(--card); padding: 20px; border-radius: 10px; min-width: 300px; }
@@ -63,3 +66,5 @@ textarea, input, select {
 .error { color: var(--bad); margin-top: 8px; }
 
 .backlog-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+.muted { color: #9ca3af; }
+.inline { display: inline-flex; align-items: center; gap: 8px; }

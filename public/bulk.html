@@ -16,13 +16,32 @@
       </nav>
     </header>
 
+    <section class="card" id="status-card">
+      <div class="status-pill" id="connected-pill">Disconnected</div>
+      <div class="status-pill" id="running-pill">Stopped</div>
+      <div class="status-pill" id="link-pill">Not linked</div>
+      <div class="controls">
+        <button id="qr-btn">Get QR</button>
+      </div>
+    </section>
+
     <section class="card">
       <label>Group
         <select id="bulk-group"></select>
       </label>
-      <label>Messages (one per line)
-        <textarea id="bulk-messages" rows="10" placeholder="Message 1\nMessage 2"></textarea>
+      <label>Messages
+        <textarea id="bulk-messages" rows="10" placeholder="Paragraphs separated by blank lines"></textarea>
       </label>
+      <div class="controls">
+        <label class="inline">Parse Mode
+          <select id="bulk-parse-mode">
+            <option value="paragraph">Paragraphs (blank line separated)</option>
+            <option value="fixed3">Fixed 3 lines</option>
+          </select>
+        </label>
+        <button id="bulk-analyze" class="secondary">Analyze Notifications</button>
+      </div>
+      <div id="bulk-analysis" class="list muted"></div>
       <label>Delay Seconds
         <input type="number" id="bulk-delay" value="2" min="1" />
       </label>
@@ -43,6 +62,13 @@
       <div id="bulk-progress">0 / 0</div>
       <pre id="bulk-logs" class="logs"></pre>
     </section>
+  </div>
+
+  <div id="qr-modal" class="modal hidden">
+    <div class="modal-content">
+      <span id="qr-close" class="close">&times;</span>
+      <img id="qr-image" alt="QR Code" />
+    </div>
   </div>
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>

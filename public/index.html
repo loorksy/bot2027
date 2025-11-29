@@ -19,6 +19,7 @@
     <section class="card" id="status-card">
       <div class="status-pill" id="connected-pill">Disconnected</div>
       <div class="status-pill" id="running-pill">Stopped</div>
+      <div class="status-pill" id="link-pill">Not linked</div>
       <div class="controls">
         <button id="start-btn">Start Bot</button>
         <button id="stop-btn">Stop Bot</button>
@@ -37,7 +38,10 @@
       <div class="card">
         <h2>Clients (Name|Emoji)</h2>
         <textarea id="clients-text" rows="10" placeholder="Ali|✅\nSara|🔥"></textarea>
-        <button id="save-clients">Save Clients</button>
+        <div class="controls">
+          <button id="save-clients">Save Clients</button>
+          <button id="clear-clients" class="secondary">Clear Clients</button>
+        </div>
       </div>
 
       <div class="card">
@@ -62,13 +66,35 @@
         <button id="backlog-check">Check Backlog</button>
         <button id="backlog-process">Process Backlog</button>
       </div>
+      <div id="backlog-checkpoints" class="list muted"></div>
       <div id="backlog-output" class="list"></div>
     </section>
 
-    <section class="card">
-      <h2>Logs</h2>
-      <pre id="logs" class="logs"></pre>
-    </section>
+  <section class="card">
+    <h2>Logs</h2>
+    <div class="log-tabs">
+      <div class="log-pane">
+        <div class="log-pane-header">
+          <h3>Interacted</h3>
+          <div>
+            <button id="copy-interacted" class="secondary">Copy</button>
+            <button id="clear-interacted" class="secondary">Clear</button>
+          </div>
+        </div>
+        <pre id="interacted-log" class="logs"></pre>
+      </div>
+      <div class="log-pane">
+        <div class="log-pane-header">
+          <h3>Not Interacted</h3>
+          <div>
+            <button id="copy-skipped" class="secondary">Copy</button>
+            <button id="clear-skipped" class="secondary">Clear</button>
+          </div>
+        </div>
+        <pre id="skipped-log" class="logs"></pre>
+      </div>
+    </div>
+  </section>
   </div>
 
   <div id="qr-modal" class="modal hidden">

@@ -9,6 +9,7 @@ class WhatsAppBot extends EventEmitter {
     super();
     this.connected = false;
     this.running = false;
+    this.linkState = 'not_linked';
     this.queue = [];
     this.processing = false;
     this.settings = null;
@@ -16,6 +17,8 @@ class WhatsAppBot extends EventEmitter {
     this.selectedGroups = [];
     this.processed = [];
     this.lastChecked = {};
+    this.interactedLogs = [];
+    this.skippedLogs = [];
     this.rateWindow = [];
     this.lastActionByGroup = {};
     this.bulkState = { state: 'idle', sent: 0, total: 0, groupId: null, paused: false, messages: [], delaySeconds: 1, rpm: 10 };
@@ -33,6 +36,8 @@ class WhatsAppBot extends EventEmitter {
     this.processed = await store.read('processed.json');
     this.lastChecked = await store.read('lastChecked.json');
     this.bulkState = await store.read('bulkState.json');
+    this.interactedLogs = await store.read('interactedLogs.json');
+    this.skippedLogs = await store.read('skippedLogs.json');
 
     const puppeteerArgs = {
       headless: true,
@@ -48,6 +53,7 @@ class WhatsAppBot extends EventEmitter {
     });
 
     this.registerEvents();
+    this.linkState = 'linking';
     this.client.initialize();
     this.initialized = true;
     this.emitLog('Bot initialized.');
@@ -58,28 +64,35 @@ class WhatsAppBot extends EventEmitter {
     this.client.on('qr', async (qr) => {
       const qrImage = await qrcode.toDataURL(qr);
       this.lastQr = qrImage;
+      this.linkState = 'qr';
       this.emit('qr', qrImage);
       this.emitLog('QR code generated.');
+      this.emitStatus();
     });
 
     this.client.on('ready', () => {
       this.connected = true;
+      this.linkState = 'ready';
       this.emitStatus();
       this.emitLog('WhatsApp client ready.');
     });
 
     this.client.on('authenticated', () => {
+      this.linkState = 'linking';
       this.emitLog('Authenticated with WhatsApp.');
+      this.emitStatus();
     });
 
     this.client.on('auth_failure', (msg) => {
       this.connected = false;
+      this.linkState = 'not_linked';
       this.emitStatus();
       this.emitLog(`Auth failure: ${msg}`);
     });
 
     this.client.on('disconnected', (reason) => {
       this.connected = false;
+      this.linkState = 'disconnected';
       this.emitStatus();
       this.emitLog(`Disconnected: ${reason}`);
     });
@@ -97,7 +110,9 @@ class WhatsAppBot extends EventEmitter {
     this.emit('status', {
       connected: this.connected,
       running: this.running,
+      linkState: this.linkState,
       bulk: this.getBulkPublicState(),
+      lastChecked: this.lastChecked,
     });
   }
 
@@ -116,14 +131,29 @@ class WhatsAppBot extends EventEmitter {
     this.emitLog(`Bot ${running ? 'started' : 'stopped'}.`);
   }
 
-  async handleIncoming(message) {
-    if (!this.running) return;
-    if (!message.from.endsWith('@g.us')) return;
-    if (!this.selectedGroups.includes(message.from)) return;
-    if (message.fromMe) return;
-    if (message.type !== 'chat') return;
+  async shouldProcessMessage(message) {
+    if (!this.running) return { eligible: false, reason: 'bot stopped' };
+    if (!message.from.endsWith('@g.us')) return { eligible: false, reason: 'not a group' };
+    if (!this.selectedGroups.includes(message.from)) return { eligible: false, reason: 'group not selected' };
+    if (message.fromMe) return { eligible: false, reason: 'from self' };
 
-    if (this.isProcessed(message.id._serialized)) return;
+    const text = await this.extractText(message);
+    if (!text) return { eligible: false, reason: 'no text' };
+
+    return { eligible: true, reason: null, text };
+  }
+
+  async handleIncoming(message) {
+    const { eligible, reason } = await this.shouldProcessMessage(message);
+    if (!eligible) {
+      await this.recordSkipped(message, reason);
+      return;
+    }
+
+    if (this.isProcessed(message.id._serialized)) {
+      await this.recordSkipped(message, 'already processed');
+      return;
+    }
 
     this.queue.push(message);
     this.processQueue();
@@ -161,6 +191,30 @@ class WhatsAppBot extends EventEmitter {
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
+  async extractText(message) {
+    let text = message.body || '';
+    if (!text && message.caption) text = message.caption;
+    if (!text && message._data?.caption) text = message._data.caption;
+    if (!text && message._data?.body) text = message._data.body;
+    if (!text && message.hasQuotedMsg) {
+      try {
+        const quoted = await message.getQuotedMessage();
+        if (quoted?.body) text = quoted.body;
+      } catch (err) {
+        this.emitLog(`Quoted fetch failed: ${err.message}`);
+      }
+    }
+    if (!text && message._data?.quotedMsg?.body) {
+      text = message._data.quotedMsg.body;
+    }
+    return text;
+  }
+
+  getSnippet(text) {
+    if (!text) return '';
+    return text.length > 80 ? `${text.slice(0, 77)}...` : text;
+  }
+
   matchClient(text) {
     if (!text) return null;
     const target = this.settings.normalizeArabicEnabled ? this.normalizeArabic(text) : text;
@@ -169,7 +223,7 @@ class WhatsAppBot extends EventEmitter {
       if (!name) continue;
       const regex = new RegExp(this.escapeRegex(name), 'i');
       if (regex.test(target)) {
-        return client.emoji || this.settings.defaultEmoji;
+        return { match: name, emoji: client.emoji || this.settings.defaultEmoji };
       }
     }
     return null;
@@ -186,6 +240,33 @@ class WhatsAppBot extends EventEmitter {
       this.processed = this.processed.slice(-50000);
     }
     store.write('processed.json', this.processed);
+  }
+
+  async recordInteraction(message, matchResult, action, text) {
+    const entry = {
+      ts: Date.now(),
+      groupId: message.from,
+      groupName: message._data?.notifyName || message.from,
+      match: matchResult?.match || '',
+      action,
+      snippet: this.getSnippet(text || (await this.extractText(message))),
+      id: message.id?._serialized,
+    };
+    this.interactedLogs = await store.appendLimited('interactedLogs.json', entry, 2000);
+    this.emit('interaction:log', { interacted: this.interactedLogs, skipped: this.skippedLogs });
+  }
+
+  async recordSkipped(message, reason) {
+    const entry = {
+      ts: Date.now(),
+      groupId: message?.from,
+      groupName: message?._data?.notifyName || message?.from,
+      reason,
+      snippet: this.getSnippet(message?.body || ''),
+      id: message?.id?._serialized,
+    };
+    this.skippedLogs = await store.appendLimited('skippedLogs.json', entry, 2000);
+    this.emit('interaction:log', { interacted: this.interactedLogs, skipped: this.skippedLogs });
   }
 
   async ensureRateLimit(rpmOverride) {
@@ -211,9 +292,11 @@ class WhatsAppBot extends EventEmitter {
   }
 
   async processMessage(message) {
-    const emoji = this.matchClient(message.body);
-    if (!emoji) {
+    const text = await this.extractText(message);
+    const matchResult = this.matchClient(text);
+    if (!matchResult) {
       this.markProcessed(message.id._serialized);
+      await this.recordSkipped(message, 'no match');
       return;
     }
 
@@ -221,9 +304,11 @@ class WhatsAppBot extends EventEmitter {
     await this.respectCooldown(message.from);
 
     if (this.settings.replyMode) {
-      await message.reply(emoji);
+      await message.reply(matchResult.emoji);
+      await this.recordInteraction(message, matchResult, 'reply', text);
     } else {
-      await message.react(emoji);
+      await message.react(matchResult.emoji);
+      await this.recordInteraction(message, matchResult, 'reaction', text);
     }
 
     this.markProcessed(message.id._serialized);
@@ -280,36 +365,57 @@ class WhatsAppBot extends EventEmitter {
     const response = [];
 
     for (const groupId of this.selectedGroups) {
-      let since = targetSince || this.lastChecked[groupId] || 0;
+      const since = targetSince || this.lastChecked[groupId] || 0;
       let limit = 50;
       let done = false;
-      let collected = 0;
       const chat = await this.client.getChatById(groupId);
+      const collected = [];
+      let newestTs = since;
 
       while (!done) {
         const messages = await chat.fetchMessages({ limit });
-        const eligible = messages.filter((m) => m.timestamp * 1000 >= since);
-        collected += eligible.length;
-
-        if (process) {
-          for (const msg of eligible.reverse()) {
-            if (this.running && !this.isProcessed(msg.id._serialized) && msg.type === 'chat' && !msg.fromMe && msg.from === groupId) {
-              this.queue.push(msg);
-            }
-          }
-          this.processQueue();
+        if (!messages || messages.length === 0) {
+          break;
         }
+        messages.forEach((m) => {
+          const ts = m.timestamp * 1000;
+          if (ts >= since) {
+            collected.push(m);
+            if (ts > newestTs) newestTs = ts;
+          }
+        });
 
-        if (messages.length < limit || limit >= limitCap || (messages[messages.length - 1] && messages[messages.length - 1].timestamp * 1000 <= since)) {
+        const lastMsg = messages[messages.length - 1];
+        if (messages.length < limit || limit >= limitCap || (lastMsg && lastMsg.timestamp * 1000 <= since)) {
           done = true;
         } else {
           limit = Math.min(limit + 50, limitCap);
         }
       }
 
-      this.lastChecked[groupId] = now;
+      collected.sort((a, b) => a.timestamp - b.timestamp);
+      let eligibleCount = 0;
+      for (const msg of collected) {
+        if (this.isProcessed(msg.id._serialized)) {
+          await this.recordSkipped(msg, 'already processed');
+          continue;
+        }
+        const { eligible, reason } = await this.shouldProcessMessage(msg);
+        if (!eligible) {
+          await this.recordSkipped(msg, reason || 'filtered');
+          continue;
+        }
+        eligibleCount += 1;
+        if (process) {
+          this.queue.push(msg);
+        }
+      }
+      if (process && eligibleCount > 0) {
+        this.processQueue();
+      }
+      this.lastChecked[groupId] = newestTs || now;
       await store.write('lastChecked.json', this.lastChecked);
-      response.push({ groupId, found: collected, processed: process ? collected : 0 });
+      response.push({ groupId, found: eligibleCount, processed: process ? eligibleCount : 0, lastChecked: this.lastChecked[groupId] });
     }
 
     return response;
@@ -379,6 +485,22 @@ class WhatsAppBot extends EventEmitter {
     };
 
     loop();
+  }
+
+  getInteractionLogs() {
+    return { interacted: this.interactedLogs, skipped: this.skippedLogs };
+  }
+
+  async clearInteractionLogs(type) {
+    if (type === 'interacted') {
+      this.interactedLogs = [];
+      await store.write('interactedLogs.json', this.interactedLogs);
+    }
+    if (type === 'skipped') {
+      this.skippedLogs = [];
+      await store.write('skippedLogs.json', this.skippedLogs);
+    }
+    this.emit('interaction:log', { interacted: this.interactedLogs, skipped: this.skippedLogs });
   }
 }
 

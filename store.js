@@ -9,6 +9,8 @@ const defaultFiles = {
   'processed.json': [],
   'lastChecked.json': {},
   'bulkState.json': { state: 'idle', sent: 0, total: 0, groupId: null },
+  'interactedLogs.json': [],
+  'skippedLogs.json': [],
 };
 
 function ensureDataDir() {
@@ -35,6 +37,17 @@ async function write(name, data) {
   return fs.writeJSON(filePath(name), data, { spaces: 2 });
 }
 
+async function appendLimited(name, entry, maxSize = 2000) {
+  await ensure();
+  const current = await read(name);
+  current.push(entry);
+  if (current.length > maxSize) {
+    current.splice(0, current.length - maxSize);
+  }
+  await write(name, current);
+  return current;
+}
+
 async function ensure() {
   ensureDataDir();
 }
@@ -44,4 +57,6 @@ module.exports = {
   ensure,
   read,
   write,
+  filePath,
+  appendLimited,
 };

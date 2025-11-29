@@ -23,7 +23,7 @@ const bot = new WhatsAppBot();
 bot.init();
 
 app.get('/api/status', (req, res) => {
-  res.json({ connected: bot.connected, running: bot.running, bulk: bot.getBulkPublicState() });
+  res.json({ connected: bot.connected, running: bot.running, linkState: bot.linkState, bulk: bot.getBulkPublicState(), lastChecked: bot.lastChecked });
 });
 
 app.post('/api/start', async (req, res) => {
@@ -68,6 +68,11 @@ app.post('/api/clients', async (req, res) => {
   res.json({ success: true });
 });
 
+app.post('/api/clients/clear', async (req, res) => {
+  await bot.setClients('');
+  res.json({ success: true });
+});
+
 app.get('/api/settings', async (req, res) => {
   const settings = await store.read('settings.json');
   res.json(settings);
@@ -93,7 +98,7 @@ app.post('/api/backlog/process', async (req, res) => {
 app.post('/api/bulk/start', async (req, res) => {
   try {
     const { groupId, messages, delaySeconds, rpm } = req.body;
-    const parsedMessages = (messages || []).map((m) => m.trim()).filter(Boolean);
+    const parsedMessages = (messages || []).filter((m) => typeof m === 'string' && m.trim() !== '');
     await bot.startBulk({ groupId, messages: parsedMessages, delaySeconds, rpm });
     res.json({ success: true });
   } catch (err) {
@@ -120,18 +125,37 @@ app.get('/api/bulk/status', (req, res) => {
   res.json(bot.getBulkPublicState());
 });
 
+app.get('/api/backlog/last', (req, res) => {
+  res.json(bot.lastChecked || {});
+});
+
+app.get('/api/logs', (req, res) => {
+  res.json(bot.getInteractionLogs());
+});
+
+app.post('/api/logs/clear', async (req, res) => {
+  const { type } = req.body || {};
+  await bot.clearInteractionLogs(type);
+  res.json({ success: true });
+});
+
 io.on('connection', (socket) => {
   const logHandler = (msg) => socket.emit('log', msg);
   const qrHandler = (qr) => socket.emit('qr', qr);
   const statusHandler = (status) => socket.emit('status', status);
   const bulkHandler = (state) => socket.emit('bulk:update', state);
   const backlogHandler = (payload) => socket.emit('backlog:update', payload);
+  const interactionHandler = (payload) => socket.emit('interaction:log', payload);
 
   bot.on('log', logHandler);
   bot.on('qr', qrHandler);
   bot.on('status', statusHandler);
   bot.on('bulk:update', bulkHandler);
   bot.on('backlog:update', backlogHandler);
+  bot.on('interaction:log', interactionHandler);
+
+  socket.emit('status', { connected: bot.connected, running: bot.running, linkState: bot.linkState, bulk: bot.getBulkPublicState(), lastChecked: bot.lastChecked });
+  socket.emit('interaction:log', bot.getInteractionLogs());
 
   socket.on('disconnect', () => {
     bot.off('log', logHandler);
@@ -139,6 +163,7 @@ io.on('connection', (socket) => {
     bot.off('status', statusHandler);
     bot.off('bulk:update', bulkHandler);
     bot.off('backlog:update', backlogHandler);
+    bot.off('interaction:log', interactionHandler);
   });
 });
 
