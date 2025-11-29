@@ -3,7 +3,17 @@ const path = require('path');
 
 const dataDir = path.join(__dirname, 'data');
 const defaultFiles = {
-  'settings.json': { rpm: 20, cooldownSeconds: 3, normalizeArabicEnabled: true, replyMode: false, defaultEmoji: '✅' },
+  'settings.json': {
+    rpm: 20,
+    cooldownSeconds: 3,
+    normalizeArabicEnabled: true,
+    replyMode: false,
+    defaultEmoji: '✅',
+    forwardEnabled: false,
+    forwardTargetChatId: '',
+    forwardBatchSize: 10,
+    forwardFlushOnIdle: true,
+  },
   'clients.json': [],
   'groups.json': [],
   'processed.json': [],
@@ -11,6 +21,8 @@ const defaultFiles = {
   'bulkState.json': { state: 'idle', sent: 0, total: 0, groupId: null },
   'interactedLogs.json': [],
   'skippedLogs.json': [],
+  'forwardQueue.json': [],
+  'forwardMeta.json': { lastForwardedAt: null },
 };
 
 function ensureDataDir() {

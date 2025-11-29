@@ -53,6 +53,23 @@
         <label>Default Emoji <input id="defaultEmoji" type="text" maxlength="4" /></label>
         <button id="save-settings">Save Settings</button>
       </div>
+
+      <div class="card">
+        <h2>Forwarding</h2>
+        <label><input type="checkbox" id="forward-enabled" /> Enable batch forwarding</label>
+        <label>Target Group
+          <select id="forward-target"></select>
+        </label>
+        <label>Batch Size
+          <input type="number" id="forward-batch" min="1" value="10" />
+        </label>
+        <label><input type="checkbox" id="forward-flush-idle" /> Flush remaining on idle</label>
+        <div class="muted">Queue: <span id="forward-queue">0</span> | Last: <span id="forward-last">N/A</span></div>
+        <div class="controls">
+          <button id="forward-flush">Forward now</button>
+          <button id="forward-clear" class="secondary">Clear forward queue</button>
+        </div>
+      </div>
     </section>
 
     <section class="card">

@@ -26,11 +26,15 @@ class WhatsAppBot extends EventEmitter {
     this.client = null;
     this.initialized = false;
     this.lastQr = null;
+    this.forwardQueue = [];
+    this.forwardMeta = { lastForwardedAt: null };
+    this.forwardFlushing = false;
   }
 
   async init() {
     await store.ensure();
     this.settings = await store.read('settings.json');
+    this.applySettingsDefaults();
     this.clients = await store.read('clients.json');
     this.selectedGroups = await store.read('groups.json');
     this.processed = await store.read('processed.json');
@@ -38,6 +42,8 @@ class WhatsAppBot extends EventEmitter {
     this.bulkState = await store.read('bulkState.json');
     this.interactedLogs = await store.read('interactedLogs.json');
     this.skippedLogs = await store.read('skippedLogs.json');
+    this.forwardQueue = await store.read('forwardQueue.json');
+    this.forwardMeta = await store.read('forwardMeta.json');
 
     const puppeteerArgs = {
       headless: true,
@@ -58,6 +64,24 @@ class WhatsAppBot extends EventEmitter {
     this.initialized = true;
     this.emitLog('Bot initialized.');
     this.emitStatus();
+    if (this.settings.forwardFlushOnIdle && this.forwardQueue.length) {
+      this.flushForwardBatch(true);
+    }
+  }
+
+  applySettingsDefaults() {
+    this.settings = {
+      rpm: 20,
+      cooldownSeconds: 3,
+      normalizeArabicEnabled: true,
+      replyMode: false,
+      defaultEmoji: '✅',
+      forwardEnabled: false,
+      forwardTargetChatId: '',
+      forwardBatchSize: 10,
+      forwardFlushOnIdle: true,
+      ...this.settings,
+    };
   }
 
   registerEvents() {
@@ -113,12 +137,24 @@ class WhatsAppBot extends EventEmitter {
       linkState: this.linkState,
       bulk: this.getBulkPublicState(),
       lastChecked: this.lastChecked,
+      forward: this.getForwardState(),
     });
   }
 
   getBulkPublicState() {
     const { state, sent, total, groupId, paused } = this.bulkState;
     return { state, sent, total, groupId, paused };
+  }
+
+  getForwardState() {
+    return {
+      enabled: this.settings?.forwardEnabled,
+      targetChatId: this.settings?.forwardTargetChatId || '',
+      batchSize: this.settings?.forwardBatchSize || 10,
+      flushOnIdle: this.settings?.forwardFlushOnIdle,
+      queueLength: this.forwardQueue.length,
+      lastForwardedAt: this.forwardMeta?.lastForwardedAt || null,
+    };
   }
 
   getLastQr() {
@@ -160,18 +196,25 @@ class WhatsAppBot extends EventEmitter {
   }
 
   async processQueue() {
-    if (this.processing) return;
+    if (this.processing || this.forwardFlushing) return;
     this.processing = true;
     while (this.queue.length > 0) {
       if (!this.running) break;
+      if (this.forwardFlushing) break;
       const msg = this.queue.shift();
       try {
         await this.processMessage(msg);
+        if (this.shouldFlushForwardOnBatch()) {
+          await this.flushForwardBatch();
+        }
       } catch (err) {
         this.emitLog(`Error processing message ${msg.id._serialized}: ${err.message}`);
       }
     }
     this.processing = false;
+    if (!this.forwardFlushing && this.settings.forwardFlushOnIdle && this.queue.length === 0) {
+      await this.flushForwardBatch(true);
+    }
   }
 
   normalizeArabic(text) {
@@ -269,6 +312,85 @@ class WhatsAppBot extends EventEmitter {
     this.emit('interaction:log', { interacted: this.interactedLogs, skipped: this.skippedLogs });
   }
 
+  shouldFlushForwardOnBatch() {
+    return (
+      this.settings.forwardEnabled &&
+      this.settings.forwardTargetChatId &&
+      this.forwardQueue.length >= (this.settings.forwardBatchSize || 10)
+    );
+  }
+
+  async enqueueForward(message) {
+    if (!this.settings.forwardEnabled || !this.settings.forwardTargetChatId) return;
+    const id = message?.id?._serialized;
+    if (!id) return;
+    if (this.forwardQueue.find((f) => f.messageId === id)) return;
+    const item = { sourceChatId: message.from, messageId: id, timestamp: Date.now() };
+    this.forwardQueue.push(item);
+    await store.write('forwardQueue.json', this.forwardQueue);
+    this.emitStatus();
+  }
+
+  async clearForwardQueue() {
+    this.forwardQueue = [];
+    await store.write('forwardQueue.json', this.forwardQueue);
+    this.emitStatus();
+  }
+
+  async recordForwarded(message) {
+    if (!message) return;
+    const entry = {
+      ts: Date.now(),
+      groupId: message.from,
+      groupName: message._data?.notifyName || message.from,
+      match: 'forward',
+      action: 'forwarded',
+      snippet: this.getSnippet(message.body || message.caption || ''),
+      id: message.id?._serialized,
+    };
+    this.interactedLogs = await store.appendLimited('interactedLogs.json', entry, 2000);
+    this.emit('interaction:log', { interacted: this.interactedLogs, skipped: this.skippedLogs });
+  }
+
+  async flushForwardBatch(force = false) {
+    if (this.forwardFlushing) return;
+    if (!this.settings.forwardEnabled || !this.settings.forwardTargetChatId) return;
+    const batchSize = this.settings.forwardBatchSize || 10;
+    if (!force && this.forwardQueue.length < batchSize) return;
+    this.forwardFlushing = true;
+    this.emitLog('Flushing forward queue...');
+    try {
+      const target = this.settings.forwardTargetChatId;
+      const items = [...this.forwardQueue];
+      for (const item of items) {
+        try {
+          const msg = await this.client.getMessageById(item.messageId);
+          if (!msg) {
+            this.emitLog(`Forward lookup failed for ${item.messageId}`);
+            continue;
+          }
+          await this.ensureRateLimit();
+          await this.respectCooldown(target);
+          await msg.forward(target);
+          this.forwardQueue = this.forwardQueue.filter((f) => f.messageId !== item.messageId);
+          await store.write('forwardQueue.json', this.forwardQueue);
+          this.forwardMeta.lastForwardedAt = Date.now();
+          await store.write('forwardMeta.json', this.forwardMeta);
+          await this.recordForwarded(msg);
+          this.emitLog(`Forwarded ${item.messageId} to ${target}`);
+        } catch (err) {
+          this.emitLog(`Forward error for ${item.messageId}: ${err.message}`);
+        }
+      }
+      this.emitStatus();
+    } finally {
+      this.forwardFlushing = false;
+      if (this.queue.length > 0 && this.running) {
+        this.processQueue();
+      }
+    }
+  }
+
   async ensureRateLimit(rpmOverride) {
     const now = Date.now();
     const rpmLimit = rpmOverride || this.settings.rpm || 20;
@@ -312,6 +434,7 @@ class WhatsAppBot extends EventEmitter {
     }
 
     this.markProcessed(message.id._serialized);
+    await this.enqueueForward(message);
     this.emitLog(`Processed message ${message.id.id} in ${message.from}`);
   }
 
@@ -343,8 +466,10 @@ class WhatsAppBot extends EventEmitter {
 
   async setSettings(newSettings) {
     this.settings = { ...this.settings, ...newSettings };
+    this.applySettingsDefaults();
     await store.write('settings.json', this.settings);
     this.emitLog('Settings updated.');
+    this.emitStatus();
   }
 
   async checkBacklog({ sinceTimestamp, hours, limitCap = 500 }) {

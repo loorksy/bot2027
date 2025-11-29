@@ -6,7 +6,7 @@ const api = {
 };
 
 const socket = io('/', { withCredentials: true, autoConnect: false });
-let statusState = { connected: false, running: false, linkState: 'not_linked', bulk: {}, lastChecked: {} };
+let statusState = { connected: false, running: false, linkState: 'not_linked', bulk: {}, lastChecked: {}, forward: {} };
 const isDashboard = window.location.pathname.includes('index.html') || window.location.pathname === '/';
 const isBulk = window.location.pathname.includes('bulk.html');
 
@@ -53,6 +53,7 @@ function renderStatus(status) {
   }
   if (statusState.bulk) renderBulkStatus(statusState.bulk);
   renderCheckpoints(statusState.lastChecked || {});
+  renderForwardState(statusState.forward || {});
 }
 
 function addLog(line, target = 'logs') {
@@ -82,6 +83,24 @@ function renderCheckpoints(map) {
     return;
   }
   el.innerHTML = entries.map(([id, ts]) => `<div>${id}: ${formatTs(ts)}</div>`).join('');
+}
+
+function renderForwardState(forward) {
+  const queueEl = document.getElementById('forward-queue');
+  const lastEl = document.getElementById('forward-last');
+  if (queueEl) queueEl.textContent = forward.queueLength ?? 0;
+  if (lastEl) lastEl.textContent = formatTs(forward.lastForwardedAt);
+  const enabled = document.getElementById('forward-enabled');
+  if (enabled) enabled.checked = !!forward.enabled;
+  const batch = document.getElementById('forward-batch');
+  if (batch && forward.batchSize != null) batch.value = forward.batchSize;
+  const flushIdle = document.getElementById('forward-flush-idle');
+  if (flushIdle && forward.flushOnIdle != null) flushIdle.checked = forward.flushOnIdle;
+  const target = document.getElementById('forward-target');
+  if (target && forward.targetChatId && target.value !== forward.targetChatId) {
+    const match = Array.from(target.options).find((o) => o.value === forward.targetChatId);
+    if (match) target.value = forward.targetChatId;
+  }
 }
 
 function initSocket() {
@@ -130,15 +149,30 @@ async function loadClients() {
 
 async function loadSettings() {
   const settings = await api.request('/api/settings');
-  document.getElementById('rpm').value = settings.rpm;
-  document.getElementById('cooldown').value = settings.cooldownSeconds;
-  document.getElementById('normalize').checked = settings.normalizeArabicEnabled;
-  document.getElementById('replyMode').checked = settings.replyMode;
-  document.getElementById('defaultEmoji').value = settings.defaultEmoji || '';
+  if (document.getElementById('rpm')) document.getElementById('rpm').value = settings.rpm;
+  if (document.getElementById('cooldown')) document.getElementById('cooldown').value = settings.cooldownSeconds;
+  if (document.getElementById('normalize')) document.getElementById('normalize').checked = settings.normalizeArabicEnabled;
+  if (document.getElementById('replyMode')) document.getElementById('replyMode').checked = settings.replyMode;
+  if (document.getElementById('defaultEmoji')) document.getElementById('defaultEmoji').value = settings.defaultEmoji || '';
+  const forwardEnabled = document.getElementById('forward-enabled');
+  if (forwardEnabled) forwardEnabled.checked = !!settings.forwardEnabled;
+  const forwardBatch = document.getElementById('forward-batch');
+  if (forwardBatch) forwardBatch.value = settings.forwardBatchSize || 10;
+  const forwardFlush = document.getElementById('forward-flush-idle');
+  if (forwardFlush) forwardFlush.checked = settings.forwardFlushOnIdle;
+  const forwardTarget = document.getElementById('forward-target');
+  if (forwardTarget) forwardTarget.value = settings.forwardTargetChatId || '';
+}
+
+async function loadForwardGroups() {
+  const groups = await api.request('/api/groups');
+  updateForwardTargetOptions(groups);
 }
 
 async function initDashboard() {
   bindDashboard();
+  bindForwardingControls();
+  await loadForwardGroups();
   await loadClients();
   await loadSettings();
 }
@@ -181,6 +215,10 @@ function bindDashboard() {
       normalizeArabicEnabled: document.getElementById('normalize').checked,
       replyMode: document.getElementById('replyMode').checked,
       defaultEmoji: document.getElementById('defaultEmoji').value || '✅',
+      forwardEnabled: document.getElementById('forward-enabled')?.checked || false,
+      forwardTargetChatId: document.getElementById('forward-target')?.value || '',
+      forwardBatchSize: Number(document.getElementById('forward-batch')?.value) || 10,
+      forwardFlushOnIdle: document.getElementById('forward-flush-idle')?.checked || false,
     };
     await api.request('/api/settings', { method: 'POST', body: JSON.stringify(payload) });
     addLog('Settings saved');
@@ -217,6 +255,16 @@ function bindDashboard() {
   document.getElementById('clear-skipped').addEventListener('click', () => clearLog('skipped'));
 }
 
+function bindForwardingControls() {
+  document.getElementById('forward-flush')?.addEventListener('click', async () => {
+    await api.request('/api/forward/flush', { method: 'POST' });
+  });
+  document.getElementById('forward-clear')?.addEventListener('click', async () => {
+    await api.request('/api/forward/clear', { method: 'POST' });
+    addLog('Forward queue cleared');
+  });
+}
+
 function copyLog(id) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -246,6 +294,22 @@ function renderGroups(groups) {
     item.innerHTML = `<label><input type="checkbox" value="${g.id}" ${g.selected ? 'checked' : ''}/> ${g.name}</label>`;
     container.appendChild(item);
   });
+  updateForwardTargetOptions(groups);
+}
+
+function updateForwardTargetOptions(groups) {
+  const select = document.getElementById('forward-target');
+  if (!select) return;
+  select.innerHTML = '<option value="">-- Select target group --</option>';
+  (groups || []).forEach((g) => {
+    const opt = document.createElement('option');
+    opt.value = g.id;
+    opt.textContent = g.name;
+    select.appendChild(opt);
+  });
+  if (statusState.forward?.targetChatId) {
+    select.value = statusState.forward.targetChatId;
+  }
 }
 
 function renderBacklog(data) {
@@ -268,6 +332,9 @@ function renderBulkStatus(state) {
 
 async function initBulk() {
   bindBulk();
+  bindForwardingControls();
+  await loadForwardGroups();
+  await loadSettings();
   await loadBulkGroups();
 }
 
@@ -281,6 +348,7 @@ async function loadBulkGroups() {
     option.textContent = g.name;
     select.appendChild(option);
   });
+  updateForwardTargetOptions(groups);
 }
 
 function parseNotifications(rawText, mode) {

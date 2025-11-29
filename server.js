@@ -23,7 +23,14 @@ const bot = new WhatsAppBot();
 bot.init();
 
 app.get('/api/status', (req, res) => {
-  res.json({ connected: bot.connected, running: bot.running, linkState: bot.linkState, bulk: bot.getBulkPublicState(), lastChecked: bot.lastChecked });
+  res.json({
+    connected: bot.connected,
+    running: bot.running,
+    linkState: bot.linkState,
+    bulk: bot.getBulkPublicState(),
+    lastChecked: bot.lastChecked,
+    forward: bot.getForwardState(),
+  });
 });
 
 app.post('/api/start', async (req, res) => {
@@ -139,6 +146,20 @@ app.post('/api/logs/clear', async (req, res) => {
   res.json({ success: true });
 });
 
+app.get('/api/forward/state', (req, res) => {
+  res.json(bot.getForwardState());
+});
+
+app.post('/api/forward/flush', async (req, res) => {
+  await bot.flushForwardBatch(true);
+  res.json({ success: true });
+});
+
+app.post('/api/forward/clear', async (req, res) => {
+  await bot.clearForwardQueue();
+  res.json({ success: true });
+});
+
 io.on('connection', (socket) => {
   const logHandler = (msg) => socket.emit('log', msg);
   const qrHandler = (qr) => socket.emit('qr', qr);
@@ -154,7 +175,14 @@ io.on('connection', (socket) => {
   bot.on('backlog:update', backlogHandler);
   bot.on('interaction:log', interactionHandler);
 
-  socket.emit('status', { connected: bot.connected, running: bot.running, linkState: bot.linkState, bulk: bot.getBulkPublicState(), lastChecked: bot.lastChecked });
+  socket.emit('status', {
+    connected: bot.connected,
+    running: bot.running,
+    linkState: bot.linkState,
+    bulk: bot.getBulkPublicState(),
+    lastChecked: bot.lastChecked,
+    forward: bot.getForwardState(),
+  });
   socket.emit('interaction:log', bot.getInteractionLogs());
 
   socket.on('disconnect', () => {
