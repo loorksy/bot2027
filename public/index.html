@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WhatsApp Bot Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div>
+        <h1>WA Bot Control</h1>
+        <p class="muted">Modern dark workspace · Mobile-first</p>
+      </div>
+      <nav class="header-actions">
+        <a class="pill" href="bulk.html">Bulk Sender</a>
+      </nav>
+    </header>
+
+    <section class="grid two">
+      <div class="card status-card">
+        <div class="card-header">
+          <h2>Status</h2>
+          <button id="qr-btn" class="ghost">Show QR</button>
+        </div>
+        <div class="pill-row">
+          <span id="connected-pill" class="status-pill">Disconnected</span>
+          <span id="link-pill" class="status-pill">Not linked</span>
+          <span id="running-pill" class="status-pill">Stopped</span>
+        </div>
+        <div class="stacked-actions">
+          <button id="start-btn" class="primary">Start Bot</button>
+          <button id="stop-btn" class="danger">Stop Bot</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Forwarding</h2>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="forward-enabled">Enable Forwarding</label>
+            <label class="switch">
+              <input type="checkbox" id="forward-enabled" />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="field">
+            <label for="forward-target">Target Group</label>
+            <select id="forward-target"></select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="forward-batch">Batch Size</label>
+            <input type="number" id="forward-batch" min="1" value="10" />
+          </div>
+          <div class="field">
+            <label for="forward-flush-idle">Flush on Idle</label>
+            <label class="switch">
+              <input type="checkbox" id="forward-flush-idle" />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+        <div class="forward-meta">
+          <div>Queue: <span id="forward-queue">0</span></div>
+          <div>Last Forward: <span id="forward-last">N/A</span></div>
+        </div>
+        <div class="stacked-actions">
+          <button id="forward-flush" class="primary ghost">Forward now</button>
+          <button id="forward-clear" class="ghost">Clear forward queue</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid two">
+      <div class="card">
+        <div class="card-header">
+          <h2>Groups</h2>
+          <div class="spacer"></div>
+          <button id="fetch-groups" class="ghost">Refresh</button>
+          <button id="save-groups" class="primary ghost">Save</button>
+        </div>
+        <div id="groups-list" class="group-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Clients (Main List)</h2>
+          <div class="spacer"></div>
+          <button id="save-clients" class="primary ghost">Save</button>
+          <button id="clear-clients" class="danger ghost">Clear</button>
+        </div>
+        <textarea id="clients-text" rows="8" placeholder="Name|Emoji per line"></textarea>
+      </div>
+    </section>
+
+    <section class="grid two">
+      <div class="card">
+        <div class="card-header">
+          <h2>Settings</h2>
+          <button id="save-settings" class="primary ghost">Save</button>
+        </div>
+        <div class="field-grid">
+          <div class="field">
+            <label for="rpm">Actions per minute</label>
+            <input type="number" id="rpm" min="1" value="20" />
+          </div>
+          <div class="field">
+            <label for="cooldown">Cooldown (seconds)</label>
+            <input type="number" id="cooldown" min="0" value="3" />
+          </div>
+          <div class="field">
+            <label for="defaultEmoji">Default Emoji</label>
+            <input type="text" id="defaultEmoji" maxlength="4" />
+          </div>
+          <div class="field toggle-field">
+            <label>Normalize Arabic</label>
+            <label class="switch">
+              <input type="checkbox" id="normalize" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="field toggle-field">
+            <label>Reply Mode</label>
+            <label class="switch">
+              <input type="checkbox" id="replyMode" />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Backlog & Archive</h2>
+          <button id="backlog-process" class="primary ghost">Process</button>
+          <button id="backlog-check" class="ghost">Check</button>
+        </div>
+        <div class="field-grid">
+          <div class="field">
+            <label for="backlog-hours">Hours window</label>
+            <input type="range" id="backlog-hours" min="0" max="72" step="1" value="0" />
+            <div class="range-value" id="backlog-hours-value">0h</div>
+          </div>
+          <div class="field">
+            <label for="backlog-since">Start from (date/time)</label>
+            <input type="datetime-local" id="backlog-since" />
+          </div>
+          <div class="field">
+            <label for="backlog-limit">Limit</label>
+            <input type="number" id="backlog-limit" min="50" max="2000" value="500" />
+          </div>
+        </div>
+        <div id="backlog-checkpoints" class="muted small"></div>
+        <div id="backlog-output" class="backlog-output"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <h2>Interactions</h2>
+        <div class="spacer"></div>
+        <button id="copy-pending" class="ghost">Copy Pending</button>
+        <button id="copy-interacted" class="ghost">Copy Interacted</button>
+      </div>
+      <div class="grid two compact">
+        <div class="list-block">
+          <div class="block-header">Pending <span id="pending-count" class="badge">0</span></div>
+          <div id="pending-log" class="pill-list"></div>
+        </div>
+        <div class="list-block">
+          <div class="block-header">Interacted <span id="interacted-count" class="badge">0</span></div>
+          <div id="interacted-log" class="pill-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <h2>System Log</h2>
+        <button id="copy-skipped" class="ghost">Copy Raw</button>
+        <button id="clear-skipped" class="danger ghost">Clear</button>
+      </div>
+      <pre id="logs" class="terminal"></pre>
+    </section>
+  </div>
+
+  <div id="qr-modal" class="modal hidden">
+    <div class="modal-content">
+      <button id="qr-close" class="ghost close">✕</button>
+      <img id="qr-image" alt="QR code" />
+    </div>
+  </div>
+
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script src="client.js"></script>
+</body>
+</html>
