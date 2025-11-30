@@ -21,8 +21,11 @@ const api = {
 const socket = io('/', { withCredentials: true, autoConnect: false });
 const isDashboard = window.location.pathname.includes('index.html') || window.location.pathname === '/';
 const isBulk = window.location.pathname.includes('bulk.html');
+const isAdminPage = window.location.pathname.includes('admin');
 let statusState = { connected: false, running: false, linkState: 'not_linked', bulk: {}, lastChecked: {}, forward: {} };
 let savingForward = false;
+let currentUser = null;
+let appInitialized = false;
 
 const PENDING_KEY = 'wa_pending_names';
 const INTERACTED_KEY = 'wa_interacted_names';
@@ -95,6 +98,14 @@ function handleInteractionEntry(entry) {
 
 function handleApiError(data, context) {
   if (!data || typeof data !== 'object') return false;
+  if (data.status === 401) {
+    showLoginOverlay('الرجاء تسجيل الدخول');
+    return true;
+  }
+  if (data.status === 403) {
+    addLog('صلاحيات غير كافية');
+    return true;
+  }
   if (data.error === 'WA_NOT_READY') {
     addLog(`واتساب غير جاهز${context ? `: ${context}` : ''}`);
     return true;
@@ -104,6 +115,24 @@ function handleApiError(data, context) {
     return true;
   }
   return false;
+}
+
+function applyPermissionVisibility() {
+  const perms = currentUser?.permissions || {};
+  document.querySelectorAll('[data-permission]').forEach((el) => {
+    const key = el.dataset.permission;
+    if (!key) return;
+    if (perms[key]) {
+      el.classList.remove('hidden-permission');
+    } else {
+      el.classList.add('hidden-permission');
+    }
+  });
+  const adminLink = document.getElementById('admin-link');
+  if (adminLink) {
+    if (perms.is_admin) adminLink.classList.remove('hidden-permission');
+    else adminLink.classList.add('hidden-permission');
+  }
 }
 
 function setStatusPill(id, text, cls) {
@@ -148,6 +177,20 @@ function renderStatus(status) {
   renderForwardState(statusState.forward || {});
   renderCheckpoints(statusState.lastChecked || {});
   if (statusState.bulk) renderBulkStatus(statusState.bulk);
+}
+
+function showLoginOverlay(message) {
+  const overlay = document.getElementById('login-overlay');
+  const err = document.getElementById('login-error');
+  if (err && message) err.textContent = message;
+  if (overlay) overlay.classList.remove('hidden');
+}
+
+function hideLoginOverlay() {
+  const overlay = document.getElementById('login-overlay');
+  const err = document.getElementById('login-error');
+  if (err) err.textContent = '';
+  if (overlay) overlay.classList.add('hidden');
 }
 
 function addLog(line, target = 'logs') {
@@ -230,30 +273,70 @@ function initSocket() {
   socket.on('bulk:update', renderBulkStatus);
   socket.on('backlog:update', renderBacklog);
   socket.on('interaction:log', renderInteractionLogs);
+  socket.on('connect_error', (err) => {
+    if (err && err.message === 'UNAUTHORIZED') {
+      showLoginOverlay('الرجاء تسجيل الدخول');
+    }
+  });
 }
 
 function bindCommon() {
   document.getElementById('qr-close')?.addEventListener('click', () => document.getElementById('qr-modal').classList.add('hidden'));
+  const loginForm = document.getElementById('login-form');
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+      const res = await api.request('/api/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+      if (res.error) {
+        showLoginOverlay('بيانات غير صحيحة');
+        return;
+      }
+      currentUser = res.user;
+      hideLoginOverlay();
+      applyPermissionVisibility();
+      await startApp();
+    });
+  }
 }
 
-async function init() {
-  try {
-    bindCommon();
-    initSocket();
-    socket.connect();
-    const initialStatus = await api.request('/api/status');
-    renderStatus(initialStatus);
-    if (isDashboard) {
-      await initDashboard();
+async function ensureAuthenticated() {
+  const me = await api.request('/api/me');
+  if (me.error) {
+    if (me.status === 401) {
+      showLoginOverlay();
+      return false;
     }
-    if (isBulk) {
-      await initBulk();
-    }
-    const logs = await api.request('/api/logs');
-    renderInteractionLogs(logs);
-  } catch (err) {
-    console.error('Initialization failed', err);
+    showLoginOverlay('تعذر التحقق من الهوية');
+    return false;
   }
+  currentUser = me.user;
+  applyPermissionVisibility();
+  return true;
+}
+
+async function startApp() {
+  bindCommon();
+  const authed = await ensureAuthenticated();
+  if (!authed) return;
+  if (appInitialized) return;
+  appInitialized = true;
+  initSocket();
+  socket.connect();
+  const initialStatus = await api.request('/api/status');
+  renderStatus(initialStatus);
+  if (isDashboard) {
+    await initDashboard();
+  }
+  if (isBulk) {
+    await initBulk();
+  }
+  if (isAdminPage) {
+    await initAdmin();
+  }
+  const logs = await api.request('/api/logs');
+  renderInteractionLogs(logs);
 }
 
 async function loadClients() {
@@ -288,11 +371,16 @@ async function loadForwardGroups() {
 }
 
 async function initDashboard() {
+  const perms = currentUser?.permissions || {};
   bindDashboard();
   bindForwardingControls();
-  await loadForwardGroups();
-  await loadClients();
-  await loadSettings();
+  if (perms.can_manage_lists || perms.can_send_messages) {
+    await loadForwardGroups();
+  }
+  if (perms.can_manage_lists) {
+    await loadClients();
+    await loadSettings();
+  }
   updateHoursLabel();
 }
 
@@ -509,9 +597,73 @@ function renderBulkStatus(state) {
 async function initBulk() {
   bindBulk();
   bindForwardingControls();
-  await loadForwardGroups();
-  await loadSettings();
-  await loadBulkGroups();
+  const perms = currentUser?.permissions || {};
+  if (perms.can_manage_lists || perms.can_send_messages) {
+    await loadForwardGroups();
+    await loadBulkGroups();
+  }
+  if (perms.can_manage_lists) {
+    await loadSettings();
+  }
+}
+
+async function initAdmin() {
+  applyPermissionVisibility();
+  if (!currentUser?.permissions?.is_admin) {
+    const adminContainer = document.getElementById('admin-container');
+    if (adminContainer) adminContainer.innerHTML = '<p class="muted">ليس لديك صلاحية الوصول للوحة الإدارة.</p>';
+    return;
+  }
+  bindAdmin();
+  await loadUsers();
+}
+
+async function loadUsers() {
+  const res = await api.request('/api/users');
+  if (res.error) return;
+  renderUsers(res);
+}
+
+function renderUsers(users) {
+  const list = document.getElementById('users-list');
+  if (!list) return;
+  list.innerHTML = '';
+  (users || []).forEach((u) => {
+    const item = document.createElement('div');
+    item.className = 'user-row';
+    item.innerHTML = `<div>${u.email}</div><div class="muted small">${
+      u.permissions?.is_admin ? 'مدير' : 'مستخدم'
+    }</div>`;
+    list.appendChild(item);
+  });
+}
+
+function bindAdmin() {
+  const form = document.getElementById('add-user-form');
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('user-email').value.trim();
+      const password = document.getElementById('user-password').value;
+      const permissions = {
+        is_admin: document.getElementById('perm-admin').checked,
+        can_scan_backlog: document.getElementById('perm-backlog').checked,
+        can_send_messages: document.getElementById('perm-send').checked,
+        can_manage_lists: document.getElementById('perm-lists').checked,
+      };
+      const res = await api.request('/api/users', {
+        method: 'POST',
+        body: JSON.stringify({ email, password, permissions }),
+      });
+      if (res.error) {
+        showToast('فشل إنشاء المستخدم');
+        return;
+      }
+      form.reset();
+      showToast('تم إنشاء المستخدم');
+      await loadUsers();
+    });
+  }
 }
 
 async function loadBulkGroups() {
@@ -593,4 +745,4 @@ function updateHoursLabel() {
   }
 }
 
-init();
+startApp();

@@ -24,6 +24,7 @@ const defaultFiles = {
   'forwardQueue.json': [],
   'forwardMeta.json': { lastForwardedAt: null },
   'groupDirectory.json': {},
+  'users.json': [],
 };
 
 function ensureDataDir() {

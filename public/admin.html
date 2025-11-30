@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>لوحة الإدارة</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div>
+        <h1>لوحة الإدارة</h1>
+        <p class="muted">إدارة المستخدمين والصلاحيات</p>
+      </div>
+      <nav class="header-actions">
+        <a class="pill" href="index.html">الرئيسية</a>
+        <a class="pill" href="bulk.html">الإرسال الجماعي</a>
+      </nav>
+    </header>
+
+    <section class="card" id="admin-container">
+      <div class="card-header">
+        <h2>إضافة مستخدم</h2>
+      </div>
+      <form id="add-user-form" class="field-grid">
+        <div class="field">
+          <label for="user-email">البريد الإلكتروني</label>
+          <input type="email" id="user-email" required />
+        </div>
+        <div class="field">
+          <label for="user-password">كلمة المرور</label>
+          <input type="password" id="user-password" required />
+        </div>
+        <div class="field toggle-field">
+          <label>منح صلاحية المدير</label>
+          <label class="switch">
+            <input type="checkbox" id="perm-admin" />
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="field toggle-field">
+          <label>السماح بفحص الأرشيف</label>
+          <label class="switch">
+            <input type="checkbox" id="perm-backlog" />
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="field toggle-field">
+          <label>السماح بالإرسال</label>
+          <label class="switch">
+            <input type="checkbox" id="perm-send" />
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="field toggle-field">
+          <label>إدارة القوائم</label>
+          <label class="switch">
+            <input type="checkbox" id="perm-lists" />
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="field" style="grid-column: 1 / -1;">
+          <button type="submit" class="primary">إضافة مستخدم</button>
+        </div>
+      </form>
+      <div class="card-header">
+        <h2>المستخدمون</h2>
+      </div>
+      <div id="users-list" class="user-list"></div>
+    </section>
+  </div>
+
+  <div id="login-overlay" class="overlay hidden">
+    <form id="login-form" class="login-card">
+      <h2>تسجيل الدخول</h2>
+      <label for="login-email">البريد الإلكتروني</label>
+      <input type="email" id="login-email" required />
+      <label for="login-password">كلمة المرور</label>
+      <input type="password" id="login-password" required />
+      <div id="login-error" class="error-text"></div>
+      <button type="submit" class="primary">دخول</button>
+    </form>
+  </div>
+
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script src="client.js"></script>
+</body>
+</html>
