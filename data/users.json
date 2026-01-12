@@ -1,0 +1,16 @@
+[
+  {
+    "email": "loorksy@gmail.com",
+    "password": "188bc78ba7c722eb1cb9986061f8798dbc1644a000f2e9797fa768788a96dfe9",
+    "permissions": {
+      "can_scan_backlog": true,
+      "can_send_messages": true,
+      "can_manage_lists": true,
+      "can_manage_settings": true,
+      "can_control_bot": true,
+      "can_manage_forwarding": true,
+      "can_view_logs": true,
+      "is_admin": true
+    }
+  }
+]

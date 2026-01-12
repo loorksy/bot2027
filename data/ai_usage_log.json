@@ -1,0 +1,11 @@
+{
+  "totalChatCalls": 0,
+  "totalSttCalls": 0,
+  "totalTtsCalls": 0,
+  "totalInputTokens": 0,
+  "totalOutputTokens": 0,
+  "totalSttMinutes": 0,
+  "totalTtsCharacters": 0,
+  "estimatedCost": 0,
+  "log": []
+}

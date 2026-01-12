@@ -3,6 +3,7 @@ const qrcode = require('qrcode');
 const EventEmitter = require('events');
 const path = require('path');
 const store = require('./store');
+const aiAgent = require('./src/ai_agent_v1');
 
 class WhatsAppBot extends EventEmitter {
   constructor() {
@@ -73,6 +74,11 @@ class WhatsAppBot extends EventEmitter {
     if (this.settings.forwardFlushOnIdle && this.forwardQueue.length) {
       this.flushForwardBatch(true);
     }
+
+    // Initialize AI Agent
+    aiAgent.init(this.client).catch(err => {
+      this.emitLog(`AI Agent init error: ${err.message}`);
+    });
   }
 
   applySettingsDefaults() {
@@ -169,6 +175,30 @@ class WhatsAppBot extends EventEmitter {
     });
 
     this.client.on('message', async (message) => {
+      console.log('[Bot] Message received from:', message?.from, 'fromMe:', message?.fromMe);
+
+      // Check if this is a DM (ends with @c.us or @lid, not @g.us for groups)
+      const isDM = message?.from && !message.fromMe &&
+        (message.from.endsWith('@c.us') || message.from.endsWith('@lid'));
+
+      // Route DMs to AI Agent if enabled
+      if (isDM) {
+        console.log('[Bot] This is a DM, checking AI Agent...');
+        try {
+          const aiEnabled = await aiAgent.isEnabled();
+          console.log('[Bot] AI Agent enabled:', aiEnabled);
+          if (aiEnabled) {
+            this.emitLog(`DM from ${message.from} routed to AI Agent`);
+            aiAgent.handleMessage(message);
+            return;
+          }
+        } catch (err) {
+          console.error('[Bot] AI Agent check error:', err);
+          this.emitLog(`AI Agent check error: ${err.message}`);
+        }
+      }
+
+      // Handle group messages
       if (message?.from?.endsWith('@g.us')) {
         await this.recordGroupMeta(message.from, message._data?.notifyName || message._data?.sender?.pushname);
         if (!this.lastChecked[message.from]) {
