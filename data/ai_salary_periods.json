@@ -1,0 +1,12 @@
+[
+  {
+    "id": "6df1f690-94ec-46f5-8dd5-c069b88be1e4",
+    "name": "12.31",
+    "idColumn": "رقم المستخدم",
+    "salaryColumn": "الراتب",
+    "agencyPercent": 7,
+    "recordCount": 1431,
+    "uploadedAt": "2026-01-11T15:45:12.671Z",
+    "isCurrent": true
+  }
+]

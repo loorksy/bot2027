@@ -7,8 +7,12 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const multer = require('multer');
+const { parse: csvParse } = require('csv-parse/sync');
 const WhatsAppBot = require('./bot');
 const store = require('./store');
+const aiAgent = require('./src/ai_agent_v1');
+const customFields = require('./src/ai_agent_v1/customFields');
 
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'CHANGE_ME_SECRET';
@@ -39,6 +43,14 @@ app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+
+
+// Multer setup for file uploads
+const upload = multer({
+  dest: path.join(__dirname, 'temp'),
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
 
 function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
@@ -185,6 +197,10 @@ app.use('/api', authMiddleware);
 app.get('/api/me', (req, res) => {
   res.json({ user: req.user });
 });
+
+// Accounting Routes
+const accountingApi = require('./src/accounting/routes/api');
+app.use('/api/accounting', accountingApi);
 
 app.get('/api/status', (req, res) => {
   res.json({
@@ -390,7 +406,885 @@ app.post('/api/forward/clear', requireAny(['can_manage_forwarding', 'can_send_me
   res.json({ success: true });
 });
 
+// =====================================================
+// AI Agent API Routes
+// =====================================================
+
+const aiModules = aiAgent.getModules();
+
+// AI Settings - Unified Endpoint
+app.get('/api/ai/settings', requireAdmin, async (req, res) => {
+  try {
+    const aiSettings = await aiModules.analyzer.getSettings();
+    const botSettings = await settings.getSettings();
+    // Merge both for frontend
+    res.json({ ...aiSettings, ...botSettings });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/ai/settings', requireAdmin, async (req, res) => {
+  try {
+    const body = req.body;
+    console.log('[API] Received settings update:', body); // DEBUG LOG
+
+    const aiFields = ['enabled', 'openaiKey', 'modelChat', 'modelStt', 'modelTts', 'voiceTts', 'trustedSessionMinutes', 'agencyPercent'];
+    const botFields = ['salaryTemplate', 'salaryCurrency', 'salaryFooter'];
+
+    const aiUpdates = {};
+    const botUpdates = {};
+
+    // Separate fields
+    Object.keys(body).forEach(key => {
+      if (aiFields.includes(key)) aiUpdates[key] = body[key];
+      if (botFields.includes(key)) botUpdates[key] = body[key];
+    });
+
+    console.log('[API] AI Updates:', aiUpdates); // DEBUG LOG
+    console.log('[API] Bot Updates:', botUpdates); // DEBUG LOG
+
+    // Update AI Settings
+    if (Object.keys(aiUpdates).length > 0) {
+      await aiModules.analyzer.updateSettings(aiUpdates);
+    }
+
+    // Update Bot Settings
+    if (Object.keys(botUpdates).length > 0) {
+      const updated = await settings.updateSettings(botUpdates);
+      console.log('[API] Bot Settings saved:', updated); // DEBUG LOG
+    }
+
+    res.json({ success: true, message: 'Settings updated' });
+  } catch (err) {
+    console.error('[API] Settings save error:', err); // DEBUG LOG
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// AI Clients
+app.get('/api/ai/clients', requireAdmin, async (req, res) => {
+  try {
+    const clients = await aiModules.clients.getAllClients();
+    res.json(clients);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// AI Usage
+app.get('/api/ai/usage', requireAdmin, async (req, res) => {
+  try {
+    const summary = await aiModules.usage.getUsageSummary();
+    res.json(summary);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/ai/usage/log', requireAdmin, async (req, res) => {
+  try {
+    const log = await aiModules.usage.getUsageLog();
+    res.json(log);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/ai/usage/reset', requireAdmin, async (req, res) => {
+  try {
+    await aiModules.usage.resetUsage();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Salary Periods
+app.get('/api/ai/salary/periods', requireAdmin, async (req, res) => {
+  try {
+    const periods = await aiModules.salary.getPeriods();
+    res.json(periods);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/ai/salary/upload', requireAdmin, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const { name, idColumn, salaryColumn, agencyPercent } = req.body;
+
+    if (!name || !idColumn || !salaryColumn) {
+      await fs.remove(req.file.path);
+      return res.status(400).json({ error: 'Missing required fields: name, idColumn, salaryColumn' });
+    }
+
+    // Read and parse file
+    const fileContent = await fs.readFile(req.file.path, 'utf-8');
+    let data;
+
+    // Parse CSV
+    try {
+      data = csvParse(fileContent, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true
+      });
+    } catch (parseErr) {
+      await fs.remove(req.file.path);
+      return res.status(400).json({ error: 'Failed to parse file: ' + parseErr.message });
+    }
+
+    if (!data || data.length === 0) {
+      await fs.remove(req.file.path);
+      return res.status(400).json({ error: 'No data found in file' });
+    }
+
+    // Validate columns exist
+    const sampleRow = data[0];
+    if (!(idColumn in sampleRow)) {
+      await fs.remove(req.file.path);
+      return res.status(400).json({ error: `ID column "${idColumn}" not found in file` });
+    }
+    if (!(salaryColumn in sampleRow)) {
+      await fs.remove(req.file.path);
+      return res.status(400).json({ error: `Salary column "${salaryColumn}" not found in file` });
+    }
+
+    // Create period
+    const period = await aiModules.salary.createPeriod({
+      name,
+      idColumn,
+      salaryColumn,
+      agencyPercent: parseFloat(agencyPercent) || 0,
+      data
+    });
+
+    // Clean up temp file
+    await fs.remove(req.file.path);
+
+    res.json({ success: true, period });
+
+  } catch (err) {
+    if (req.file) await fs.remove(req.file.path).catch(() => { });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/ai/salary/upload/preview', requireAdmin, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // Read and parse file
+    const fileContent = await fs.readFile(req.file.path, 'utf-8');
+    let data;
+
+    try {
+      data = csvParse(fileContent, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true
+      });
+    } catch (parseErr) {
+      await fs.remove(req.file.path);
+      return res.status(400).json({ error: 'Failed to parse file: ' + parseErr.message });
+    }
+
+    if (!data || data.length === 0) {
+      await fs.remove(req.file.path);
+      return res.status(400).json({ error: 'No data found in file' });
+    }
+
+    // Get columns from first row
+    const columns = Object.keys(data[0]);
+    const sampleRows = data.slice(0, 5);
+
+    // Clean up temp file
+    await fs.remove(req.file.path);
+
+    res.json({
+      columns,
+      sampleRows,
+      totalRows: data.length
+    });
+
+  } catch (err) {
+    if (req.file) await fs.remove(req.file.path).catch(() => { });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/ai/salary/period/:id', requireAdmin, async (req, res) => {
+  try {
+    await aiModules.salary.deletePeriod(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/ai/salary/period/:id/current', requireAdmin, async (req, res) => {
+  try {
+    await aiModules.salary.setCurrentPeriod(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// =====================================================
+// Registered Clients API (Admin-managed)
+// =====================================================
+
+
+// =====================================================
+// Import / Export APIs (Must be before generic ID routes)
+// =====================================================
+
+// Helper to escape CSV fields
+function escapeCsv(field) {
+  if (field === null || field === undefined) return '';
+  const stringField = String(field);
+  if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
+    return `"${stringField.replace(/"/g, '""')}"`;
+  }
+  return stringField;
+}
+
+// REGISTERED CLIENTS - Export CSV
+app.get('/api/ai/registered-clients/export', requireAdmin, async (req, res) => {
+  try {
+    const clients = await registeredClients.getAllClients();
+    const allFields = await customFields.getAllFields();
+
+    const staticHeaders = ['ID', 'Full Name', 'Phone', 'Country', 'City', 'Address', 'Agency'];
+    const customHeaders = allFields.map(f => f.name);
+    const headers = [...staticHeaders, ...customHeaders];
+
+    const rows = [headers.join(',')];
+
+    Object.values(clients).forEach(client => {
+      const staticData = [
+        (client.ids || []).join('; '),
+        client.fullName,
+        client.phone,
+        client.country,
+        client.city,
+        client.address,
+        client.agencyName
+      ];
+
+      const customData = allFields.map(field => {
+        const val = client.customFields ? client.customFields[field.id] : '';
+        if (typeof val === 'object' && val !== null) {
+          return `${val.value || ''}${val.subValue ? ` (${val.subValue})` : ''}`;
+        }
+        return val;
+      });
+
+      rows.push([...staticData, ...customData].map(escapeCsv).join(','));
+    });
+
+    const csvContent = '\uFEFF' + rows.join('\n');
+    res.header('Content-Type', 'text/csv');
+    res.header('Content-Disposition', 'attachment; filename="clients_export.csv"');
+    res.send(csvContent);
+  } catch (err) {
+    console.error('Export error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// REGISTERED CLIENTS - Download Template
+app.get('/api/ai/registered-clients/template', requireAdmin, async (req, res) => {
+  try {
+    const allFields = await customFields.getAllFields();
+
+    const staticHeaders = ['ID', 'Full Name', 'Phone', 'Country', 'City', 'Address', 'Agency'];
+    const customHeaders = allFields.map(f => f.name);
+    const headers = [...staticHeaders, ...customHeaders];
+
+    const rows = [headers.join(',')];
+    const csvContent = '\uFEFF' + rows.join('\n');
+
+    res.header('Content-Type', 'text/csv');
+    res.header('Content-Disposition', 'attachment; filename="clients_template.csv"');
+    res.send(csvContent);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// REGISTERED CLIENTS - Import CSV
+app.post('/api/ai/registered-clients/import', requireAdmin, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+    const fileContent = await fs.readFile(req.file.path, 'utf8');
+    const records = csvParse(fileContent, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+      bom: true
+    });
+
+    const allFields = await customFields.getAllFields();
+    let imported = 0;
+    let updated = 0;
+    let errors = [];
+
+    for (const [index, row] of records.entries()) {
+      try {
+        const rawIds = row['ID'] || row['id'];
+        const fullName = row['Full Name'] || row['Fullname'] || row['fullname'] || row['الاسم'];
+
+        if (!rawIds || !fullName) {
+          errors.push(`Row ${index + 1}: Missing ID or Full Name`);
+          continue;
+        }
+
+        const ids = rawIds.split(/[;,]/).map(id => id.trim()).filter(Boolean);
+
+        const clientData = {
+          ids: ids,
+          fullName: fullName,
+          phone: row['Phone'] || row['phone'] || row['الهاتف'],
+          country: row['Country'] || row['country'] || row['الدولة'],
+          city: row['City'] || row['city'] || row['المدينة'],
+          address: row['Address'] || row['address'] || row['العنوان'],
+          agencyName: row['Agency'] || row['agency'] || row['الوكالة'],
+          customFields: {}
+        };
+
+        allFields.forEach(field => {
+          const val = row[field.name];
+          if (val) clientData.customFields[field.id] = val;
+        });
+
+        let existingClient = null;
+        for (const id of ids) {
+          const found = await registeredClients.getClientById(id);
+          if (found) {
+            existingClient = found;
+            break;
+          }
+        }
+
+        if (existingClient) {
+          await registeredClients.updateClient(existingClient.key, {
+            ...clientData,
+            ids: [...new Set([...(existingClient.ids || []), ...ids])]
+          });
+          updated++;
+        } else {
+          await registeredClients.addClient(clientData);
+          imported++;
+        }
+
+      } catch (rowErr) {
+        errors.push(`Row ${index + 1}: ${rowErr.message}`);
+      }
+    }
+
+    await fs.remove(req.file.path);
+    res.json({ success: true, imported, updated, errors });
+
+  } catch (err) {
+    if (req.file) await fs.remove(req.file.path);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+const registeredClients = require('./src/ai_agent_v1/registeredClients');
+
+// Get all registered clients
+app.get('/api/ai/registered-clients', requireAdmin, async (req, res) => {
+  try {
+    const clients = await registeredClients.getAllClients();
+    res.json(clients);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get single client
+app.get('/api/ai/registered-clients/:id', requireAdmin, async (req, res) => {
+  try {
+    const client = await registeredClients.getClientById(req.params.id);
+    if (!client) {
+      return res.status(404).json({ error: 'Client not found' });
+    }
+    res.json(client);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Add new client
+app.post('/api/ai/registered-clients', requireAdmin, async (req, res) => {
+  try {
+    const client = await registeredClients.addClient(req.body);
+    res.json({ success: true, client });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Update client
+app.put('/api/ai/registered-clients/:id', requireAdmin, async (req, res) => {
+  try {
+    const client = await registeredClients.updateClient(req.params.id, req.body);
+    res.json({ success: true, client });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Delete client
+app.delete('/api/ai/registered-clients/:id', requireAdmin, async (req, res) => {
+  try {
+    await registeredClients.deleteClient(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Import clients from CSV
+app.post('/api/ai/registered-clients/import', requireAdmin, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const fileContent = await fs.readFile(req.file.path, 'utf-8');
+    let data;
+
+    try {
+      data = csvParse(fileContent, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true
+      });
+    } catch (parseErr) {
+      await fs.remove(req.file.path);
+      return res.status(400).json({ error: 'Failed to parse file: ' + parseErr.message });
+    }
+
+    const result = await registeredClients.importClients(data);
+    await fs.remove(req.file.path);
+
+    res.json({ success: true, ...result });
+
+  } catch (err) {
+    if (req.file) await fs.remove(req.file.path).catch(() => { });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get client count
+app.get('/api/ai/registered-clients-count', requireAdmin, async (req, res) => {
+  try {
+    const count = await registeredClients.getClientCount();
+    res.json({ count });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Add ID to existing client
+app.post('/api/ai/registered-clients/:key/add-id', requireAdmin, async (req, res) => {
+  try {
+    const { newId } = req.body;
+    if (!newId) {
+      return res.status(400).json({ error: 'newId is required' });
+    }
+    const client = await registeredClients.addIdToClient(req.params.key, newId);
+    res.json({ success: true, client });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Update a client
+app.put('/api/ai/registered-clients/:key', requireAdmin, async (req, res) => {
+  try {
+    const client = await registeredClients.updateClient(req.params.key, req.body);
+    res.json({ success: true, client });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Search clients
+app.get('/api/ai/registered-clients/search/query', requireAdmin, async (req, res) => {
+  try {
+    const query = req.query.q;
+    if (!query) return res.json([]);
+    const results = await registeredClients.searchClients(query);
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Send Custom Notification
+app.post('/api/ai/notify/custom', requireAdmin, async (req, res) => {
+  try {
+    const { phone, message } = req.body;
+    if (!phone || !message) {
+      return res.status(400).json({ error: 'Phone and message are required' });
+    }
+    await aiAgent.notifyClient(phone, message);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Helper: Generate Salary Message
+async function generateSalaryMessage(client, salaryInfo, settingsData) {
+  const { salaryTemplate, salaryCurrency, salaryFooter } = settingsData;
+  const currency = salaryCurrency || 'ل.س';
+
+  let details = '';
+  details += `📄 *الفترة:* ${salaryInfo.periodName}\n`;
+  details += `────────────────\n`;
+  salaryInfo.salaries.forEach(s => {
+    details += `🆔 ID: ${s.id} | 💰 ${s.amount.toLocaleString()} ${currency}\n`;
+  });
+  details += `────────────────`;
+
+  let net = salaryInfo.total;
+  if (salaryInfo.agencyPercent > 0) {
+    const agencyFee = salaryInfo.total * (salaryInfo.agencyPercent / 100);
+    net = salaryInfo.total - agencyFee;
+    details += `\n📉 الخصم (${salaryInfo.agencyPercent}%): -${agencyFee.toLocaleString()} ${currency}`;
+  }
+
+  const footer = salaryFooter || 'شكراً لجهودك!';
+
+  return salaryTemplate
+    .replace(/{الاسم}/g, client.fullName)
+    .replace(/{الفترة}/g, salaryInfo.periodName)
+    .replace(/{التفاصيل}/g, details)
+    .replace(/{المجموع}/g, salaryInfo.total.toLocaleString())
+    .replace(/{الصافي}/g, net.toLocaleString())
+    .replace(/{العملة}/g, currency)
+    .replace(/{الخاتمة}/g, footer);
+}
+
+// Send Salary Notification (Single)
+app.post('/api/ai/notify/salary', requireAdmin, async (req, res) => {
+  try {
+    const { clientKey } = req.body;
+    if (!clientKey) return res.status(400).json({ error: 'Client Key required' });
+
+    const clients = await registeredClients.getAllClients();
+    const client = clients[clientKey];
+
+    if (!client) return res.status(404).json({ error: 'Client not found' });
+    if (!client.phone) return res.status(400).json({ error: 'Client has no phone number registered' });
+
+    // Lookup salary
+    const salaryModule = aiAgent.getModules().salary;
+    const salaryInfo = await salaryModule.lookupSalary(client.ids || []);
+
+    if (!salaryInfo.found || salaryInfo.salaries.length === 0) {
+      const msg = `مرحباً ${client.fullName}،\n\nلا توجد بيانات راتب مسجلة لمعرفاتك في الفترة الحالية (${salaryInfo.periodName || 'غير محددة'}).`;
+      await aiAgent.notifyClient(client.phone, msg);
+      return res.json({ success: true, message: msg });
+    }
+
+    // Generate Message
+    const settingsData = await settings.getSettings();
+    const msg = await generateSalaryMessage(client, salaryInfo, settingsData);
+
+    await aiAgent.notifyClient(client.phone, msg);
+    res.json({ success: true, message: msg });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Send Salary Notification (Bulk - All with Salary)
+app.post('/api/ai/notify/salary-all', requireAdmin, async (req, res) => {
+  try {
+    const clients = await registeredClients.getAllClients();
+    const salaryModule = aiAgent.getModules().salary;
+    const settingsData = await settings.getSettings();
+
+    let sentCount = 0;
+    let skippedCount = 0;
+    let errorCount = 0;
+
+    const clientsArray = Object.values(clients);
+    const validClients = clientsArray.filter(c => c.phone); // Must have phone
+
+    for (const client of validClients) {
+      try {
+        const salaryInfo = await salaryModule.lookupSalary(client.ids || []);
+
+        // Only send if salary exists for current period
+        if (salaryInfo.found && salaryInfo.salaries.length > 0) {
+          const msg = await generateSalaryMessage(client, salaryInfo, settingsData);
+          await aiAgent.notifyClient(client.phone, msg);
+          sentCount++;
+
+          // Rate Limiting Delay (2 seconds)
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } else {
+          skippedCount++;
+        }
+      } catch (innerErr) {
+        console.error(`Failed to send salary to ${client.fullName}:`, innerErr);
+        errorCount++;
+      }
+    }
+
+    res.json({ success: true, sent: sentCount, skipped: skippedCount, errors: errorCount });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// Remove ID from client
+app.post('/api/ai/registered-clients/:key/remove-id', requireAdmin, async (req, res) => {
+  try {
+    const { removeId } = req.body;
+    if (!removeId) {
+      return res.status(400).json({ error: 'removeId is required' });
+    }
+    const client = await registeredClients.removeIdFromClient(req.params.key, removeId);
+    res.json({ success: true, client });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+
+
+// =====================================================
+// Custom Fields API
+// =====================================================
+
+
+
+// Get all custom fields
+app.get('/api/ai/custom-fields', requireAdmin, async (req, res) => {
+  try {
+    const fields = await customFields.getAllFields();
+    res.json(fields);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Add new field
+app.post('/api/ai/custom-fields', requireAdmin, async (req, res) => {
+  try {
+    const field = await customFields.addField(req.body);
+    res.json({ success: true, field });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Update field
+app.put('/api/ai/custom-fields/:id', requireAdmin, async (req, res) => {
+  try {
+    const field = await customFields.updateField(req.params.id, req.body);
+    res.json({ success: true, field });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Delete field
+app.delete('/api/ai/custom-fields/:id', requireAdmin, async (req, res) => {
+  try {
+    await customFields.deleteField(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Add option to dropdown field
+app.post('/api/ai/custom-fields/:id/options', requireAdmin, async (req, res) => {
+  try {
+    const { option } = req.body;
+    const field = await customFields.addOption(req.params.id, option);
+    res.json({ success: true, field });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Remove option from dropdown field
+app.delete('/api/ai/custom-fields/:id/options/:option', requireAdmin, async (req, res) => {
+  try {
+    const field = await customFields.removeOption(req.params.id, decodeURIComponent(req.params.option));
+    res.json({ success: true, field });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// =====================================================
+// Lookups API (Agencies, Countries, Cities)
+// =====================================================
+const lookups = require('./src/ai_agent_v1/lookups');
+
+app.get('/api/ai/lookups', requireAdmin, async (req, res) => {
+  try {
+    const data = await lookups.getLookups();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/ai/lookups/agency', requireAdmin, async (req, res) => {
+  try {
+    const agencies = await lookups.addAgency(req.body.name);
+    res.json(agencies);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/ai/lookups/agency/:name', requireAdmin, async (req, res) => {
+  try {
+    const agencies = await lookups.removeAgency(decodeURIComponent(req.params.name));
+    res.json(agencies);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/ai/lookups/country', requireAdmin, async (req, res) => {
+  try {
+    const countries = await lookups.addCountry(req.body.name);
+    res.json(countries);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/ai/lookups/country/:name', requireAdmin, async (req, res) => {
+  try {
+    const countries = await lookups.removeCountry(decodeURIComponent(req.params.name));
+    res.json(countries);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/ai/lookups/city', requireAdmin, async (req, res) => {
+  try {
+    const countries = await lookups.addCity(req.body.country, req.body.city);
+    res.json(countries);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/ai/lookups/city/:country/:city', requireAdmin, async (req, res) => {
+  try {
+    const countries = await lookups.removeCity(decodeURIComponent(req.params.country), decodeURIComponent(req.params.city));
+    res.json(countries);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// =====================================================
+// Accounting API (Soulchill ERP)
+// =====================================================
+const accountingRoutes = require('./src/accounting/routes/api');
+app.use('/api/accounting', requireAdmin, accountingRoutes);
+
+// =====================================================
+// Custom Fields API
+// =====================================================
+// ... (Custom Fields logic)
+
+// =====================================================
+// Settings & Broadcast API
+// =====================================================
+const settings = require('./src/ai_agent_v1/settings');
+const notificationQueue = require('./src/ai_agent_v1/notificationQueue');
+
+// Get Settings
+app.get('/api/ai/settings', requireAdmin, async (req, res) => {
+  try {
+    const data = await settings.getSettings();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update Settings
+app.post('/api/ai/settings', requireAdmin, async (req, res) => {
+  try {
+    const updated = await settings.updateSettings(req.body);
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Broadcast Message
+app.post('/api/ai/notify/broadcast', requireAdmin, async (req, res) => {
+  try {
+    const { clients: targetClients, message } = req.body;
+
+    if (!targetClients || !Array.isArray(targetClients) || targetClients.length === 0) {
+      return res.status(400).json({ error: 'No targets selected' });
+    }
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    let sentCount = 0;
+    targetClients.forEach(client => {
+      if (client.phone) {
+        notificationQueue.enqueue(client.phone, message, async (phone, msg) => {
+          await aiAgent.notifyClient(phone, msg);
+        });
+        sentCount++;
+      }
+    });
+
+    res.json({ success: true, queued: sentCount });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get Queue Status
+app.get('/api/ai/notify/status', requireAdmin, (req, res) => {
+  res.json(notificationQueue.getStatus());
+});
+
+// ------------------------------
+// Socket IO & Server Listen
+// ------------------------------
 io.use((socket, next) => {
+  // ...
   const cookieHeader = socket.handshake.headers.cookie || '';
   const cookieMap = Object.fromEntries(
     cookieHeader

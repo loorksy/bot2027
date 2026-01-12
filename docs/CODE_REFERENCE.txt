@@ -1,0 +1,239 @@
+================================================================================
+CODE REFERENCE - AI Agent Step 1
+================================================================================
+
+MODULES (src/ai_agent_v1/)
+================================================================================
+
+index.js (Entry Point)
+----------------------
+- init(client)                    → Initialize AI Agent with WhatsApp client
+- isEnabled()                     → Check if AI Agent is enabled
+- handleMessage(message)          → Route DM to processing queue
+- getModules()                    → Get references to all modules
+
+dmQueue.js (Sequential Processing)
+----------------------------------
+- enqueue(message, handler)       → Add message to queue
+- process()                       → Process queue sequentially
+- getQueueLength()                → Get current queue size
+- isProcessing()                  → Check if currently processing
+
+analyzer.js (AI Analysis)
+-------------------------
+- loadSettings()                  → Load settings from file
+- getSettings()                   → Get settings (masked API key)
+- updateSettings(newSettings)     → Update settings
+- isEnabled()                     → Check if enabled + configured
+- analyzeMessage(text, profile, missing) → Analyze message, return JSON
+
+reply.js (Response Generation)
+------------------------------
+- generateReply(options)          → Generate response based on type
+Types: GREETING, ASK_FIELD, VALIDATION_ERROR, PIN_*, SALARY_*, etc.
+
+voice.js (STT/TTS)
+------------------
+- downloadVoice(message)          → Download voice message to temp
+- speechToText(audioPath)         → Convert audio to text (Whisper)
+- textToSpeech(text)              → Convert text to audio (TTS)
+- sendVoiceReply(chat, text)      → Send voice note reply
+- isVoiceMessage(message)         → Check if message is audio
+- cleanupTempFiles()              → Clean old temp files
+
+clients.js (Client Management)
+------------------------------
+- getClient(whatsappId)           → Get client by ID
+- upsertClient(whatsappId, data)  → Create/update client
+- createEmptyClient(whatsappId)   → Create empty client structure
+- hasTrustedSession(client)       → Check if session is valid
+- setTrustedSession(id, minutes)  → Set trusted session
+- clearTrustedSession(id)         → Clear session
+- getAllClients()                 → Get all clients (admin)
+- addConversationEntry(id, role, content) → Add to history
+- getMissingFields(profile)       → Get list of missing fields
+- isProfileComplete(profile)      → Check if all fields filled
+
+pin.js (PIN Security)
+---------------------
+- generatePin()                   → Generate 6-digit PIN
+- hashPin(pin)                    → Hash PIN with SHA-256
+- verifyPin(pin, hash)            → Verify PIN against hash
+- looksLikePin(text)              → Check if text looks like PIN
+
+salary.js (Salary Management)
+-----------------------------
+- getPeriods()                    → Get all salary periods
+- getCurrentPeriod()              → Get current (active) period
+- createPeriod(options)           → Create new period from data
+- getSalaryData(periodId)         → Get ID→Salary mapping
+- lookupSalary(clientIds, periodId) → Look up salary for IDs
+- deletePeriod(periodId)          → Delete a period
+- setCurrentPeriod(periodId)      → Set as current period
+
+usage.js (Usage Tracking)
+-------------------------
+- recordChat(model, input, output) → Record chat completion
+- recordStt(durationSeconds)       → Record STT call
+- recordTts(charCount, model)      → Record TTS call
+- getUsageSummary()                → Get usage summary
+- getUsageLog()                    → Get last 100 operations
+- resetUsage()                     → Reset all stats
+
+
+DATA FILES (data/)
+================================================================================
+
+ai_settings.json
+----------------
+{
+  enabled: boolean,
+  openaiKey: string,
+  modelChat: "gpt-4o-mini" | "gpt-4o" | ...,
+  modelStt: "whisper-1",
+  modelTts: "tts-1" | "tts-1-hd",
+  voiceTts: "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer",
+  trustedSessionMinutes: number,
+  agencyPercent: number
+}
+
+ai_clients.json (Object keyed by whatsappId)
+--------------------------------------------
+{
+  "966501234567@c.us": {
+    whatsappId: string,
+    profile: {
+      fullName: string | null,
+      country: string | null,
+      city: string | null,
+      address: string | null,
+      phone: string | null,
+      agencyName: string | null,
+      ids: string[]
+    },
+    status: "incomplete" | "complete",
+    pinHash: string | null,
+    trustedSession: { expiresAt: string | null },
+    lastAskedField: string | null,
+    conversationHistory: [{ role, content, timestamp }],
+    createdAt: string,
+    updatedAt: string
+  }
+}
+
+ai_salary_periods.json
+----------------------
+[{
+  id: string (UUID),
+  name: string,
+  idColumn: string,
+  salaryColumn: string,
+  agencyPercent: number,
+  recordCount: number,
+  uploadedAt: string,
+  isCurrent: boolean
+}]
+
+ai_salary_data/<periodId>.json
+------------------------------
+{
+  "12345": 5000,
+  "67890": 3500,
+  ...
+}
+
+ai_usage_log.json
+-----------------
+{
+  totalChatCalls: number,
+  totalSttCalls: number,
+  totalTtsCalls: number,
+  totalInputTokens: number,
+  totalOutputTokens: number,
+  totalSttMinutes: number,
+  totalTtsCharacters: number,
+  estimatedCost: number,
+  log: [{ type, model, tokens/duration/chars, cost, time }]
+}
+
+
+API ENDPOINTS
+================================================================================
+
+AI Settings:
+  GET  /api/ai/settings
+  POST /api/ai/settings
+
+AI Clients:
+  GET  /api/ai/clients
+
+AI Usage:
+  GET  /api/ai/usage
+  GET  /api/ai/usage/log
+  POST /api/ai/usage/reset
+
+Salary:
+  GET    /api/ai/salary/periods
+  POST   /api/ai/salary/upload          (multipart: file, name, idColumn, salaryColumn, agencyPercent)
+  POST   /api/ai/salary/upload/preview  (multipart: file)
+  DELETE /api/ai/salary/period/:id
+  POST   /api/ai/salary/period/:id/current
+
+
+ANALYZER JSON SCHEMA
+================================================================================
+
+{
+  "intent": "REGISTER|ASK_SALARY|UPDATE_PROFILE|GENERAL_QA|FORGOT_PIN|UNKNOWN",
+  "extracted": {
+    "fullName": string | null,
+    "country": string | null,
+    "city": string | null,
+    "address": string | null,
+    "phone": string | null,
+    "agencyName": string | null,
+    "ids": string[]
+  },
+  "confidence": number (0-1),
+  "suggested_next_field": "fullName|country|city|address|phone|agencyName|ids|none",
+  "isPinAttempt": boolean,
+  "pinValue": string | null,
+  "notes": string
+}
+
+
+VALIDATION RULES
+================================================================================
+
+fullName:
+  - At least 2 words
+  - Reject: "ممكن سوال", "مرحبا", "تمام", "شكرا", etc.
+
+address:
+  - At least 3 words OR contains place indicators
+  - Indicators: حي, شارع, طريق, رقم, بجانب, قرب, etc.
+
+phone:
+  - Numbers only
+  - Length: 8-15 digits
+
+ids:
+  - Array of numbers only
+
+
+PRICING TABLE (usage.js)
+================================================================================
+
+Chat Models (per 1K tokens):
+  gpt-4o:        input=$0.0025,  output=$0.01
+  gpt-4o-mini:   input=$0.00015, output=$0.0006
+  gpt-4-turbo:   input=$0.01,    output=$0.03
+  gpt-4:         input=$0.03,    output=$0.06
+  gpt-3.5-turbo: input=$0.0005,  output=$0.0015
+
+Whisper STT (per minute):
+  whisper-1: $0.006
+
+TTS (per 1K characters):
+  tts-1:    $0.015
+  tts-1-hd: $0.03

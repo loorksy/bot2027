@@ -11,3 +11,9 @@ logs/
 
 # Env files
 .env
+
+# Ignored Folders
+temp/
+uploads/
+data/sessions/
+data/ai_settings.json
