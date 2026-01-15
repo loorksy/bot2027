@@ -2296,6 +2296,18 @@
         document.getElementById('regCity').value = client.city || '';
         document.getElementById('regAddress').value = client.address || '';
 
+        // Delete Logic
+        window.promptDeleteRegClient = async (key) => {
+          if (!confirm('هل أنت متأكد من حذف هذا العميل؟ لا يمكن التراجع.')) return;
+          try {
+            await api('DELETE', `/api/ai/registered-clients/${key}`);
+            showAlert('تم حذف العميل بنجاح 🗑️');
+            loadRegisteredClients();
+          } catch (err) {
+            showAlert('فشل الحذف: ' + err.message, 'error');
+          }
+        };
+
         // Populate custom fields
         renderCustomFieldsInForm().then(() => {
           // Fill custom fields values

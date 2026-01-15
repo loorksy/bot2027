@@ -1,0 +1,345 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// AUTH & ACCOUNTING (users.json)
+// ==========================================
+
+model User {
+  id           String   @id @default(uuid())
+  email        String?  @unique // For dashboard login (optional for some users)
+  password     String?  // Hashed
+  
+  // Core fields
+  name         String?
+  phone        String?
+  country      String?
+  address      String?
+  agencyName   String?  @default("Main")
+  type         String?  @default("Host") // Host, Agent, Admin
+  
+  custodyBalance Float  @default(0) // Balance held by user
+  
+  permissions  Json?    // { can_manage_bot: true, ... }
+  
+  // Extended fields from Sheet (for sub-agency users)
+  gender       String?  // C: الجنس
+  roomNumber   String?  // D: رقم الغرفة
+  agencyId     String?  // F: ايدي الوكالة
+  region       String?  // G: المنطقة
+  regDate      String?  // I: تاريخ التسجيل
+  hasOtherAccount Boolean? // J: هل لدى المضيفة حساب اخر مفعل (1=نعم, 0=لا)
+  
+  // Performance data
+  hours        Float?   // K: عدد الساعات المحتسبة
+  goldReceived Float?   // L: قطع الذهب المستلمة
+  goldFromLastMonth Float? // M: قطع الذهب المضافة من الشهر الماضي
+  goldFromRatio Float?  // N: قطع الذهب المضافة من النسبة
+  totalTarget  Float?   // O: اجمالي التارقت النهائي
+  lastMonthLevel String? // P: المستوى (الشهر الماضي)
+  level        String?  // Q: المستوى
+  
+  // Salary data
+  targetSalary Float?   // R: راتب التارقت
+  activityBonus Float?  // S: مكافات الأنشطة
+  firstWeekBonus Float? // T: مكافات اول أسبوع
+  monthlyBonus Float?   // U: المكافات الشهرية
+  totalSalary  Float?   // V: اجمالي راتب المضيف/ة
+  
+  // Debt and custody
+  debtBalance  Float    @default(0)  // Outstanding debt
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  deliveries   Delivery[]
+  custody      UserCustody?
+}
+
+// ==========================================
+// AI AGENT (registered_clients.json)
+// ==========================================
+
+model RegisteredClient {
+  key          String   @id @default(uuid())
+  fullName     String
+  phone        String?  // Main contact number
+  country      String?
+  city         String?
+  address      String?
+  agencyName   String?
+  
+  customFields Json?    // Flexible storage for extra fields
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relationships
+  ids          ClientId[] // One client can have multiple IDs (Big IDs)
+}
+
+model ClientId {
+  id        String @id // The Big ID itself (e.g. 7099026)
+  clientKey String
+  
+  client    RegisteredClient @relation(fields: [clientKey], references: [key], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+
+  @@index([clientKey])
+}
+
+// ==========================================
+// SETTINGS (settings.json)
+// ==========================================
+
+model Setting {
+  key   String @id
+  value Json   // Store value as JSON (string, number, object)
+}
+
+// ==========================================
+// ACCOUNTING PERIODS & FINANCE
+// ==========================================
+
+model Period {
+  id            String   @id @default(uuid())
+  name          String
+  startDate     DateTime
+  endDate       DateTime
+  status        String   @default("OPEN") // OPEN, CLOSED
+  
+  summary       Json?    // Cached stats { totalIncoming: 0, ... }
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  reports       Report[]
+  salaries      Salary[]
+  transfers     CompanyTransfer[]
+  deliveries    Delivery[]
+  returns       CompanyReturn[]
+  custodyTxs    UserCustodyTransaction[]
+}
+
+model Report {
+  id          String   @id @default(uuid())
+  periodId    String
+  title       String
+  type        String   // SOULCHILL_IMPORT, AGENT_IMPORT
+  data        Json     // The raw rows or summary
+  
+  period      Period   @relation(fields: [periodId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model Salary {
+  id              String   @id @default(uuid())
+  periodId        String
+  userId          String   // Links to User ID
+  
+  amountBase      Float    // Original amount
+  deductionRate   Float    @default(0.07)
+  deductionAmount Float    @default(0)
+  netAmount       Float    @default(0)
+  
+  currency        String   @default("USD")
+  status          String   @default("UNPAID") // UNPAID, PAID, DEFERRED, CONVERTED
+  paymentMethod   String?  // CASH, TRANSFER, etc.
+  
+  bigId           String?  // The specific ID this salary is for
+  notes           String?
+  deferredTo      String?  // Period ID if deferred
+  paidAt          DateTime?
+  
+  period          Period   @relation(fields: [periodId], references: [id])
+  
+  createdAt       DateTime @default(now())
+}
+
+model DeferredItem {
+  id              String   @id @default(uuid())
+  description     String
+  amount          Float
+  
+  originalPeriodId String
+  targetPeriodId  String
+  
+  type            String   @default("AGENCY") // AGENCY, ACCREDITED
+  status          String   @default("PENDING") // PENDING, RESOLVED
+  sourceSalaryId  String?
+  
+  createdAt       DateTime @default(now())
+}
+
+model Transaction {
+  id          String   @id @default(uuid())
+  companyId   String?  // If related to external company wallet
+  agencyId    String?  // If related to internal agency profit
+  periodId    String?  // If related to a specific period
+  
+  type        String   // IN, OUT, EXPENSE, INCOME
+  category    String?  // Agency Profit, Salary, etc.
+  amount      Float
+  description String?
+  
+  date        DateTime @default(now())
+}
+
+model Company {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  balance     Float    @default(0)
+  
+  createdAt   DateTime @default(now())
+}
+
+// ==========================================
+// AGENCIES (Sub-Agency Management)
+// ==========================================
+
+model Agency {
+  id                  String   @id @default(uuid())
+  name                String   @unique // Agency name
+  profitRatio         Float    @default(10) // Legacy: Used as Management Ratio
+  managementRatio     Float    @default(10) // % Main Agency takes from Comm (W)
+  salaryTransferRatio Float    @default(7)  // % Main Agency takes from Salaries (D)
+  balance             Float    @default(0)  // Agency wallet balance
+  isActive            Boolean  @default(true) // Active agencies earn profit
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// ==========================================
+// TRANSFER COMPANIES & CUSTODY MANAGEMENT
+// ==========================================
+
+// Transfer Companies - شركات التحويل
+model TransferCompany {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  balance     Float    @default(0)  // Current liability (ذمة)
+  totalIn     Float    @default(0)  // Total transferred in
+  totalOut    Float    @default(0)  // Total delivered + returned
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  transfers   CompanyTransfer[]
+  deliveries  Delivery[]
+  returns     CompanyReturn[]
+}
+
+// Transfers to Companies - نقل أموال للشركات
+model CompanyTransfer {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     TransferCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  amount      Float
+  periodId    String
+  period      Period   @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  
+  date        DateTime @default(now())
+  description String?
+  createdBy   String?
+  
+  @@index([companyId])
+  @@index([periodId])
+}
+
+// Deliveries to Users - تسليمات للمستخدمين
+model Delivery {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  amount      Float    // Delivered amount
+  salary      Float    // Original salary in this period
+  
+  periodId    String
+  period      Period   @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  
+  // Delivery method
+  method      String   // "COMPANY" | "MANUAL" | "WALLET" | "CASH"
+  companyId   String?
+  company     TransferCompany? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  
+  // Debt tracking (if amount > salary)
+  isDebt      Boolean  @default(false)
+  debtReason  String?
+  
+  date        DateTime @default(now())
+  notes       String?
+  createdBy   String?
+  
+  @@index([userId])
+  @@index([periodId])
+  @@index([companyId])
+}
+
+// Company Returns - مرتجعات من الشركات
+model CompanyReturn {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     TransferCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  amount      Float
+  
+  // Destination: custody or treasury
+  destination String   // "CUSTODY" | "TREASURY"
+  
+  periodId    String?
+  period      Period?  @relation(fields: [periodId], references: [id], onDelete: SetNull)
+  
+  date        DateTime @default(now())
+  description String?
+  createdBy   String?
+  
+  @@index([companyId])
+  @@index([periodId])
+}
+
+// User Personal Custody - أمانات المستخدم الشخصية
+model UserCustody {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  balance     Float    @default(0)  // Current balance
+  
+  transactions UserCustodyTransaction[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// User Custody Transactions - حركات أمانات المستخدم
+model UserCustodyTransaction {
+  id          String   @id @default(uuid())
+  custodyId   String
+  custody     UserCustody @relation(fields: [custodyId], references: [id], onDelete: Cascade)
+  
+  type        String   // "CREDIT" (add) | "DEBIT" (withdraw)
+  amount      Float
+  
+  periodId    String?
+  period      Period?  @relation(fields: [periodId], references: [id], onDelete: SetNull)
+  
+  deliveryId  String?  // Link to delivery if from partial delivery
+  
+  description String
+  date        DateTime @default(now())
+  
+  @@index([custodyId])
+  @@index([periodId])
+}
+

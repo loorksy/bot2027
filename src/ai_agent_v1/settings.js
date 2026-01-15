@@ -1,4 +1,5 @@
-const store = require('../../store');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 const DEFAULT_SETTINGS = {
     salaryCurrency: 'ل.س',
@@ -20,20 +21,42 @@ const DEFAULT_SETTINGS = {
  * Get all settings (merged with defaults)
  */
 async function getSettings() {
-    // Read from store.js (which handles file lock/cache/path)
-    const current = await store.read('settings.json');
-    return { ...DEFAULT_SETTINGS, ...current };
+    try {
+        const rows = await prisma.setting.findMany();
+        const settings = {};
+        rows.forEach(r => {
+            settings[r.key] = r.value;
+        });
+
+        // Merge with defaults
+        return { ...DEFAULT_SETTINGS, ...settings };
+    } catch (err) {
+        console.error('Error fetching settings:', err);
+        return DEFAULT_SETTINGS;
+    }
 }
 
 /**
  * Update settings
  */
 async function updateSettings(newSettings) {
-    const current = await getSettings();
-    const updated = { ...current, ...newSettings };
-    // Write back via store.js
-    await store.write('settings.json', updated);
-    return updated;
+    try {
+        // Upsert each key
+        const updates = Object.entries(newSettings).map(([key, value]) => {
+            return prisma.setting.upsert({
+                where: { key },
+                update: { value },
+                create: { key, value }
+            });
+        });
+
+        await prisma.$transaction(updates);
+
+        return await getSettings();
+    } catch (err) {
+        console.error('Error updating settings:', err);
+        throw err;
+    }
 }
 
 module.exports = {

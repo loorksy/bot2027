@@ -17,3 +17,19 @@ temp/
 uploads/
 data/sessions/
 data/ai_settings.json
+
+# Data files (contain user data)
+data/ai_clients.json
+data/ai_usage_log.json
+data/lookups.json
+data/skippedLogs.json
+
+# Accounting sensitive data
+src/accounting/data/*.json
+
+# Prisma
+prisma/migrations/
+
+# IDE
+.vscode/
+.idea/
