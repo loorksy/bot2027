@@ -1,88 +1,72 @@
-const fs = require('fs-extra');
-const path = require('path');
-const userService = require('./UserService'); // Import UserService
-
-// Data Files
-const COMPANIES_FILE = path.join(__dirname, '../data/companies.json');
-const WALLET_TX_FILE = path.join(__dirname, '../data/company_wallet_transactions.json');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+const userService = require('./UserService');
 
 class CompanyService {
-    constructor() {
-        this.companies = [];
-        this.transactions = [];
-        this.init();
-    }
 
-    async init() {
-        try {
-            await fs.ensureFile(COMPANIES_FILE);
-            await fs.ensureFile(WALLET_TX_FILE);
-
-            const compData = await fs.readFile(COMPANIES_FILE, 'utf8');
-            this.companies = compData ? JSON.parse(compData) : [];
-
-            // Seed Default Safe if empty
-            if (this.companies.length === 0) {
-                this.companies.push({ id: 'SAFE', name: 'الخزينة الرئيسية (Safe)', type: 'SAFE', balance: 0 });
-            }
-
-            const txData = await fs.readFile(WALLET_TX_FILE, 'utf8');
-            this.transactions = txData ? JSON.parse(txData) : [];
-        } catch (err) {
-            console.error('Error loading CompanyService data:', err);
+    async ensureDefaultSafe() {
+        // Check if SAFE exists, if not create it
+        const safe = await prisma.company.findUnique({ where: { name: 'الخزينة الرئيسية (Safe)' } });
+        if (!safe) {
+            await prisma.company.create({
+                data: {
+                    name: 'الخزينة الرئيسية (Safe)',
+                    balance: 0
+                }
+            });
         }
-    }
-
-    async save() {
-        await fs.writeFile(COMPANIES_FILE, JSON.stringify(this.companies, null, 2));
-        await fs.writeFile(WALLET_TX_FILE, JSON.stringify(this.transactions, null, 2));
     }
 
     // ===================================
     // COMPANIES / WALLETS
     // ===================================
     async getCompanies() {
-        return this.companies;
+        await this.ensureDefaultSafe();
+        return await prisma.company.findMany();
     }
 
-    async addCompany(data) { // data: { name, type: 'BANK'|'SAFE'|'EXCHANGE', initialBalance }
-        const newComp = {
-            id: Date.now().toString(),
-            balance: 0,
-            ...data
-        };
-        this.companies.push(newComp);
-        await this.save();
-        return newComp;
+    async addCompany(data) {
+        const company = await prisma.company.create({
+            data: {
+                name: data.name,
+                balance: data.initialBalance || 0
+            }
+        });
+        return company;
     }
 
     // ===================================
     // TRANSACTIONS
     // ===================================
     async addTransaction(data) {
-        // data: { companyId, type: 'INCOME'|'EXPENSE'|'TRANSFER', amount, description, refId? }
-        const company = this.companies.find(c => c.id === data.companyId);
+        const company = await prisma.company.findUnique({ where: { id: data.companyId } });
         if (!company) throw new Error('Company/Wallet not found');
 
         const amount = parseFloat(data.amount);
         if (isNaN(amount)) throw new Error('Invalid amount');
 
-        // Update Balance
-        if (data.type === 'INCOME') company.balance += amount;
-        else if (data.type === 'EXPENSE') company.balance -= amount;
-        if (data.type === 'TRANSFER') {
+        let newBalance = company.balance;
+
+        // Update Balance based on type
+        if (data.type === 'INCOME' || data.type === 'IN') {
+            newBalance += amount;
+        } else if (data.type === 'EXPENSE' || data.type === 'OUT') {
+            newBalance -= amount;
+        } else if (data.type === 'TRANSFER') {
             if (!data.targetId) throw new Error('Target required for transfer');
 
             // Handle Transfer to Another Wallet
             if (data.targetType !== 'USER') {
-                const target = this.companies.find(c => c.id === data.targetId);
+                const target = await prisma.company.findUnique({ where: { id: data.targetId } });
                 if (!target) throw new Error('Target Wallet not found');
-                target.balance += amount;
+
+                await prisma.company.update({
+                    where: { id: data.targetId },
+                    data: { balance: target.balance + amount }
+                });
             }
             // Handle Transfer to Trusted User (Custody)
             else {
-                // We rely on UserService for this
-                // Verify user exists implicitly via the call or check
                 const user = await userService.getUserById(data.targetId);
                 if (!user) throw new Error('Target User not found');
 
@@ -90,24 +74,38 @@ class CompanyService {
             }
 
             // Deduct from Source
-            company.balance -= amount;
+            newBalance -= amount;
         }
 
-        const tx = {
-            id: Date.now().toString(),
-            date: new Date().toISOString(),
-            ...data,
-            balanceAfter: company.balance
-        };
+        // Update company balance
+        await prisma.company.update({
+            where: { id: data.companyId },
+            data: { balance: newBalance }
+        });
 
-        this.transactions.push(tx);
-        await this.save();
-        return tx;
+        // Create transaction record
+        const tx = await prisma.transaction.create({
+            data: {
+                companyId: data.companyId,
+                type: data.type,
+                amount: amount,
+                description: data.description || ''
+            }
+        });
+
+        return { ...tx, balanceAfter: newBalance };
     }
 
     async getTransactions(companyId) {
-        if (!companyId) return this.transactions;
-        return this.transactions.filter(t => t.companyId === companyId || t.targetId === companyId);
+        if (!companyId) {
+            return await prisma.transaction.findMany({
+                orderBy: { date: 'desc' }
+            });
+        }
+        return await prisma.transaction.findMany({
+            where: { companyId },
+            orderBy: { date: 'desc' }
+        });
     }
 }
 

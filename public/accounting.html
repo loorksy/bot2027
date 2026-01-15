@@ -15,8 +15,17 @@
         <!-- DASHBOARD (CYCLES LIST) -->
         <div id="page-dashboard">
             <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-                <h1>الدورات المحاسبية</h1>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <h1>الدورات المحاسبية</h1>
+                    <div id="safe-balance-badge"
+                        style="background: #2e7d32; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; display: none;">
+                        💰 الخزنة: $0
+                    </div>
+                </div>
                 <div>
+                    <button class="btn btn-success" onclick="showTreasury()">💰 الخزينة</button>
+                    <a href="/transfer-companies.html" class="btn btn-info">🏢 شركات التحويل</a>
+                    <button class="btn btn-warning" onclick="showAgencyWallets()">📦 صناديق الوكالات</button>
                     <button class="btn btn-secondary" onclick="showSubAgencies()">🏢 الوكالات الفرعية</button>
                     <button class="btn btn-secondary" onclick="showMainAgency()">👤 الوكالة الرئيسية</button>
                     <button class="btn btn-primary" onclick="openCreateModal()">+ دورة جديدة</button>
@@ -111,7 +120,14 @@
                     <button class="btn btn-secondary btn-sm" onclick="showDashboard()">العودة للرئيسية</button>
                     <h2 style="display:inline-block; margin:0 10px;">👤 مستخدمي الوكالة الرئيسية</h2>
                 </div>
-                <div>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <label style="font-size: 12px; color: #888;">عمولة التسليم:</label>
+                        <input type="number" id="main-salary-ratio" style="width: 60px;" value="7" min="0" max="100"
+                            step="0.1">
+                        <span style="color: #888;">%</span>
+                        <button class="btn btn-primary btn-sm" onclick="saveMainAgencyConfig()">💾 حفظ</button>
+                    </div>
                     <button class="btn btn-secondary btn-sm" onclick="openImportUsersModal(true, 'Main')">📂 استيراد
                         (CSV)</button>
                     <button class="btn btn-primary btn-sm" onclick="openAddUserModal('Main')">+ إضافة مستخدم</button>
@@ -133,6 +149,228 @@
             </div>
         </div>
 
+        <!-- PAGE: TREASURY (Main Safe) -->
+        <div id="page-treasury" style="display: none;">
+            <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div>
+                    <button class="btn btn-secondary btn-sm" onclick="showDashboard()">العودة للرئيسية</button>
+                    <h2 style="display:inline-block; margin:0 10px;">💰 الخزينة الرئيسية</h2>
+                </div>
+            </header>
+
+            <!-- Stats Cards -->
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                <div class="ai-card"
+                    style="padding: 20px; text-align: center; background: linear-gradient(135deg, #1a472a 0%, #2e7d32 100%);">
+                    <div style="font-size: 12px; color: #aaa;">رصيد الخزينة</div>
+                    <div id="treasury-balance" style="font-size: 28px; font-weight: bold;">$0</div>
+                </div>
+                <div class="ai-card" style="padding: 20px; text-align: center;">
+                    <div style="font-size: 12px; color: #aaa;">إجمالي الدخل</div>
+                    <div id="treasury-income" style="font-size: 24px; color: #4caf50;">$0</div>
+                </div>
+                <div class="ai-card" style="padding: 20px; text-align: center;">
+                    <div style="font-size: 12px; color: #aaa;">إجمالي المصروفات</div>
+                    <div id="treasury-expense" style="font-size: 24px; color: #f44336;">$0</div>
+                </div>
+                <div class="ai-card" style="padding: 20px; text-align: center;">
+                    <div style="font-size: 12px; color: #aaa;">صافي الربح</div>
+                    <div id="treasury-profit" style="font-size: 24px; color: #2196f3;">$0</div>
+                </div>
+                <div class="ai-card" style="padding: 20px; text-align: center; cursor: pointer;"
+                    onclick="showCustodyDetails()" title="اضغط لعرض التفاصيل">
+                    <div style="font-size: 12px; color: #aaa;">إجمالي الأمانات 👁️</div>
+                    <div id="treasury-custody" style="font-size: 24px; color: #ff9800;">$0</div>
+                    <div style="font-size: 10px; color: #666; margin-top: 5px;">المستخدمون الذين لم يستلموا</div>
+                </div>
+            </div>
+
+            <!-- Profit Sources Breakdown -->
+            <div class="ai-card" style="padding: 20px; margin-bottom: 25px;">
+                <h3 style="margin-bottom: 15px;">📊 مصادر الربح</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+                    <div style="background: #1a3a4a; padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 11px; color: #888;">كمسيون التسليم</div>
+                        <div id="profit-commission" style="font-size: 20px; color: #4caf50;">$0</div>
+                        <div style="font-size: 10px; color: #666;">من رواتب المسجلين</div>
+                    </div>
+                    <div style="background: #1a3a4a; padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 11px; color: #888;">نسبة الإدارة من الفرعي</div>
+                        <div id="profit-cycle-income" style="font-size: 20px; color: #2196f3;">$0</div>
+                        <div style="font-size: 10px; color: #666;">من أرباح الوكالات الفرعية</div>
+                    </div>
+                    <div style="background: #1a3a4a; padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 11px; color: #888;">ربح الوكالات الفرعية</div>
+                        <div id="profit-sub-agency" style="font-size: 20px; color: #ff5722;">$0</div>
+                        <div style="font-size: 10px; color: #666;">مستحق للوكالات</div>
+                    </div>
+                    <div
+                        style="background: linear-gradient(135deg, #1a472a 0%, #2e7d32 100%); padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 11px; color: #ccc;">صافي الربح</div>
+                        <div id="profit-net-total" style="font-size: 24px; font-weight: bold; color: #fff;">$0</div>
+                        <div style="font-size: 10px; color: #aaa;">إجمالي أرباح الوكالة الرئيسية</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transactions Table -->
+            <div class="ai-card">
+                <h3 style="margin-bottom: 15px;">📜 سجل المعاملات</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>النوع</th>
+                            <th>الفئة</th>
+                            <th>المبلغ</th>
+                            <th>الوصف</th>
+                        </tr>
+                    </thead>
+                    <tbody id="treasury-transactions"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PAGE: AGENCY WALLETS -->
+        <div id="page-agency-wallets" style="display: none;">
+            <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div>
+                    <button class="btn btn-secondary btn-sm" onclick="showDashboard()">العودة للرئيسية</button>
+                    <h2 style="display:inline-block; margin:0 10px;">📦 صناديق الوكالات</h2>
+                </div>
+            </header>
+
+            <div id="agency-wallets-grid"
+                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- PAGE: AGENCY WALLET DETAIL -->
+        <div id="page-wallet-detail" style="display: none;">
+            <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div>
+                    <button class="btn btn-secondary btn-sm" onclick="showAgencyWallets()">العودة لصناديق
+                        الوكالات</button>
+                    <h2 id="wallet-detail-name" style="display:inline-block; margin:0 10px;">📦 صندوق الوكالة</h2>
+                </div>
+                <div>
+                    <button class="btn btn-warning btn-sm" onclick="openWithdrawModal()">💸 سحب من الصندوق</button>
+                </div>
+            </header>
+
+            <!-- Wallet Stats -->
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                <div class="ai-card"
+                    style="padding: 20px; text-align: center; background: linear-gradient(135deg, #1a1a4a 0%, #3949ab 100%);">
+                    <div style="font-size: 12px; color: #aaa;">الرصيد الحالي</div>
+                    <div id="wallet-balance" style="font-size: 28px; font-weight: bold;">$0</div>
+                </div>
+                <div class="ai-card" style="padding: 20px; text-align: center;">
+                    <div style="font-size: 12px; color: #aaa;">إجمالي الوارد</div>
+                    <div id="wallet-in" style="font-size: 22px; color: #4caf50;">$0</div>
+                </div>
+                <div class="ai-card" style="padding: 20px; text-align: center;">
+                    <div style="font-size: 12px; color: #aaa;">إجمالي المسحوب</div>
+                    <div id="wallet-out" style="font-size: 22px; color: #f44336;">$0</div>
+                </div>
+            </div>
+
+            <!-- Wallet Transactions -->
+            <div class="ai-card">
+                <h3 style="margin-bottom: 15px;">📜 سجل المعاملات</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>النوع</th>
+                            <th>المبلغ</th>
+                            <th>الوصف</th>
+                        </tr>
+                    </thead>
+                    <tbody id="wallet-transactions"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- MODAL: WITHDRAW -->
+        <div id="modal-withdraw" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 400px;">
+                <h2>💸 سحب من الصندوق</h2>
+                <div class="form-group">
+                    <label>المبلغ ($)</label>
+                    <input type="number" id="inp-withdraw-amount" min="1" step="0.01"
+                        style="width: 100%; padding: 10px;">
+                </div>
+                <div class="form-group">
+                    <label>ملاحظات (اختياري)</label>
+                    <input type="text" id="inp-withdraw-note" placeholder="سبب السحب..."
+                        style="width: 100%; padding: 10px;">
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px;">
+                    <button class="btn btn-secondary" onclick="closeWithdrawModal()">إلغاء</button>
+                    <button class="btn btn-warning" onclick="processWithdraw()">💸 سحب</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE: UNKNOWN USERS (مجهول) -->
+        <div id="page-unknown-users" style="display: none;">
+            <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div>
+                    <button class="btn btn-secondary btn-sm" onclick="showAgencyWallets()">العودة لصناديق
+                        الوكالات</button>
+                    <h2 style="display:inline-block; margin:0 10px;">❓ المستخدمين المجهولين</h2>
+                </div>
+            </header>
+
+            <!-- Stats Cards -->
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                <div class="ai-card"
+                    style="padding: 20px; text-align: center; background: linear-gradient(135deg, #4a1a1a 0%, #8b0000 100%);">
+                    <div style="font-size: 12px; color: #ccc;">عدد المجهولين</div>
+                    <div id="unknown-count" style="font-size: 28px; font-weight: bold;">0</div>
+                </div>
+                <div class="ai-card" style="padding: 20px; text-align: center;">
+                    <div style="font-size: 12px; color: #aaa;">إجمالي الأمانات</div>
+                    <div id="unknown-custody" style="font-size: 24px; color: #ff9800;">$0</div>
+                </div>
+                <div class="ai-card" style="padding: 20px; text-align: center;">
+                    <div style="font-size: 12px; color: #aaa;">إجمالي الكمسيون</div>
+                    <div id="unknown-commission" style="font-size: 24px; color: #4caf50;">$0</div>
+                </div>
+            </div>
+
+            <!-- Period Selector -->
+            <div class="ai-card" style="padding: 15px; margin-bottom: 20px;">
+                <label>اختر الدورة: </label>
+                <select id="sel-unknown-period" onchange="loadUnknownUsers()" style="padding: 8px; min-width: 200px;">
+                    <option value="">-- اختر دورة --</option>
+                </select>
+            </div>
+
+            <!-- Users Table -->
+            <div class="ai-card">
+                <h3 style="margin-bottom: 15px;">📋 قائمة المستخدمين المجهولين</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>رقم المستخدم</th>
+                            <th>الاسم</th>
+                            <th>الراتب</th>
+                            <th>الكمسيون</th>
+                            <th>الأمانة</th>
+                        </tr>
+                    </thead>
+                    <tbody id="unknown-users-list"></tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- PAGE: SUB-AGENCIES GRID -->
         <div id="page-sub-agencies" style="display: none;">
             <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -140,7 +378,10 @@
                     <button class="btn btn-secondary btn-sm" onclick="showDashboard()">العودة للرئيسية</button>
                     <h2 style="display:inline-block; margin:0 10px;">🏢 الوكالات الفرعية</h2>
                 </div>
-                <button class="btn btn-primary" onclick="openAddAgencyModal()">+ إضافة وكالة جديدة</button>
+                <div>
+                    <button class="btn btn-secondary" onclick="downloadUsersTemplate()">📥 تحميل القالب</button>
+                    <button class="btn btn-primary" onclick="openAddAgencyModal()">+ إضافة وكالة جديدة</button>
+                </div>
             </header>
 
             <div id="agencies-grid"
@@ -152,19 +393,45 @@
         <!-- PAGE: AGENCY PROFILE (DETAILS) -->
         <div id="page-agency-profile" style="display: none;">
             <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <div>
+                <div style="display: flex; align-items: center; gap: 10px;">
                     <button class="btn btn-secondary btn-sm" onclick="showSubAgencies()">العودة للقائمة</button>
                     <h2 id="profile-agency-name" style="display:inline-block; margin:0 10px;">Agency Name</h2>
+                    <button class="btn btn-secondary btn-sm" onclick="openRenameAgencyModal()">✏️ تغيير الاسم</button>
+                    <span id="agency-status-badge"
+                        style="padding: 4px 10px; border-radius: 5px; font-size: 12px;">مفعّلة</span>
                 </div>
                 <div>
-                    <button class="btn btn-red btn-sm" onclick="deleteAgency()">حذف الوكالة</button>
+                    <button id="btn-toggle-agency" class="btn btn-secondary btn-sm" onclick="toggleAgencyActive()">⏸️
+                        إيقاف الوكالة</button>
                 </div>
             </header>
 
-            <div class="ai-card" style="margin-bottom: 20px; padding: 15px;">
-                <div style="display: flex; gap: 20px;">
-                    <div><strong>عدد المستخدمين:</strong> <span id="profile-user-count">0</span></div>
-                    <div><strong>النسبة:</strong> <span id="profile-ratio">10%</span></div>
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                <!-- Card 1: Stats -->
+                <div class="ai-card" style="padding: 15px;">
+                    <strong style="display: block; color: #888; font-size: 12px;">عدد المستخدمين</strong>
+                    <span id="profile-user-count" style="font-size: 24px;">0</span>
+                </div>
+
+                <!-- Card 2: Mgmt Ratio -->
+                <div class="ai-card" style="padding: 15px;">
+                    <strong style="display: block; color: #888; font-size: 12px;">نسبة الإدارة من الربح (Management
+                        %)</strong>
+                    <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
+                        <input type="number" id="inp-mgmt-ratio" value="10" min="0" max="100" style="width: 60px;"> %
+                        <button class="btn btn-secondary btn-sm" onclick="saveAgencyConfig()">💾 حفظ </button>
+                    </div>
+                </div>
+
+                <!-- Card 3: Salary Ratio -->
+                <div class="ai-card" style="padding: 15px;">
+                    <strong style="display: block; color: #888; font-size: 12px;">عمولة تحويل الرواتب (Salary
+                        %)</strong>
+                    <div style="display: flex; align-items: center; gap: 5px; margin-top: 5px;">
+                        <input type="number" id="inp-salary-ratio" value="7" min="0" max="100" style="width: 60px;"> %
+                        <button class="btn btn-secondary btn-sm" onclick="saveAgencyConfig()">💾 حفظ الإعدادات</button>
+                    </div>
                 </div>
             </div>
 
@@ -172,24 +439,62 @@
                 <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
                     <h3>المستخدمين</h3>
                     <div>
+                        <button class="btn btn-secondary btn-sm" onclick="openBulkIdImportModal()">📋 استيراد من
+                            الشيت</button>
                         <button class="btn btn-secondary btn-sm" onclick="openImportUsersModal(true, currentAgency)">📂
                             استيراد (CSV)</button>
                         <button class="btn btn-primary btn-sm" onclick="openAddUserModal(currentAgency)">+ إضافة
                             مستخدم</button>
                     </div>
                 </div>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>الاسم</th>
-                            <th>الدولة</th>
-                            <th>الهاتف</th>
-                            <th>إجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody id="profile-users-list"></tbody>
-                </table>
+
+                <!-- Search Box -->
+                <div style="margin-bottom: 15px;">
+                    <input type="text" id="inp-users-search" placeholder="🔍 بحث بالاسم أو ID..."
+                        style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #444; background: #1a1a2e; color: #fff;"
+                        oninput="filterUsersTable()">
+                </div>
+
+                <div style="overflow-x: auto;">
+                    <table class="data-table" style="min-width: 2000px;">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>الاسم</th>
+                                <th>الجنس</th>
+                                <th>الغرفة</th>
+                                <th>الوكالة</th>
+                                <th>ايدي الوكالة</th>
+                                <th>المنطقة</th>
+                                <th>الدولة</th>
+                                <th>تاريخ التسجيل</th>
+                                <th>حساب آخر</th>
+                                <th>الساعات</th>
+                                <th>الذهب المستلم</th>
+                                <th>ذهب الشهر الماضي</th>
+                                <th>ذهب النسبة</th>
+                                <th>التارقت</th>
+                                <th>المستوى السابق</th>
+                                <th>المستوى</th>
+                                <th>راتب التارقت</th>
+                                <th>مكافآت الأنشطة</th>
+                                <th>مكافأة أول أسبوع</th>
+                                <th>المكافآت الشهرية</th>
+                                <th>إجمالي الراتب</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="profile-users-list"></tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div id="users-pagination"
+                    style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 15px;">
+                    <button class="btn btn-secondary btn-sm" onclick="prevUsersPage()">« السابق</button>
+                    <span id="page-info">صفحة 1 من 1</span>
+                    <button class="btn btn-secondary btn-sm" onclick="nextUsersPage()">التالي »</button>
+                </div>
             </div>
         </div>
 
@@ -223,8 +528,8 @@
                 <input type="text" id="inp-user-name">
             </div>
             <div class="form-group">
-                <label>الوكالة</label>
-                <input type="text" id="inp-user-agency" disabled style="background: #333; color: #aaa;">
+                <label>الوكالة (يمكن وتغييرها لنقل المستخدم)</label>
+                <input type="text" id="inp-user-agency" placeholder="Main, Soulchill, etc...">
             </div>
             <div class="form-group">
                 <label>معلومات إضافية (الدولة)</label>
@@ -233,7 +538,7 @@
 
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="closeModal('modal-add-user')">إلغاء</button>
-                <button class="btn btn-primary" onclick="addUser()">حفظ</button>
+                <button id="btn-save-user" class="btn btn-primary" onclick="addUser()">حفظ</button>
             </div>
         </div>
     </div>
@@ -277,6 +582,59 @@
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="closeModalUsers()">إلغاء</button>
                 <button class="btn btn-primary" onclick="importUsers()">رفع وتحديث</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Bulk ID Import from Sheet -->
+    <div id="modal-bulk-import" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <h2>📋 استيراد مستخدمين من شيت الإدارة</h2>
+            <p style="color: #aaa; margin-bottom: 15px;">اختر الدورة ثم الصق قائمة الـ IDs المطلوبة</p>
+
+            <div class="form-group">
+                <label>📅 اختر الدورة</label>
+                <select id="sel-bulk-period" style="width: 100%; padding: 8px;">
+                    <option value="">جاري التحميل...</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-top: 10px;">
+                <label>🔢 قائمة الـ IDs المطلوب استيرادها (كل ID في سطر منفصل)</label>
+                <textarea id="inp-bulk-ids" rows="8" placeholder="12345678
+23456789
+34567890" style="width: 100%; padding: 10px; font-family: monospace;"></textarea>
+            </div>
+
+            <div class="form-group" style="margin-top: 10px;">
+                <label>الوكالة المستهدفة</label>
+                <input type="text" id="inp-bulk-agency" value="" style="padding: 8px; width: 100%;" readonly>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 15px;">
+                <button class="btn btn-secondary" onclick="closeBulkImportModal()">إلغاء</button>
+                <button class="btn btn-primary" onclick="processBulkImport()">🚀 استيراد</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Custody Details -->
+    <div id="modal-custody-details" class="modal">
+        <div class="modal-content" style="max-width: 700px; max-height: 80vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h3>📦 تفاصيل الأمانات</h3>
+                <span class="modal-close" onclick="closeCustodyDetailsModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p class="muted" style="margin-bottom: 15px;">المستخدمون الذين لم يستلموا رواتبهم بعد (حسب الوكالة)</p>
+
+                <div style="background: #1a1a1a; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="font-size: 12px; color: #aaa;">إجمالي الأمانات</div>
+                    <div id="custody-total" style="font-size: 28px; font-weight: bold; color: #ff9800;">$0</div>
+                    <div id="custody-period" style="font-size: 11px; color: #666; margin-top: 5px;"></div>
+                </div>
+
+                <div id="custody-by-agency"></div>
             </div>
         </div>
     </div>

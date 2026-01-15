@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شركات التحويل - نظام المحاسبة</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body style="margin: 0; background: #0f0f1a; color: #fff; font-family: 'Segoe UI', sans-serif;">
+
+    <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+
+        <!-- PAGE: TRANSFER COMPANIES LIST -->
+        <div id="page-transfer-companies">
+            <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div>
+                    <a href="/accounting.html" class="btn btn-secondary btn-sm">← العودة للرئيسية</a>
+                    <h2 style="display:inline-block; margin:0 10px;">🏢 شركات التحويل</h2>
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="openNewCompanyModal()">+ إضافة شركة</button>
+            </header>
+
+            <div id="companies-grid"
+                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- PAGE: TRANSFER COMPANY DETAIL -->
+        <div id="page-company-detail" style="display: none;">
+            <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div>
+                    <button class="btn btn-secondary btn-sm" onclick="showTransferCompanies()">العودة للشركات</button>
+                    <h2 id="company-detail-name" style="display:inline-block; margin:0 10px;">🏢 شركة التحويل</h2>
+                </div>
+                <div>
+                    <button class="btn btn-primary btn-sm" onclick="openTransferMoneyModal()">💰 نقل مبلغ</button>
+                    <button class="btn btn-success btn-sm" onclick="openRegisterReturnModal()">↩️ تسجيل مرتجع</button>
+                </div>
+            </header>
+
+            <!-- Stats Cards -->
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                <div class="ai-card"
+                    style="padding: 20px; text-align: center; background: linear-gradient(135deg, #1a4a1a 0%, #2e7d32 100%);">
+                    <div style="font-size: 12px; color: #aaa;">الذمة الحالية</div>
+                    <div id="stat-balance" style="font-size: 28px; font-weight: bold; margin: 10px 0; color: #4caf50;">
+                        $0</div>
+                </div>
+                <div class="ai-card" style="padding: 20px; text-align: center;">
+                    <div style="font-size: 12px; color: #aaa;">إجمالي المنقول</div>
+                    <div id="stat-total-in" style="font-size: 28px; font-weight: bold; margin: 10px 0;">$0</div>
+                </div>
+                <div class="ai-card" style="padding: 20px; text-align: center;">
+                    <div style="font-size: 12px; color: #aaa;">المسلم للمستخدمين</div>
+                    <div id="stat-delivered" style="font-size: 28px; font-weight: bold; margin: 10px 0;">$0</div>
+                </div>
+                <div class="ai-card" style="padding: 20px; text-align: center;">
+                    <div style="font-size: 12px; color: #aaa;">المرتجع</div>
+                    <div id="stat-returned" style="font-size: 28px; font-weight: bold; margin: 10px 0;">$0</div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div style="border-bottom: 2px solid #333; margin-bottom: 20px;">
+                <button class="tab-btn active" onclick="switchCompanyTab('transfers')">التحويلات الواردة</button>
+                <button class="tab-btn" onclick="switchCompanyTab('deliveries')">التسليمات</button>
+                <button class="tab-btn" onclick="switchCompanyTab('returns')">المرتجعات</button>
+            </div>
+
+            <!-- Tab: Transfers -->
+            <div id="company-tab-transfers" class="tab-content">
+                <div class="ai-card">
+                    <h3>التحويلات الواردة</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>المبلغ</th>
+                                <th>الدورة</th>
+                                <th>الوصف</th>
+                            </tr>
+                        </thead>
+                        <tbody id="list-company-transfers">
+                            <tr>
+                                <td colspan="4" class="text-center muted">لا توجد تحويلات</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab: Deliveries -->
+            <div id="company-tab-deliveries" class="tab-content" style="display: none;">
+                <div class="ai-card">
+                    <h3>التسليمات للمستخدمين</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>المستخدم</th>
+                                <th>المبلغ</th>
+                                <th>دين؟</th>
+                            </tr>
+                        </thead>
+                        <tbody id="list-company-deliveries">
+                            <tr>
+                                <td colspan="4" class="text-center muted">لا توجد تسليمات</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab: Returns -->
+            <div id="company-tab-returns" class="tab-content" style="display: none;">
+                <div class="ai-card">
+                    <h3>المرتجعات</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>المبلغ</th>
+                                <th>المقصد</th>
+                                <th>الوصف</th>
+                            </tr>
+                        </thead>
+                        <tbody id="list-company-returns">
+                            <tr>
+                                <td colspan="4" class="text-center muted">لا توجد مرتجعات</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODALS -->
+
+    <!-- Modal: New Company -->
+    <div id="modal-new-company" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <h3>إضافة شركة تحويل جديدة</h3>
+            <div class="form-group">
+                <label>اسم الشركة</label>
+                <input type="text" id="inp-new-company-name" placeholder="مثال: شركة ABC"
+                    style="width: 100%; padding: 8px;">
+            </div>
+            <div class="modal-actions" style="margin-top: 15px;">
+                <button class="btn btn-secondary" onclick="closeNewCompanyModal()">إلغاء</button>
+                <button class="btn btn-primary" onclick="createCompany()">إضافة</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Transfer Money -->
+    <div id="modal-transfer-money" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3>نقل مبلغ إلى الشركة</h3>
+            <div class="form-group">
+                <label>المبلغ</label>
+                <input type="number" id="inp-transfer-amount" placeholder="0.00" step="0.01"
+                    style="width: 100%; padding: 8px;">
+            </div>
+            <div class="form-group">
+                <label>الدورة</label>
+                <select id="inp-transfer-period" style="width: 100%; padding: 8px;">
+                    <option value="">جاري التحميل...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>الوصف (اختياري)</label>
+                <textarea id="inp-transfer-description" rows="3" placeholder="مثال: نقل لتسليم رواتب يناير"
+                    style="width: 100%; padding: 8px;"></textarea>
+            </div>
+            <div class="modal-actions" style="margin-top: 15px;">
+                <button class="btn btn-secondary" onclick="closeTransferMoneyModal()">إلغاء</button>
+                <button class="btn btn-primary" onclick="confirmTransferMoney()">نقل</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Register Return -->
+    <div id="modal-register-return" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3>تسجيل مرتجع من الشركة</h3>
+            <div class="form-group">
+                <label>المبلغ</label>
+                <input type="number" id="inp-return-amount" placeholder="0.00" step="0.01"
+                    style="width: 100%; padding: 8px;">
+            </div>
+            <div class="form-group">
+                <label>المقصد</label>
+                <select id="inp-return-destination" style="width: 100%; padding: 8px;">
+                    <option value="CUSTODY">الأمانات</option>
+                    <option value="TREASURY">الخزينة (ربح)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>الوصف (اختياري)</label>
+                <textarea id="inp-return-description" rows="3" placeholder="مثال: فائض من التحويلات"
+                    style="width: 100%; padding: 8px;"></textarea>
+            </div>
+            <div class="modal-actions" style="margin-top: 15px;">
+                <button class="btn btn-secondary" onclick="closeRegisterReturnModal()">إلغاء</button>
+                <button class="btn btn-success" onclick="confirmRegisterReturn()">تسجيل</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="transfer-companies.js"></script>
+</body>
+
+</html>
