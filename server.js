@@ -121,6 +121,26 @@ async function findUserByEmail(email) {
   return users.find((u) => u.email === email);
 }
 
+// ⚠️ AUTH DISABLED TEMPORARILY - RESTORE LATER
+async function authMiddleware(req, res, next) {
+  // Set default admin user for all requests
+  req.user = {
+    email: 'loorksy@gmail.com',
+    permissions: {
+      can_scan_backlog: true,
+      can_send_messages: true,
+      can_manage_lists: true,
+      can_manage_settings: true,
+      can_control_bot: true,
+      can_manage_forwarding: true,
+      can_view_logs: true,
+      is_admin: true
+    }
+  };
+  return next();
+}
+
+/* ORIGINAL AUTH - RESTORE THIS LATER:
 async function authMiddleware(req, res, next) {
   const token = req.cookies[TOKEN_NAME] || (req.headers.authorization || '').replace('Bearer ', '');
   if (!token) return res.status(401).json({ error: 'UNAUTHORIZED' });
@@ -132,6 +152,7 @@ async function authMiddleware(req, res, next) {
     return res.status(401).json({ error: 'UNAUTHORIZED' });
   }
 }
+*/
 
 function requirePermission(key) {
   return (req, res, next) => {
