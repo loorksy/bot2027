@@ -111,7 +111,7 @@ const ANALYZER_SYSTEM_PROMPT = `أنت محلل رسائل ذكي ومتفهم. 
 يجب أن ترجع JSON فقط بالصيغة التالية (بدون أي نص إضافي):
 
 {
-  "intent": "GREETING|ASK_SALARY|ASK_PROFILE|UPDATE_PROFILE|FORGOT_PIN|COMPLAINT|GRATITUDE|CHITCHAT|OFF_TOPIC|UNKNOWN",
+  "intent": "GREETING|ASK_SALARY|ASK_PROFILE|UPDATE_PROFILE|FORGOT_PIN|COMPLAINT|GRATITUDE|CHITCHAT|OFF_TOPIC|ASK_PORTAL_LINK|UNKNOWN",
   "extracted": {
     "fullName": null,
     "country": null,
