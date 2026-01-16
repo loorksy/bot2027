@@ -3039,7 +3039,60 @@
       }
     };
 
+    // Sidebar Navigation
+    const pageTitles = {
+      'settings': '⚙️ إعدادات AI',
+      'fields': '📝 الحقول المخصصة',
+      'registered': '👥 العملاء المسجلين',
+      'linked': '🔗 العملاء المربوطين',
+      'salary': '💰 الرواتب',
+      'usage': '📊 الاستهلاك'
+    };
+
+    document.querySelectorAll('.nav-item[data-tab]').forEach(item => {
+      item.addEventListener('click', () => {
+        const tab = item.dataset.tab;
+        
+        // Update nav items
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        
+        // Update tab content
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.getElementById(tab).classList.add('active');
+        
+        // Update page title
+        document.getElementById('pageTitle').textContent = pageTitles[tab] || tab;
+        
+        // Close sidebar on mobile
+        if (window.innerWidth <= 1024) {
+          document.getElementById('sidebar').classList.remove('open');
+        }
+      });
+    });
+
+    // Mobile sidebar toggle
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+    }
+
+    // Close sidebar when clicking outside on mobile
+    document.addEventListener('click', (e) => {
+      const sidebar = document.getElementById('sidebar');
+      const menuBtn = document.querySelector('.mobile-menu-btn');
+      if (window.innerWidth <= 1024 && 
+          !sidebar.contains(e.target) && 
+          !menuBtn.contains(e.target) &&
+          sidebar.classList.contains('open')) {
+        sidebar.classList.remove('open');
+      }
+    });
+
   </script>
+        </div>
+      </div>
+    </main>
+  </div>
 </body>
 
 </html>
