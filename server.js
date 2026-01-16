@@ -32,9 +32,6 @@ let googleSheetSyncState = {
   running: false
 };
 
-const MASTER_EMAIL = 'loorksy@gmail.com';
-const MASTER_PASSWORD = 'Ahmetlork@29cb';
-
 const DEFAULT_PERMISSIONS = {
   can_scan_backlog: false,
   can_send_messages: false,
