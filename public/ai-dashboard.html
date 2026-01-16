@@ -800,7 +800,7 @@
     <!-- Settings Tab -->
     <div id="settings" class="tab-content active">
       <div class="ai-card">
-        <h2>إعدادات OpenAI</h2>
+        <h2>إعدادات الذكاء الاصطناعي</h2>
 
         <div class="form-group">
           <div class="toggle-container">
@@ -813,46 +813,121 @@
         </div>
 
         <div class="form-group">
-          <label>OpenAI API Key</label>
-          <input type="password" id="openaiKey" placeholder="sk-...">
+          <label>مزود الذكاء الاصطناعي</label>
+          <select id="aiProvider" onchange="toggleProviderSettings()">
+            <option value="openai">OpenAI</option>
+            <option value="openrouter">OpenRouter.ai (500+ موديل)</option>
+          </select>
         </div>
 
-        <div class="row">
+        <!-- OpenAI Settings -->
+        <div id="openaiSettings">
           <div class="form-group">
-            <label>موديل المحادثة (Chat)</label>
-            <select id="modelChat">
-              <option value="gpt-4o-mini">GPT-4o Mini (أرخص)</option>
-              <option value="gpt-4o">GPT-4o (متوازن)</option>
-              <option value="gpt-4-turbo">GPT-4 Turbo</option>
-              <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-            </select>
+            <label>OpenAI API Key</label>
+            <input type="password" id="openaiKey" placeholder="sk-...">
           </div>
-          <div class="form-group">
-            <label>موديل تحويل الصوت لنص (STT)</label>
-            <select id="modelStt">
-              <option value="whisper-1">Whisper-1</option>
-            </select>
+
+          <div class="row">
+            <div class="form-group">
+              <label>موديل المحادثة (Chat)</label>
+              <select id="modelChat">
+                <option value="gpt-4o-mini">GPT-4o Mini (أرخص)</option>
+                <option value="gpt-4o">GPT-4o (متوازن)</option>
+                <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>موديل تحويل الصوت لنص (STT)</label>
+              <select id="modelStt">
+                <option value="whisper-1">Whisper-1</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="form-group">
+              <label>موديل تحويل النص لصوت (TTS)</label>
+              <select id="modelTts">
+                <option value="tts-1">TTS-1 (سريع)</option>
+                <option value="tts-1-hd">TTS-1 HD (جودة عالية)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>صوت TTS</label>
+              <select id="voiceTts">
+                <option value="alloy">Alloy</option>
+                <option value="echo">Echo</option>
+                <option value="fable">Fable</option>
+                <option value="onyx">Onyx</option>
+                <option value="nova">Nova</option>
+                <option value="shimmer">Shimmer</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        <div class="row">
+        <!-- OpenRouter Settings -->
+        <div id="openrouterSettings" style="display: none;">
           <div class="form-group">
-            <label>موديل تحويل النص لصوت (TTS)</label>
-            <select id="modelTts">
-              <option value="tts-1">TTS-1 (سريع)</option>
-              <option value="tts-1-hd">TTS-1 HD (جودة عالية)</option>
+            <label>OpenRouter API Key</label>
+            <input type="password" id="openrouterKey" placeholder="sk-or-...">
+            <small style="color: #64748b; display: block; margin-top: 4px;">
+              احصل على مفتاحك من <a href="https://openrouter.ai/keys" target="_blank" style="color: #3b82f6;">openrouter.ai/keys</a>
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label>موديل المحادثة</label>
+            <select id="openrouterModel">
+              <optgroup label="🟢 OpenAI">
+                <option value="openai/gpt-4o-mini">GPT-4o Mini - سريع ورخيص</option>
+                <option value="openai/gpt-4o">GPT-4o - متوازن</option>
+                <option value="openai/gpt-4-turbo">GPT-4 Turbo</option>
+                <option value="openai/o1-mini">O1 Mini - تفكير متقدم</option>
+                <option value="openai/o1-preview">O1 Preview - تفكير عميق</option>
+              </optgroup>
+              <optgroup label="🟣 Anthropic">
+                <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet - الأفضل</option>
+                <option value="anthropic/claude-3-opus">Claude 3 Opus - الأقوى</option>
+                <option value="anthropic/claude-3-haiku">Claude 3 Haiku - سريع</option>
+              </optgroup>
+              <optgroup label="🔵 Google">
+                <option value="google/gemini-pro-1.5">Gemini Pro 1.5</option>
+                <option value="google/gemini-flash-1.5">Gemini Flash 1.5 - سريع</option>
+                <option value="google/gemini-2.0-flash-exp">Gemini 2.0 Flash</option>
+              </optgroup>
+              <optgroup label="🟡 Meta Llama">
+                <option value="meta-llama/llama-3.1-70b-instruct">Llama 3.1 70B</option>
+                <option value="meta-llama/llama-3.1-405b-instruct">Llama 3.1 405B - الأكبر</option>
+                <option value="meta-llama/llama-3.2-90b-vision-instruct">Llama 3.2 90B Vision</option>
+              </optgroup>
+              <optgroup label="🔴 Mistral">
+                <option value="mistralai/mistral-large">Mistral Large</option>
+                <option value="mistralai/mistral-medium">Mistral Medium</option>
+                <option value="mistralai/mixtral-8x22b-instruct">Mixtral 8x22B</option>
+              </optgroup>
+              <optgroup label="⚫ DeepSeek">
+                <option value="deepseek/deepseek-chat">DeepSeek Chat - رخيص جداً</option>
+                <option value="deepseek/deepseek-r1">DeepSeek R1 - تفكير</option>
+              </optgroup>
+              <optgroup label="🟠 Qwen">
+                <option value="qwen/qwen-2.5-72b-instruct">Qwen 2.5 72B</option>
+                <option value="qwen/qwen-2.5-coder-32b-instruct">Qwen 2.5 Coder 32B</option>
+              </optgroup>
+              <optgroup label="⚪ مجاني">
+                <option value="meta-llama/llama-3.2-3b-instruct:free">Llama 3.2 3B (مجاني)</option>
+                <option value="google/gemma-2-9b-it:free">Gemma 2 9B (مجاني)</option>
+                <option value="mistralai/mistral-7b-instruct:free">Mistral 7B (مجاني)</option>
+              </optgroup>
             </select>
           </div>
-          <div class="form-group">
-            <label>صوت TTS</label>
-            <select id="voiceTts">
-              <option value="alloy">Alloy</option>
-              <option value="echo">Echo</option>
-              <option value="fable">Fable</option>
-              <option value="onyx">Onyx</option>
-              <option value="nova">Nova</option>
-              <option value="shimmer">Shimmer</option>
-            </select>
+
+          <div class="form-group" style="background: rgba(59, 130, 246, 0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.2);">
+            <p style="margin: 0; font-size: 0.85rem; color: #94a3b8;">
+              💡 <strong>OpenRouter</strong> يوفر وصولاً لأكثر من 500 موديل من مزودين مختلفين بـ API واحد.
+              <br>يمكنك رؤية كل الموديلات والأسعار على <a href="https://openrouter.ai/models" target="_blank" style="color: #3b82f6;">openrouter.ai/models</a>
+            </p>
           </div>
         </div>
 
