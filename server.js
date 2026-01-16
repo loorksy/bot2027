@@ -908,9 +908,9 @@ app.put('/api/ai/registered-clients/:id', requireAdmin, async (req, res) => {
 });
 
 // Delete client
-app.delete('/api/ai/registered-clients/:id', requireAdmin, async (req, res) => {
+app.delete('/api/ai/registered-clients/:key', requireAdmin, async (req, res) => {
   try {
-    await registeredClients.deleteClient(req.params.id);
+    await registeredClients.deleteClient(req.params.key);
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
