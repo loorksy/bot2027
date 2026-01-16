@@ -383,7 +383,8 @@ async function importClients(data) {
                 await updateClient(existingClient.key, {
                     ids: uniqueNewIds,
                     fullName,
-                    phone: row['Phone'] || row['phone'] || row['الهاتف'] || existingClient.phone,
+                    phone: row['Phone'] || row['phone'] || row['الهاتف'] || row['رقم الاتصال'] || existingClient.phone,
+                    whatsappPhone: row['WhatsApp'] || row['whatsapp'] || row['واتساب'] || row['رقم الواتساب'] || existingClient.whatsappPhone,
                     agencyName: newAgency || existingClient.agencyName
                 });
                 updated++;
@@ -392,7 +393,8 @@ async function importClients(data) {
                     await addClient({
                         ids,
                         fullName,
-                        phone: row['Phone'] || row['phone'] || row['الهاتف'],
+                        phone: row['Phone'] || row['phone'] || row['الهاتف'] || row['رقم الاتصال'],
+                        whatsappPhone: row['WhatsApp'] || row['whatsapp'] || row['واتساب'] || row['رقم الواتساب'],
                         agencyName: row['Agency'] || row['agency'] || row['الوكالة']
                     });
                     imported++;
