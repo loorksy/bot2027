@@ -1401,6 +1401,21 @@
       }
     };
 
+    // Generate Portal Link
+    window.generatePortalLink = async (clientKey, clientName) => {
+      try {
+        const result = await api('POST', `/api/admin/portal/generate/${clientKey}`);
+        const fullUrl = window.location.origin + result.url;
+        
+        // Copy to clipboard
+        await navigator.clipboard.writeText(fullUrl);
+        
+        showAlert(`✅ رابط البوابة للعميل "${clientName}":\n\n${fullUrl}\n\n📋 تم نسخ الرابط!`);
+      } catch (err) {
+        showAlert('❌ فشل إنشاء الرابط: ' + err.message, 'error');
+      }
+    };
+
     // =====================================================
     // Linked Clients (WhatsApp linked users)
     // =====================================================
