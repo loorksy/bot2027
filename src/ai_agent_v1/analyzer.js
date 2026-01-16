@@ -248,8 +248,10 @@ const ANALYZER_SYSTEM_PROMPT = `أنت محلل رسائل ذكي ومتفهم. 
 async function analyzeMessage(messageText, clientProfile = {}, missingFields = []) {
     if (!settingsCache) await loadSettings();
 
-    if (!openaiClient) {
-        throw new Error('OpenAI not configured');
+    const { client, model, provider } = getAIClient();
+    
+    if (!client) {
+        throw new Error(`${provider === 'openrouter' ? 'OpenRouter' : 'OpenAI'} not configured`);
     }
 
     const contextPrompt = `
@@ -261,22 +263,32 @@ async function analyzeMessage(messageText, clientProfile = {}, missingFields = [
 حللي الرسالة وأرجعي JSON فقط:`;
 
     try {
-        const response = await openaiClient.chat.completions.create({
-            model: settingsCache.modelChat || 'gpt-4o-mini',
+        const requestOptions = {
+            model: model,
             messages: [
                 { role: 'system', content: ANALYZER_SYSTEM_PROMPT },
                 { role: 'user', content: contextPrompt }
             ],
             temperature: 0.2,
             max_tokens: 500
-        });
+        };
+        
+        // Add OpenRouter specific headers if using OpenRouter
+        if (provider === 'openrouter') {
+            requestOptions.headers = {
+                'HTTP-Referer': 'https://lork.cloud',
+                'X-Title': 'WhatsApp Bot AI Agent'
+            };
+        }
+        
+        const response = await client.chat.completions.create(requestOptions);
 
         const content = response.choices[0]?.message?.content || '{}';
 
         // Record usage
         const inputTokens = response.usage?.prompt_tokens || 0;
         const outputTokens = response.usage?.completion_tokens || 0;
-        await usage.recordChat(settingsCache.modelChat || 'gpt-4o-mini', inputTokens, outputTokens);
+        await usage.recordChat(model, inputTokens, outputTokens);
 
         // Parse JSON response
         let result;
