@@ -398,9 +398,22 @@ async function handleProfileRequest(message, linkedClient, isVoice) {
         return;
     }
 
+    // Get custom fields from registered client if linked
+    let customFields = {};
+    if (linkedClient.linkedClientId) {
+        try {
+            const regClient = await registeredClients.getClientById(linkedClient.linkedClientId);
+            if (regClient && regClient.customFields) {
+                customFields = regClient.customFields;
+            }
+        } catch (err) {
+            console.error('[AI] Failed to fetch custom fields:', err.message);
+        }
+    }
+
     const profileReply = await reply.generateReply({
         type: 'PROFILE_RESPONSE',
-        context: { profile: linkedClient.profile }
+        context: { profile: linkedClient.profile, customFields }
     });
 
     await sendReply(message, profileReply, isVoice);
