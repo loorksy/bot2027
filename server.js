@@ -1658,12 +1658,21 @@ app.post('/api/admin/clients/:clientKey/reset-pin', requireAdmin, async (req, re
     const allLinkedClients = await aiModules.clients.getAllClients();
     let linkedWhatsappId = null;
     
-    // Find the WhatsApp client linked to this registered client
+    // Normalize phone number for comparison
+    const normalizedPhone = client.phone.replace(/\D/g, '');
+    
+    // Find the WhatsApp client linked to this registered client (by ID or phone)
     for (const [whatsappId, linkedClient] of Object.entries(allLinkedClients)) {
-      if (linkedClient.linkedClientId && client.ids.includes(linkedClient.linkedClientId)) {
+      // Check by linkedClientId
+      const matchById = linkedClient.linkedClientId && client.ids.includes(linkedClient.linkedClientId);
+      // Check by phone number in WhatsApp ID
+      const matchByPhone = whatsappId.replace('@c.us', '').replace('@lid', '') === normalizedPhone;
+      
+      if (matchById || matchByPhone) {
         linkedWhatsappId = whatsappId;
         // Update the PIN hash in linked client record
         await aiModules.clients.upsertClient(whatsappId, { pinHash: hashedPin });
+        console.log(`[Admin] Updated PIN for WhatsApp client: ${whatsappId}`);
         break;
       }
     }
