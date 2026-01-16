@@ -1630,6 +1630,64 @@ app.delete('/api/admin/receipt/:clientId/:periodId', requireAdmin, async (req, r
 // Serve receipt images
 app.use('/uploads/receipts', express.static(path.join(__dirname, 'uploads/receipts')));
 
+// =====================================================
+// Admin: Reset Client PIN
+// =====================================================
+const pin = require('./src/ai_agent_v1/pin');
+
+app.post('/api/admin/clients/:clientKey/reset-pin', requireAdmin, async (req, res) => {
+  try {
+    const { clientKey } = req.params;
+    
+    // Get the registered client
+    const client = await registeredClients.getClientByKey(clientKey);
+    
+    if (!client) {
+      return res.status(404).json({ error: 'العميل غير موجود' });
+    }
+    
+    if (!client.phone) {
+      return res.status(400).json({ error: 'العميل ليس لديه رقم هاتف مسجل' });
+    }
+    
+    // Generate new PIN
+    const newPin = pin.generatePin();
+    const hashedPin = pin.hashPin(newPin);
+    
+    // Find the linked WhatsApp client and update their PIN
+    const allLinkedClients = await aiModules.clients.getAllClients();
+    let linkedWhatsappId = null;
+    
+    // Find the WhatsApp client linked to this registered client
+    for (const [whatsappId, linkedClient] of Object.entries(allLinkedClients)) {
+      if (linkedClient.linkedClientId && client.ids.includes(linkedClient.linkedClientId)) {
+        linkedWhatsappId = whatsappId;
+        // Update the PIN hash in linked client record
+        await aiModules.clients.upsertClient(whatsappId, { pinHash: hashedPin });
+        break;
+      }
+    }
+    
+    // Send WhatsApp notification with new PIN
+    const message = `🔐 *تجديد رمز PIN*\n\nمرحباً ${client.fullName}،\n\nتم تجديد رمز الحماية الخاص بك.\n\n📌 الرمز الجديد: *${newPin}*\n\n⚠️ يرجى حفظ هذا الرمز بمكان آمن ولا تشاركيه مع أحد.`;
+    
+    await aiAgent.notifyClient(client.phone, message);
+    
+    console.log(`[Admin] PIN reset for client ${client.fullName} (${clientKey})`);
+    
+    res.json({ 
+      success: true, 
+      message: 'تم تجديد PIN وإرسال رسالة للعميل',
+      clientName: client.fullName,
+      linkedWhatsappId: linkedWhatsappId ? 'مربوط' : 'غير مربوط بعد'
+    });
+    
+  } catch (err) {
+    console.error('[Admin] Reset PIN error:', err);
+    res.status(500).json({ error: err.message || 'فشل تجديد PIN' });
+  }
+});
+
 io.on('connection', (socket) => {
   const logHandler = (msg) => socket.emit('log', msg);
   const qrHandler = (qr) => socket.emit('qr', qr);
