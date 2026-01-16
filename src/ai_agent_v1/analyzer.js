@@ -81,7 +81,8 @@ async function getSettings() {
     if (!settingsCache) await loadSettings();
     return {
         ...settingsCache,
-        openaiKey: settingsCache.openaiKey ? '••••••••' : ''
+        openaiKey: settingsCache.openaiKey ? '••••••••' : '',
+        openrouterKey: settingsCache.openrouterKey ? '••••••••' : ''
     };
 }
 
@@ -103,6 +104,14 @@ async function updateSettings(newSettings) {
     if (newSettings.openaiKey) {
         openaiClient = new OpenAI({ apiKey: settingsCache.openaiKey });
     }
+    
+    // Reinitialize OpenRouter client if key changed
+    if (newSettings.openrouterKey) {
+        openrouterClient = new OpenAI({ 
+            apiKey: settingsCache.openrouterKey,
+            baseURL: 'https://openrouter.ai/api/v1'
+        });
+    }
 
     return getSettings();
 }
@@ -112,7 +121,22 @@ async function updateSettings(newSettings) {
  */
 async function isEnabled() {
     if (!settingsCache) await loadSettings();
+    
+    // Check based on selected provider
+    if (settingsCache.aiProvider === 'openrouter') {
+        return settingsCache.enabled && !!settingsCache.openrouterKey;
+    }
     return settingsCache.enabled && !!settingsCache.openaiKey;
+}
+
+/**
+ * Get the appropriate AI client based on provider setting
+ */
+function getAIClient() {
+    if (settingsCache.aiProvider === 'openrouter' && openrouterClient) {
+        return { client: openrouterClient, model: settingsCache.openrouterModel, provider: 'openrouter' };
+    }
+    return { client: openaiClient, model: settingsCache.modelChat, provider: 'openai' };
 }
 
 /**
