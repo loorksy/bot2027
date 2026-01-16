@@ -1112,7 +1112,7 @@ app.post('/api/ai/registered-clients/import-google-sheet', requireAdmin, async (
         }
         
         // Create client
-        await registeredClients.createClient(clientData);
+        await registeredClients.addClient(clientData);
         imported++;
         
       } catch (err) {
