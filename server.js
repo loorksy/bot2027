@@ -804,14 +804,29 @@ app.get('/api/ai/registered-clients/template', requireAdmin, async (req, res) =>
   try {
     const allFields = await customFields.getAllFields();
 
-    const staticHeaders = ['ID', 'Full Name', 'Phone', 'Country', 'City', 'Address', 'Agency'];
+    // Static headers (basic info)
+    const staticHeaders = ['id', 'fullName', 'phone', 'country', 'city', 'address', 'agencyName'];
+    
+    // New payment/custom headers
+    const paymentHeaders = ['paymentMethod', 'paymentInfo', 'currency', 'notes'];
+    
+    // Custom fields from database
     const customHeaders = allFields.map(f => f.name);
-    const headers = [...staticHeaders, ...customHeaders];
+    
+    // Combine all headers
+    const headers = [...staticHeaders, ...paymentHeaders, ...customHeaders];
 
-    const rows = [headers.join(',')];
+    // Create template with Arabic header row as comment
+    const arabicHeaders = ['رقم الهوية', 'الاسم الكامل', 'الهاتف', 'الدولة', 'المدينة', 'العنوان', 'الوكالة', 'طريقة الاستلام', 'معلومات الاستلام', 'العملة', 'ملاحظات'];
+    
+    const rows = [
+      headers.join(','),
+      // Example row
+      '123456,أحمد محمد,963999999999,سوريا,دمشق,شارع الثورة,Main,شام كاش,0999999999,ليرة سورية,ملاحظة هنا'
+    ];
     const csvContent = '\uFEFF' + rows.join('\n');
 
-    res.header('Content-Type', 'text/csv');
+    res.header('Content-Type', 'text/csv; charset=utf-8');
     res.header('Content-Disposition', 'attachment; filename="clients_template.csv"');
     res.send(csvContent);
   } catch (err) {
