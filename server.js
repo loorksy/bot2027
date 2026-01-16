@@ -503,8 +503,9 @@ app.post('/api/ai/settings', requireAdmin, async (req, res) => {
     const body = req.body;
     console.log('[API] Received settings update:', body); // DEBUG LOG
 
-    const aiFields = ['enabled', 'openaiKey', 'modelChat', 'modelStt', 'modelTts', 'voiceTts', 'trustedSessionMinutes', 'agencyPercent'];
+    const aiFields = ['enabled', 'openaiKey', 'modelChat', 'modelStt', 'modelTts', 'voiceTts', 'trustedSessionMinutes', 'agencyPercent', 'aiProvider', 'openrouterKey', 'openrouterModel'];
     const botFields = ['salaryTemplate', 'salaryCurrency', 'salaryFooter'];
+    const syncFields = ['googleSheetAutoSync', 'googleSheetUrlAuto', 'googleSheetNameAuto', 'googleSheetSyncInterval'];
 
     const aiUpdates = {};
     const botUpdates = {};
@@ -527,6 +528,20 @@ app.post('/api/ai/settings', requireAdmin, async (req, res) => {
     if (Object.keys(botUpdates).length > 0) {
       const updated = await settings.updateSettings(botUpdates);
       console.log('[API] Bot Settings saved:', updated); // DEBUG LOG
+    }
+
+    // Handle Google Sheet Auto Sync
+    if (body.googleSheetAutoSync !== undefined) {
+      googleSheetSyncState.enabled = body.googleSheetAutoSync;
+      googleSheetSyncState.url = body.googleSheetUrlAuto || '';
+      googleSheetSyncState.sheetName = body.googleSheetNameAuto || '';
+      googleSheetSyncState.interval = body.googleSheetSyncInterval || 5;
+
+      if (googleSheetSyncState.enabled && googleSheetSyncState.url) {
+        startAutoSync(googleSheetSyncState.interval);
+      } else {
+        stopAutoSync();
+      }
     }
 
     res.json({ success: true, message: 'Settings updated' });
