@@ -2540,11 +2540,48 @@
     renderCustomFieldsInForm();
     loadSettingsFromBackend(); // NEW: Load initial settings
 
+    // Toggle Provider Settings
+    window.toggleProviderSettings = function() {
+      const provider = document.getElementById('aiProvider').value;
+      const openaiSettings = document.getElementById('openaiSettings');
+      const openrouterSettings = document.getElementById('openrouterSettings');
+      
+      if (provider === 'openai') {
+        openaiSettings.style.display = 'block';
+        openrouterSettings.style.display = 'none';
+      } else {
+        openaiSettings.style.display = 'none';
+        openrouterSettings.style.display = 'block';
+      }
+    };
+
     // Settings Logic
     async function loadSettingsFromBackend() {
       try {
         const settings = await api('GET', '/api/ai/settings');
-
+        
+        // AI Provider
+        if (settings.aiProvider) {
+          document.getElementById('aiProvider').value = settings.aiProvider;
+          toggleProviderSettings();
+        }
+        
+        // OpenAI settings
+        if (settings.enabled !== undefined) document.getElementById('aiEnabled').checked = settings.enabled;
+        if (settings.openaiKey) document.getElementById('openaiKey').value = settings.openaiKey;
+        if (settings.modelChat) document.getElementById('modelChat').value = settings.modelChat;
+        if (settings.modelStt) document.getElementById('modelStt').value = settings.modelStt;
+        if (settings.modelTts) document.getElementById('modelTts').value = settings.modelTts;
+        if (settings.voiceTts) document.getElementById('voiceTts').value = settings.voiceTts;
+        
+        // OpenRouter settings
+        if (settings.openrouterKey) document.getElementById('openrouterKey').value = settings.openrouterKey;
+        if (settings.openrouterModel) document.getElementById('openrouterModel').value = settings.openrouterModel;
+        
+        // General settings
+        if (settings.trustedSessionMinutes) document.getElementById('trustedSessionMinutes').value = settings.trustedSessionMinutes;
+        if (settings.agencyPercent !== undefined) document.getElementById('agencyPercent').value = settings.agencyPercent;
+        
       } catch (err) {
         console.error('Failed to load settings', err);
       }
@@ -2562,13 +2599,22 @@
 
       try {
         const data = {
-          // AI Settings
+          // AI Provider
+          aiProvider: document.getElementById('aiProvider')?.value || 'openai',
+          
+          // AI Settings (OpenAI)
           enabled: document.getElementById('aiEnabled')?.checked || false,
           openaiKey: document.getElementById('openaiKey')?.value || '',
-          modelChat: document.getElementById('modelChat')?.value || 'gpt-4-turbo',
+          modelChat: document.getElementById('modelChat')?.value || 'gpt-4o-mini',
           modelStt: document.getElementById('modelStt')?.value || 'whisper-1',
           modelTts: document.getElementById('modelTts')?.value || 'tts-1',
           voiceTts: document.getElementById('voiceTts')?.value || 'alloy',
+          
+          // OpenRouter Settings
+          openrouterKey: document.getElementById('openrouterKey')?.value || '',
+          openrouterModel: document.getElementById('openrouterModel')?.value || 'openai/gpt-4o-mini',
+          
+          // General
           trustedSessionMinutes: parseInt(document.getElementById('trustedSessionMinutes')?.value) || 15,
           agencyPercent: parseFloat(document.getElementById('agencyPercent')?.value) || 0
         };
