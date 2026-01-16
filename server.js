@@ -532,6 +532,44 @@ app.get('/api/ai/clients', requireAdmin, async (req, res) => {
   }
 });
 
+// Delete single linked client
+app.delete('/api/ai/clients/:whatsappId', requireAdmin, async (req, res) => {
+  try {
+    const whatsappId = decodeURIComponent(req.params.whatsappId);
+    await aiModules.clients.deleteClient(whatsappId);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Bulk delete linked clients
+app.post('/api/ai/clients/bulk-delete', requireAdmin, async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'لم يتم تحديد عملاء للحذف' });
+    }
+    
+    let deleted = 0;
+    let failed = 0;
+    
+    for (const whatsappId of ids) {
+      try {
+        await aiModules.clients.deleteClient(whatsappId);
+        deleted++;
+      } catch (err) {
+        failed++;
+        console.error(`Failed to delete linked client ${whatsappId}:`, err.message);
+      }
+    }
+    
+    res.json({ success: true, deleted, failed });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // AI Usage
 app.get('/api/ai/usage', requireAdmin, async (req, res) => {
   try {
