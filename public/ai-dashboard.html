@@ -485,8 +485,74 @@
             <input type="number" id="agencyPercent" min="0" max="100" step="0.1" value="0">
           </div>
         </div>
+      </div>
 
+      <!-- New Personality Settings Card -->
+      <div class="ai-card">
+        <h2>🎭 إعدادات شخصية البوت</h2>
 
+        <div class="row">
+          <div class="form-group">
+            <label>اسم البوت</label>
+            <input type="text" id="botName" placeholder="مساعد أبو سلطان">
+          </div>
+          <div class="form-group">
+            <label>اسم صاحب العمل</label>
+            <input type="text" id="ownerName" placeholder="أبو سلطان">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="form-group">
+            <label>اللهجة</label>
+            <select id="dialect">
+              <option value="سورية">🇸🇾 سورية</option>
+              <option value="خليجية">🇸🇦 خليجية</option>
+              <option value="مصرية">🇪🇬 مصرية</option>
+              <option value="فصحى">📖 فصحى</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>صيغة المخاطبة</label>
+            <select id="clientGender">
+              <option value="مؤنث">👩 مؤنث (حبيبتي، ابعتيلي)</option>
+              <option value="مذكر">👨 مذكر (حبيبي، ابعتلي)</option>
+              <option value="محايد">⚪ محايد</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="form-group">
+            <label>مستوى الودية</label>
+            <select id="friendliness">
+              <option value="عالي">😊 عالي (إيموجي + كلام ودود)</option>
+              <option value="متوسط">🙂 متوسط (لطيف)</option>
+              <option value="رسمي">📋 رسمي (بدون إيموجي)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>عملة الراتب</label>
+            <input type="text" id="salaryCurrency" placeholder="ر.س">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="form-group">
+            <label>رسالة التواصل مع الإدارة</label>
+            <input type="text" id="adminContact" placeholder="تواصلي مع الإدارة">
+          </div>
+          <div class="form-group">
+            <div class="toggle-container" style="margin-top: 28px;">
+              <label class="toggle">
+                <input type="checkbox" id="enableVoiceReplies">
+                <span class="toggle-slider"></span>
+              </label>
+              <span style="color: #fff;">الرد صوتياً على الرسائل الصوتية</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
         <button class="btn btn-primary" id="saveSettingsBtn">💾 حفظ الإعدادات</button>
       </div>
