@@ -2774,12 +2774,21 @@
           
           // General
           trustedSessionMinutes: parseInt(document.getElementById('trustedSessionMinutes')?.value) || 15,
-          agencyPercent: parseFloat(document.getElementById('agencyPercent')?.value) || 0
+          agencyPercent: parseFloat(document.getElementById('agencyPercent')?.value) || 0,
+          
+          // Google Sheet Auto Sync
+          googleSheetAutoSync: document.getElementById('googleSheetAutoSync')?.checked || false,
+          googleSheetUrlAuto: document.getElementById('googleSheetUrlAuto')?.value || '',
+          googleSheetNameAuto: document.getElementById('googleSheetNameAuto')?.value || '',
+          googleSheetSyncInterval: parseInt(document.getElementById('googleSheetSyncInterval')?.value) || 5
         };
 
         // Send all to unified endpoint
         await api('POST', '/api/ai/settings', data);
-        showAlert('تم حفظ جميع الإعدادات والقوالب بنجاح ✅');
+        showAlert('تم حفظ جميع الإعدادات بنجاح ✅');
+        
+        // Reload sync status
+        loadSyncStatus();
 
       } catch (err) {
         console.error(err);
