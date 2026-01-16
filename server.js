@@ -1007,8 +1007,7 @@ app.post('/api/ai/registered-clients/import-google-sheet', requireAdmin, async (
     
     console.log('[Google Sheet Import] Fetching from:', exportUrl);
     
-    // Fetch the CSV data
-    const fetch = (await import('node-fetch')).default;
+    // Fetch the CSV data (using built-in fetch in Node.js 18+)
     const response = await fetch(exportUrl);
     
     if (!response.ok) {
