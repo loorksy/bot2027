@@ -89,7 +89,7 @@ async function getClientByKey(key) {
  * Add a new client with one or more IDs
  */
 async function addClient(clientData) {
-    let { ids, id, fullName, phone, country, city, address, agencyName, customFields } = clientData;
+    let { ids, id, fullName, phone, whatsappPhone, country, city, address, agencyName, customFields } = clientData;
 
     // Normalizing IDs
     if (!ids && id) ids = [id.toString().trim()];
@@ -132,6 +132,7 @@ async function addClient(clientData) {
         ids,
         fullName: fullName.trim(),
         phone: phone?.toString().trim() || null,
+        whatsappPhone: whatsappPhone?.toString().trim() || null,
         country: country?.trim() || null,
         city: city?.trim() || null,
         address: address?.trim() || null,
@@ -260,6 +261,7 @@ async function updateClient(clientKey, updates) {
     // Update other fields
     if (updates.fullName !== undefined) client.fullName = updates.fullName;
     if (updates.phone !== undefined) client.phone = updates.phone;
+    if (updates.whatsappPhone !== undefined) client.whatsappPhone = updates.whatsappPhone;
     if (updates.country !== undefined) client.country = updates.country;
     if (updates.city !== undefined) client.city = updates.city;
     if (updates.address !== undefined) client.address = updates.address;
@@ -308,9 +310,10 @@ async function searchClients(query) {
     Object.values(clients).forEach(client => {
         const nameMatch = client.fullName?.toLowerCase().includes(q);
         const phoneMatch = client.phone?.includes(query);
+        const whatsappMatch = client.whatsappPhone?.includes(query);
         const idMatch = (client.ids || []).some(id => id.includes(query));
 
-        if (nameMatch || phoneMatch || idMatch) {
+        if (nameMatch || phoneMatch || whatsappMatch || idMatch) {
             results.push(client);
         }
     });
