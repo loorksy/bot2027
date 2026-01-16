@@ -33,3 +33,7 @@ prisma/migrations/
 # IDE
 .vscode/
 .idea/
+-e 
+# Environment files
+*.env
+*.env.*
