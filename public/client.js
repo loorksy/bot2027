@@ -338,6 +338,24 @@ function bindLoginPage() {
 }
 
 async function ensureAuthenticated() {
+  // ⚠️ AUTH DISABLED TEMPORARILY
+  currentUser = {
+    email: 'loorksy@gmail.com',
+    permissions: {
+      can_scan_backlog: true,
+      can_send_messages: true,
+      can_manage_lists: true,
+      can_manage_settings: true,
+      can_control_bot: true,
+      can_manage_forwarding: true,
+      can_view_logs: true,
+      is_admin: true
+    }
+  };
+  applyPermissionVisibility();
+  return true;
+  
+  /* ORIGINAL - RESTORE LATER:
   const me = await api.request('/api/me');
   if (me.error) {
     showLoginOverlay('تعذر التحقق من الهوية');
@@ -346,6 +364,7 @@ async function ensureAuthenticated() {
   currentUser = me.user;
   applyPermissionVisibility();
   return true;
+  */
 }
 
 async function startApp() {
