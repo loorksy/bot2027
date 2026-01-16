@@ -2660,6 +2660,59 @@
       }
     };
 
+    // Toggle Auto Sync Settings
+    window.toggleAutoSyncSettings = function() {
+      const enabled = document.getElementById('googleSheetAutoSync').checked;
+      document.getElementById('autoSyncSettings').style.display = enabled ? 'block' : 'none';
+    };
+
+    // Trigger Manual Sync
+    window.triggerManualSync = async function() {
+      const btn = event.target;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '⏳ جاري المزامنة...';
+      btn.disabled = true;
+      
+      try {
+        const result = await api('POST', '/api/ai/google-sheet/sync-now');
+        document.getElementById('syncStatusText').textContent = '✅ تمت المزامنة';
+        document.getElementById('syncStatusText').style.color = '#22c55e';
+        document.getElementById('lastSyncTime').textContent = new Date().toLocaleString('ar-SA');
+        showAlert(`✅ تمت المزامنة: ${result.imported} جديد، ${result.updated} محدّث، ${result.skipped} موجود`);
+        loadRegisteredClients();
+      } catch (err) {
+        document.getElementById('syncStatusText').textContent = '❌ فشلت المزامنة';
+        document.getElementById('syncStatusText').style.color = '#ef4444';
+        showAlert('❌ فشلت المزامنة: ' + err.message, 'error');
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    };
+
+    // Load sync status
+    async function loadSyncStatus() {
+      try {
+        const status = await api('GET', '/api/ai/google-sheet/status');
+        if (status.enabled) {
+          document.getElementById('googleSheetAutoSync').checked = true;
+          toggleAutoSyncSettings();
+          document.getElementById('googleSheetUrlAuto').value = status.url || '';
+          document.getElementById('googleSheetNameAuto').value = status.sheetName || '';
+          document.getElementById('googleSheetSyncInterval').value = status.interval || '5';
+          document.getElementById('syncStatusText').textContent = status.running ? '🟢 تعمل' : '⏸️ متوقفة';
+          document.getElementById('syncStatusText').style.color = status.running ? '#22c55e' : '#f59e0b';
+          if (status.lastSync) {
+            document.getElementById('lastSyncTime').textContent = new Date(status.lastSync).toLocaleString('ar-SA');
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load sync status:', err);
+      }
+    }
+    
+    loadSyncStatus();
+
     // Settings Logic
     async function loadSettingsFromBackend() {
       try {
