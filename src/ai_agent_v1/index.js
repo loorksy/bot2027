@@ -473,6 +473,51 @@ function mapFieldToLabel(field) {
 }
 
 /**
+ * Handle portal link request
+ */
+async function handlePortalLinkRequest(message, linkedClient, isVoice) {
+    const whatsappId = message.from;
+
+    if (!linkedClient.linkedClientId) {
+        await sendReply(message, 'لازم تربطي حسابك أول. ابعتيلي رقم الـ ID تبعك.', isVoice);
+        return;
+    }
+
+    // Get registered client to check agency
+    const regClient = await registeredClients.getClientById(linkedClient.linkedClientId);
+    
+    if (!regClient) {
+        await sendReply(message, 'حصل خطأ، تواصلي مع الإدارة.', isVoice);
+        return;
+    }
+
+    // Check if eligible for portal (Main agency only)
+    if (!portal.isMainAgency(regClient.agencyName)) {
+        const notAvailableReply = await reply.generateReply({ type: 'PORTAL_NOT_AVAILABLE', context: {} });
+        await sendReply(message, notAvailableReply, isVoice);
+        return;
+    }
+
+    // Generate or get existing portal token
+    const token = await portal.getOrCreateToken(regClient.key, regClient.agencyName);
+    
+    if (!token) {
+        const notAvailableReply = await reply.generateReply({ type: 'PORTAL_NOT_AVAILABLE', context: {} });
+        await sendReply(message, notAvailableReply, isVoice);
+        return;
+    }
+
+    // Build full URL (you may need to adjust the domain)
+    const portalUrl = `https://lork.cloud/portal/${token}`;
+
+    const portalReply = await reply.generateReply({ 
+        type: 'PORTAL_LINK', 
+        context: { portalUrl } 
+    });
+    await sendReply(message, portalReply, isVoice);
+}
+
+/**
  * Handle general queries with AI
  */
 async function handleGeneralQuery(message, linkedClient, messageText, isVoice) {
