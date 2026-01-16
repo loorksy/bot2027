@@ -1,0 +1,3022 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Agent Dashboard - أبو سلطان</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .ai-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .ai-card {
+      background: #1a1a2e;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      border: 1px solid #2d2d44;
+    }
+
+    .ai-card h2 {
+      margin: 0 0 20px 0;
+      color: #00d4ff;
+      font-size: 1.3rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .ai-card h2::before {
+      content: '';
+      width: 4px;
+      height: 24px;
+      background: linear-gradient(180deg, #00d4ff, #7c3aed);
+      border-radius: 2px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      color: #a0a0b0;
+      font-size: 0.9rem;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #3d3d5c;
+      border-radius: 8px;
+      background: #0f0f1a;
+      color: #fff;
+      font-size: 1rem;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: #00d4ff;
+      outline: none;
+    }
+
+    .form-group input[type="password"] {
+      font-family: monospace;
+      letter-spacing: 2px;
+    }
+
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .toggle {
+      position: relative;
+      width: 56px;
+      height: 30px;
+    }
+
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: #3d3d5c;
+      border-radius: 15px;
+      transition: 0.3s;
+    }
+
+    .toggle-slider:before {
+      content: '';
+      position: absolute;
+      height: 22px;
+      width: 22px;
+      right: 4px;
+      bottom: 4px;
+      background: #fff;
+      border-radius: 50%;
+      transition: 0.3s;
+    }
+
+    .toggle input:checked+.toggle-slider {
+      background: linear-gradient(90deg, #00d4ff, #7c3aed);
+    }
+
+    .toggle input:checked+.toggle-slider:before {
+      transform: translateX(-26px);
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(90deg, #00d4ff, #7c3aed);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: #3d3d5c;
+      color: #fff;
+    }
+
+    .btn-danger {
+      background: #dc2626;
+      color: #fff;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+    }
+
+    .stat-card {
+      background: #0f0f1a;
+      padding: 16px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #00d4ff;
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: #a0a0b0;
+      margin-top: 4px;
+    }
+
+    .file-upload {
+      border: 2px dashed #3d3d5c;
+      border-radius: 12px;
+      padding: 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .file-upload:hover {
+      border-color: #00d4ff;
+      background: rgba(0, 212, 255, 0.05);
+    }
+
+    .file-upload.dragover {
+      border-color: #00d4ff;
+      background: rgba(0, 212, 255, 0.1);
+    }
+
+    .file-upload input[type="file"] {
+      display: none;
+    }
+
+    .file-upload-icon {
+      font-size: 48px;
+      color: #3d3d5c;
+      margin-bottom: 10px;
+    }
+
+    .periods-list {
+      margin-top: 20px;
+    }
+
+    .period-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      background: #0f0f1a;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .period-info h4 {
+      margin: 0 0 4px 0;
+      color: #fff;
+    }
+
+    .period-info span {
+      font-size: 0.85rem;
+      color: #a0a0b0;
+    }
+
+    .period-badge {
+      background: #22c55e;
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+    }
+
+    .usage-log {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .log-entry {
+      display: flex;
+      gap: 16px;
+      padding: 12px;
+      background: #0f0f1a;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+    }
+
+    .log-type {
+      font-weight: 600;
+      width: 60px;
+    }
+
+    .log-type.CHAT {
+      color: #00d4ff;
+    }
+
+    .log-type.STT {
+      color: #22c55e;
+    }
+
+    .log-type.TTS {
+      color: #f59e0b;
+    }
+
+    .log-details {
+      flex: 1;
+      color: #a0a0b0;
+    }
+
+    .log-cost {
+      color: #7c3aed;
+      font-weight: 600;
+    }
+
+    .tab-container {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      padding: 12px 24px;
+      background: #1a1a2e;
+      border: 1px solid #2d2d44;
+      border-radius: 8px;
+      cursor: pointer;
+      color: #a0a0b0;
+      transition: 0.2s;
+    }
+
+    .tab:hover {
+      border-color: #00d4ff;
+    }
+
+    .tab.active {
+      background: linear-gradient(90deg, #00d4ff, #7c3aed);
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .row .form-group {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .alert {
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+
+    .alert-success {
+      background: rgba(34, 197, 94, 0.2);
+      border: 1px solid #22c55e;
+      color: #22c55e;
+    }
+
+    .alert-error {
+      background: rgba(220, 38, 38, 0.2);
+      border: 1px solid #dc2626;
+      color: #dc2626;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #a0a0b0;
+      text-decoration: none;
+      margin-bottom: 20px;
+    }
+
+    .back-link:hover {
+      color: #00d4ff;
+    }
+
+    .clients-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .clients-table th,
+    .clients-table td {
+      padding: 12px;
+      text-align: right;
+      border-bottom: 1px solid #2d2d44;
+    }
+
+    .clients-table th {
+      color: #a0a0b0;
+      font-weight: 500;
+    }
+
+    .clients-table tr:hover {
+      background: rgba(0, 212, 255, 0.05);
+    }
+
+    .status-badge {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+    }
+
+    .status-complete {
+      background: #22c55e;
+      color: #fff;
+    }
+
+    .status-incomplete {
+      background: #f59e0b;
+      color: #fff;
+    }
+
+    /* ========== Enhanced AI Dashboard Design ========== */
+    
+    /* Page Background */
+    body {
+      background: linear-gradient(135deg, #0a0a14 0%, #1a1a2e 50%, #0f0f1a 100%);
+      min-height: 100vh;
+    }
+
+    /* Header Enhancement */
+    .ai-container > h1 {
+      background: linear-gradient(90deg, #00d4ff, #7c3aed, #00d4ff);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradientShift 3s ease infinite;
+      text-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+      font-size: 1.8rem;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+      margin-bottom: 30px !important;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% center; }
+      50% { background-position: 100% center; }
+      100% { background-position: 0% center; }
+    }
+
+    /* Enhanced Cards */
+    .ai-card {
+      background: linear-gradient(145deg, #1a1a2e 0%, #12121f 100%);
+      border: 1px solid rgba(0, 212, 255, 0.15);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 
+                  0 0 40px rgba(0, 212, 255, 0.05),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ai-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #00d4ff, #7c3aed, transparent);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .ai-card:hover {
+      border-color: rgba(0, 212, 255, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4), 
+                  0 0 50px rgba(0, 212, 255, 0.1);
+    }
+
+    .ai-card:hover::before {
+      opacity: 1;
+    }
+
+    /* Enhanced Card Headers */
+    .ai-card h2 {
+      font-size: 1.2rem;
+      letter-spacing: 0.5px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      margin-bottom: 24px !important;
+    }
+
+    /* Enhanced Tabs */
+    .tab-container {
+      background: rgba(0, 0, 0, 0.2);
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .tab {
+      border-radius: 10px;
+      font-weight: 500;
+      font-size: 0.9rem;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .tab::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(0, 212, 255, 0.1), rgba(124, 58, 237, 0.1));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .tab:hover::before {
+      opacity: 1;
+    }
+
+    .tab.active {
+      box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+    }
+
+    /* Enhanced Form Inputs */
+    .form-group input,
+    .form-group select {
+      background: rgba(15, 15, 26, 0.8);
+      border: 1px solid rgba(61, 61, 92, 0.5);
+      transition: all 0.3s ease;
+    }
+
+    .form-group input:hover,
+    .form-group select:hover {
+      border-color: rgba(0, 212, 255, 0.3);
+      background: rgba(15, 15, 26, 1);
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: #00d4ff;
+      box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1), 0 0 20px rgba(0, 212, 255, 0.1);
+    }
+
+    .form-group label {
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      color: #b0b0c0;
+    }
+
+    /* Enhanced Buttons */
+    .btn-primary {
+      background: linear-gradient(135deg, #00d4ff 0%, #7c3aed 100%);
+      box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .btn-primary:hover::before {
+      left: 100%;
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 6px 25px rgba(0, 212, 255, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(145deg, #3d3d5c, #2d2d44);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-secondary:hover {
+      background: linear-gradient(145deg, #4d4d6c, #3d3d54);
+      border-color: rgba(0, 212, 255, 0.3);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+      box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
+    }
+
+    .btn-danger:hover {
+      box-shadow: 0 6px 25px rgba(220, 38, 38, 0.4);
+      transform: translateY(-2px);
+    }
+
+    /* Enhanced Toggle */
+    .toggle-slider {
+      background: linear-gradient(145deg, #3d3d5c, #2d2d44);
+    }
+
+    .toggle input:checked + .toggle-slider {
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+    }
+
+    /* Enhanced Stats */
+    .stat-card {
+      background: linear-gradient(145deg, #12121f, #0a0a14);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+      border-color: rgba(0, 212, 255, 0.2);
+      transform: translateY(-3px);
+    }
+
+    .stat-value {
+      background: linear-gradient(90deg, #00d4ff, #7c3aed);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Enhanced Table */
+    .clients-table {
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .clients-table th {
+      background: rgba(0, 212, 255, 0.1);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 0.5px;
+    }
+
+    .clients-table tr {
+      transition: all 0.2s ease;
+    }
+
+    .clients-table tr:hover {
+      background: rgba(0, 212, 255, 0.08);
+    }
+
+    /* Enhanced Badges */
+    .status-complete {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      box-shadow: 0 2px 10px rgba(34, 197, 94, 0.3);
+    }
+
+    .status-incomplete {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      box-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
+    }
+
+    /* Enhanced File Upload */
+    .file-upload {
+      background: rgba(15, 15, 26, 0.5);
+      border: 2px dashed rgba(0, 212, 255, 0.3);
+    }
+
+    .file-upload:hover {
+      border-color: #00d4ff;
+      background: rgba(0, 212, 255, 0.05);
+      box-shadow: 0 0 30px rgba(0, 212, 255, 0.1);
+    }
+
+    /* Enhanced Alerts */
+    .alert {
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+    }
+
+    .alert-success {
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      box-shadow: 0 4px 20px rgba(34, 197, 94, 0.1);
+    }
+
+    .alert-error {
+      background: rgba(220, 38, 38, 0.15);
+      border: 1px solid rgba(220, 38, 38, 0.3);
+      box-shadow: 0 4px 20px rgba(220, 38, 38, 0.1);
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #00d4ff, #7c3aed);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #00b8db, #6d28d9);
+    }
+
+    /* Checkbox Enhancement */
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #00d4ff;
+      cursor: pointer;
+    }
+
+    /* Period Items Enhancement */
+    .period-item {
+      background: linear-gradient(145deg, #12121f, #0a0a14);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: all 0.3s ease;
+    }
+
+    .period-item:hover {
+      border-color: rgba(0, 212, 255, 0.2);
+      transform: translateX(-5px);
+    }
+
+    /* Log Entries Enhancement */
+    .log-entry {
+      background: linear-gradient(145deg, #12121f, #0a0a14);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      transition: all 0.2s ease;
+    }
+
+    .log-entry:hover {
+      border-color: rgba(0, 212, 255, 0.1);
+    }
+
+    /* Back Link Enhancement */
+    .back-link {
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .back-link:hover {
+      background: rgba(0, 212, 255, 0.1);
+      transform: translateX(-5px);
+    }
+
+    /* Row Gap Enhancement for Mobile */
+    @media (max-width: 768px) {
+      .row {
+        gap: 12px;
+      }
+      
+      .tab-container {
+        padding: 8px;
+        gap: 6px;
+      }
+      
+      .tab {
+        padding: 10px 16px;
+        font-size: 0.85rem;
+      }
+      
+      .ai-card {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="ai-container">
+    <a href="/" class="back-link">← العودة للوحة الرئيسية</a>
+
+    <h1 style="color: #00d4ff; margin-bottom: 24px;">🤖 AI Agent - مساعد أبو سلطان</h1>
+
+    <div id="alertContainer"></div>
+
+    <!-- Tabs -->
+    <div class="tab-container">
+      <div class="tab active" data-tab="settings">⚙️ الإعدادات</div>
+
+      <div class="tab" data-tab="fields">📝 الحقول المخصصة</div>
+      <div class="tab" data-tab="registered">📋 إدارة العملاء</div>
+      <div class="tab" data-tab="salary">💰 الرواتب</div>
+      <div class="tab" data-tab="usage">📊 الاستهلاك</div>
+      <div class="tab" data-tab="linked">🔗 العملاء المربوطين</div>
+    </div>
+
+    <!-- Settings Tab -->
+    <div id="settings" class="tab-content active">
+      <div class="ai-card">
+        <h2>إعدادات OpenAI</h2>
+
+        <div class="form-group">
+          <div class="toggle-container">
+            <label class="toggle">
+              <input type="checkbox" id="aiEnabled">
+              <span class="toggle-slider"></span>
+            </label>
+            <span style="color: #fff;">تفعيل AI Agent</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>OpenAI API Key</label>
+          <input type="password" id="openaiKey" placeholder="sk-...">
+        </div>
+
+        <div class="row">
+          <div class="form-group">
+            <label>موديل المحادثة (Chat)</label>
+            <select id="modelChat">
+              <option value="gpt-4o-mini">GPT-4o Mini (أرخص)</option>
+              <option value="gpt-4o">GPT-4o (متوازن)</option>
+              <option value="gpt-4-turbo">GPT-4 Turbo</option>
+              <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>موديل تحويل الصوت لنص (STT)</label>
+            <select id="modelStt">
+              <option value="whisper-1">Whisper-1</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="form-group">
+            <label>موديل تحويل النص لصوت (TTS)</label>
+            <select id="modelTts">
+              <option value="tts-1">TTS-1 (سريع)</option>
+              <option value="tts-1-hd">TTS-1 HD (جودة عالية)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>صوت TTS</label>
+            <select id="voiceTts">
+              <option value="alloy">Alloy</option>
+              <option value="echo">Echo</option>
+              <option value="fable">Fable</option>
+              <option value="onyx">Onyx</option>
+              <option value="nova">Nova</option>
+              <option value="shimmer">Shimmer</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="form-group">
+            <label>مدة الجلسة الموثوقة (دقائق)</label>
+            <input type="number" id="trustedSessionMinutes" min="1" max="1440" value="15">
+          </div>
+          <div class="form-group">
+            <label>نسبة الوكالة الافتراضية (%)</label>
+            <input type="number" id="agencyPercent" min="0" max="100" step="0.1" value="0">
+          </div>
+        </div>
+      </div>
+
+      <!-- New Personality Settings Card -->
+      <div class="ai-card">
+        <h2>🎭 إعدادات شخصية البوت</h2>
+
+        <div class="row">
+          <div class="form-group">
+            <label>اسم البوت</label>
+            <input type="text" id="botName" placeholder="مساعد أبو سلطان">
+          </div>
+          <div class="form-group">
+            <label>اسم صاحب العمل</label>
+            <input type="text" id="ownerName" placeholder="أبو سلطان">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="form-group">
+            <label>اللهجة</label>
+            <select id="dialect">
+              <option value="سورية">🇸🇾 سورية</option>
+              <option value="خليجية">🇸🇦 خليجية</option>
+              <option value="مصرية">🇪🇬 مصرية</option>
+              <option value="فصحى">📖 فصحى</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>صيغة المخاطبة</label>
+            <select id="clientGender">
+              <option value="مؤنث">👩 مؤنث (حبيبتي، ابعتيلي)</option>
+              <option value="مذكر">👨 مذكر (حبيبي، ابعتلي)</option>
+              <option value="محايد">⚪ محايد</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="form-group">
+            <label>مستوى الودية</label>
+            <select id="friendliness">
+              <option value="عالي">😊 عالي (إيموجي + كلام ودود)</option>
+              <option value="متوسط">🙂 متوسط (لطيف)</option>
+              <option value="رسمي">📋 رسمي (بدون إيموجي)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>عملة الراتب</label>
+            <input type="text" id="salaryCurrency" placeholder="ر.س">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="form-group">
+            <label>رسالة التواصل مع الإدارة</label>
+            <input type="text" id="adminContact" placeholder="تواصلي مع الإدارة">
+          </div>
+          <div class="form-group">
+            <div class="toggle-container" style="margin-top: 28px;">
+              <label class="toggle">
+                <input type="checkbox" id="enableVoiceReplies">
+                <span class="toggle-slider"></span>
+              </label>
+              <span style="color: #fff;">الرد صوتياً على الرسائل الصوتية</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+        <button class="btn btn-primary" id="saveSettingsBtn">💾 حفظ الإعدادات</button>
+      </div>
+    </div>
+
+
+
+    <!-- Custom Fields Tab -->
+    <div id="fields" class="tab-content">
+      <div class="ai-card">
+        <h2>إضافة حقل جديد</h2>
+
+        <div class="row">
+          <div class="form-group">
+            <label>اسم الحقل *</label>
+            <input type="text" id="fieldName" placeholder="مثال: رقم الإقامة">
+          </div>
+          <div class="form-group">
+            <label>نوع الحقل</label>
+            <select id="fieldType">
+              <option value="text">نص</option>
+              <option value="dropdown">قائمة منسدلة</option>
+              <option value="number">رقم</option>
+              <option value="date">تاريخ</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>مطلوب</label>
+            <select id="fieldRequired">
+              <option value="false">لا</option>
+              <option value="true">نعم</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="dropdownOptionsSection" style="display: none;">
+          <div class="form-group">
+            <label>خيارات القائمة المنسدلة</label>
+            <p style="color: #a0a0b0; font-size: 0.8rem; margin-bottom: 12px;">لكل خيار، يمكنك إضافة حقل فرعي (مثل:
+              محفظة إلكترونية ← عنوان المحفظة)</p>
+            <div id="dropdownOptionsInputs">
+              <div class="option-row"
+                style="display: flex; gap: 8px; margin-bottom: 12px; align-items: flex-start; flex-wrap: wrap;">
+                <input type="text" class="dropdown-option-value" placeholder="اسم الخيار"
+                  style="flex: 2; min-width: 150px;">
+                <select class="dropdown-option-subtype" style="flex: 1; min-width: 100px;">
+                  <option value="">بدون حقل فرعي</option>
+                  <option value="text">نص</option>
+                  <option value="number">رقم</option>
+                  <option value="date">تاريخ</option>
+                </select>
+                <input type="text" class="dropdown-option-sublabel" placeholder="عنوان الحقل الفرعي"
+                  style="flex: 2; min-width: 150px; display: none;">
+              </div>
+            </div>
+            <button type="button" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;"
+              onclick="addDropdownOptionInputWithSubField()">+ إضافة خيار</button>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="addFieldBtn">➕ إضافة الحقل</button>
+        <button class="btn btn-danger" id="cancelEditBtn" style="display: none; margin-right: 8px;"
+          onclick="cancelEdit()">إلغاء</button>
+      </div>
+
+      <div class="ai-card">
+        <h2>الحقول المخصصة</h2>
+        <button class="btn btn-secondary" id="refreshFieldsBtn" style="margin-bottom: 16px;">🔄 تحديث</button>
+        <div id="fieldsList">
+          <p style="color: #666; text-align: center;">لا توجد حقول مخصصة</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Registered Clients Tab -->
+    <div id="registered" class="tab-content">
+      <div class="ai-card">
+        <h2>إضافة عميل جديد</h2>
+
+        <div class="row">
+          <div class="form-group">
+            <label>رقم الـ ID *</label>
+            <div id="regIdsContainer">
+              <div class="input-group" style="margin-bottom: 5px; display: flex; gap: 5px;">
+                <input type="text" name="regClientId" placeholder="مثال: 7099026" style="flex: 1;">
+              </div>
+            </div>
+            <button class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.8rem; margin-top: 5px;"
+              onclick="addIdField()">➕ إضافة ID آخر</button>
+          </div>
+          <div class="form-group">
+            <label>الاسم الكامل *</label>
+            <input type="text" id="regFullName" placeholder="الاسم الثلاثي">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="form-group">
+            <label>رقم الهاتف</label>
+            <input type="text" id="regPhone" placeholder="مثال: 00963935990348">
+          </div>
+          <div class="form-group">
+            <label>الوكالة <a href="#" onclick="promptManageLookups('agency'); return false;"
+                style="font-size: 0.8rem;">(إدارة)</a></label>
+            <select id="regAgency">
+              <option value="">اختر الوكالة...</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="form-group">
+            <label>الدولة <a href="#" onclick="promptManageLookups('country'); return false;"
+                style="font-size: 0.8rem;">(إدارة)</a></label>
+            <select id="regCountry" onchange="renderCityOptions()">
+              <option value="">اختر الدولة...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>المدينة <a href="#" onclick="promptManageLookups('city'); return false;"
+                style="font-size: 0.8rem;">(إدارة)</a></label>
+            <select id="regCity">
+              <option value="">اختر الدولة أولاً...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>العنوان التفصيلي</label>
+            <input type="text" id="regAddress" placeholder="العنوان">
+          </div>
+        </div>
+
+        <!-- Custom Fields Container -->
+        <div id="customFieldsContainer" class="row"></div>
+
+        <button class="btn btn-primary" id="addRegClientBtn">➕ إضافة العميل</button>
+        <button class="btn btn-secondary" id="clearRegFormBtn">مسح</button>
+      </div>
+
+      <div class="ai-card">
+        <h2>العملاء المسجلون</h2>
+        <div class="row" style="margin-bottom: 16px; align-items: center; gap: 10px;">
+
+          <div class="row" style="margin-bottom: 16px; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <button class="btn btn-secondary" id="refreshRegClientsBtn">🔄 تحديث</button>
+            <button class="btn btn-primary" onclick="promptBroadcast()" style="background: #8b5cf6;">📢 إرسال
+              جماعي</button>
+            <button class="btn btn-primary" onclick="sendSalaryToAll()" style="background: #10b981;">💰 إرسال
+              الرواتب</button>
+
+            <span style="border-left: 1px solid #444; height: 24px; margin: 0 4px;"></span>
+
+            <button class="btn btn-secondary" onclick="exportClients()" style="padding: 8px 16px;">📤 تصدير
+              (Excel)</button>
+            <button class="btn btn-secondary" onclick="downloadTemplate()" style="padding: 8px 16px;">📄 تحميل
+              القالب</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('importClientsFile').click()"
+              style="padding: 8px 16px;">📥 استيراد</button>
+            <input type="file" id="importClientsFile" accept=".csv" style="display: none;"
+              onchange="importClients(this)">
+
+            <span id="regClientCount" style="color: #a0a0b0; margin-right: 16px;"></span>
+          </div>
+        </div>
+        <div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <input type="text" id="searchRegClientInput" placeholder="🔍 بحث عن عميل (الاسم، الهاتف، ID)..."
+            style="flex: 1; min-width: 200px; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; color: white;">
+          <button class="btn btn-primary" style="background: #8b5cf6; padding: 10px 15px; white-space: nowrap;" onclick="sendPortalLinksToAll()">
+            📤 إرسال روابط البوابة لكل عملاء Main
+          </button>
+          <button class="btn btn-danger" style="padding: 10px 15px; white-space: nowrap; display: none;" id="deleteSelectedBtn" onclick="deleteSelectedClients()">
+            🗑️ حذف المحدد (<span id="selectedCount">0</span>)
+          </button>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="clients-table">
+            <thead>
+              <tr>
+                <th style="width: 40px;"><input type="checkbox" id="selectAllClients" onchange="toggleSelectAll(this)"></th>
+                <th>ID</th>
+                <th>الاسم</th>
+                <th>الهاتف</th>
+                <th>المدينة</th>
+                <th>الوكالة</th>
+                <th>تاريخ الإضافة</th>
+                <th>إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="regClientsBody">
+              <tr>
+                <td colspan="8" style="text-align: center; color: #666;">لا يوجد عملاء مسجلون</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Salary Tab (Old) -->
+
+  <!-- Salary Tab -->
+  <div id="salary" class="tab-content">
+    <div class="ai-card">
+      <h2>رفع ملف الرواتب</h2>
+
+      <div class="file-upload" id="fileUploadArea">
+        <input type="file" id="salaryFile" accept=".csv,.xlsx,.xls">
+        <div class="file-upload-icon">📄</div>
+        <p style="color: #a0a0b0; margin: 0;">اسحب ملف CSV هنا أو انقر للاختيار</p>
+        <p style="color: #666; font-size: 0.85rem; margin-top: 8px;">الحد الأقصى: 10MB</p>
+      </div>
+
+      <div id="filePreview" style="display: none; margin-top: 20px;">
+        <h3 style="color: #fff; margin-bottom: 16px;">معاينة الملف</h3>
+
+        <div class="row">
+          <div class="form-group">
+            <label>اسم القسم (Period)</label>
+            <input type="text" id="periodName" placeholder="مثال: 1-15 يناير 2024">
+          </div>
+          <div class="form-group">
+            <label>عمود ID</label>
+            <select id="idColumn"></select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="form-group">
+            <label>عمود الراتب</label>
+            <select id="salaryColumn"></select>
+          </div>
+          <div class="form-group">
+            <label>نسبة الوكالة (%)</label>
+            <input type="number" id="uploadAgencyPercent" min="0" max="100" step="0.1" value="0">
+          </div>
+        </div>
+
+        <div id="previewTable" style="overflow-x: auto; margin: 16px 0;"></div>
+
+        <p style="color: #a0a0b0; font-size: 0.9rem;" id="rowCount"></p>
+
+        <button class="btn btn-primary" id="uploadBtn">📤 رفع وتأكيد</button>
+        <button class="btn btn-secondary" id="cancelUploadBtn">إلغاء</button>
+      </div>
+    </div>
+
+    <div class="ai-card">
+      <h2>الأقسام المرفوعة</h2>
+      <div class="periods-list" id="periodsList">
+        <p style="color: #666; text-align: center;">لا توجد أقسام مرفوعة</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Usage Tab -->
+  <div id="usage" class="tab-content">
+    <div class="ai-card">
+      <h2>ملخص الاستهلاك</h2>
+      <div class="stats-grid" id="usageStats">
+        <div class="stat-card">
+          <div class="stat-value" id="totalChats">0</div>
+          <div class="stat-label">رسائل Chat</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="totalStt">0</div>
+          <div class="stat-label">تحويل صوت→نص</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="totalTts">0</div>
+          <div class="stat-label">تحويل نص→صوت</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="totalTokens">0</div>
+          <div class="stat-label">إجمالي Tokens</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="estimatedCost">$0</div>
+          <div class="stat-label">التكلفة التقديرية</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 16px;">
+        <button class="btn btn-secondary" id="refreshUsageBtn">🔄 تحديث</button>
+        <button class="btn btn-danger" id="resetUsageBtn">🗑️ إعادة تعيين</button>
+      </div>
+    </div>
+
+    <div class="ai-card">
+      <h2>سجل العمليات (آخر 100)</h2>
+      <div class="usage-log" id="usageLog">
+        <p style="color: #666; text-align: center;">لا توجد عمليات مسجلة</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Linked Clients Tab -->
+  <div id="linked" class="tab-content">
+    <div class="ai-card">
+      <h2>العملاء المربوطين بواتساب</h2>
+      <div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <button class="btn btn-secondary" id="refreshLinkedClientsBtn">🔄 تحديث</button>
+        <button class="btn btn-danger" style="display: none;" id="deleteSelectedLinkedBtn" onclick="deleteSelectedLinkedClients()">
+          🗑️ حذف المحدد (<span id="selectedLinkedCount">0</span>)
+        </button>
+      </div>
+      <div style="overflow-x: auto;">
+        <table class="clients-table" id="linkedClientsTable">
+          <thead>
+            <tr>
+              <th style="width: 40px;"><input type="checkbox" id="selectAllLinked" onchange="toggleSelectAllLinked(this)"></th>
+              <th>WhatsApp ID</th>
+              <th>الاسم</th>
+              <th>المدينة</th>
+              <th>الوكالة</th>
+              <th>ID مربوط</th>
+              <th>الحالة</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="linkedClientsBody">
+            <tr>
+              <td colspan="8" style="text-align: center; color: #666;">لا يوجد عملاء مربوطين</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <script>
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab).classList.add('active');
+      });
+    });
+
+    // Alert helper
+    function showAlert(message, type = 'success') {
+      const container = document.getElementById('alertContainer');
+      container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+      setTimeout(() => container.innerHTML = '', 5000);
+    }
+
+    // Cookie helper
+    function getCookie(name) {
+      const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      if (match) return match[2];
+      return null;
+    }
+
+    // API helper
+    async function api(method, url, data = null) {
+      const options = { method, credentials: 'include' };
+      if (data && !(data instanceof FormData)) {
+        options.headers = { 'Content-Type': 'application/json' };
+        options.body = JSON.stringify(data);
+      } else if (data) {
+        options.body = data;
+      }
+      const res = await fetch(url, options);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Unknown error');
+      return json;
+    }
+
+    // Load settings
+    async function loadSettings() {
+      try {
+        const settings = await api('GET', '/api/ai/settings');
+        document.getElementById('aiEnabled').checked = settings.enabled;
+        document.getElementById('openaiKey').value = settings.openaiKey || '';
+        document.getElementById('modelChat').value = settings.modelChat || 'gpt-4o-mini';
+        document.getElementById('modelStt').value = settings.modelStt || 'whisper-1';
+        document.getElementById('modelTts').value = settings.modelTts || 'tts-1';
+        document.getElementById('voiceTts').value = settings.voiceTts || 'alloy';
+        document.getElementById('trustedSessionMinutes').value = settings.trustedSessionMinutes || 15;
+        document.getElementById('agencyPercent').value = settings.agencyPercent || 0;
+        
+        // New personality settings
+        document.getElementById('botName').value = settings.botName || 'مساعد أبو سلطان';
+        document.getElementById('ownerName').value = settings.ownerName || 'أبو سلطان';
+        document.getElementById('dialect').value = settings.dialect || 'سورية';
+        document.getElementById('clientGender').value = settings.clientGender || 'مؤنث';
+        document.getElementById('friendliness').value = settings.friendliness || 'عالي';
+        document.getElementById('salaryCurrency').value = settings.salaryCurrency || 'ر.س';
+        document.getElementById('adminContact').value = settings.adminContact || 'تواصلي مع الإدارة';
+        document.getElementById('enableVoiceReplies').checked = settings.enableVoiceReplies || false;
+      } catch (err) {
+        showAlert('فشل تحميل الإعدادات: ' + err.message, 'error');
+      }
+    }
+
+    // Save settings
+    document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
+      try {
+        const data = {
+          enabled: document.getElementById('aiEnabled').checked,
+          modelChat: document.getElementById('modelChat').value,
+          modelStt: document.getElementById('modelStt').value,
+          modelTts: document.getElementById('modelTts').value,
+          voiceTts: document.getElementById('voiceTts').value,
+          trustedSessionMinutes: parseInt(document.getElementById('trustedSessionMinutes').value) || 15,
+          agencyPercent: parseFloat(document.getElementById('agencyPercent').value) || 0,
+          
+          // New personality settings
+          botName: document.getElementById('botName').value || 'مساعد أبو سلطان',
+          ownerName: document.getElementById('ownerName').value || 'أبو سلطان',
+          dialect: document.getElementById('dialect').value || 'سورية',
+          clientGender: document.getElementById('clientGender').value || 'مؤنث',
+          friendliness: document.getElementById('friendliness').value || 'عالي',
+          salaryCurrency: document.getElementById('salaryCurrency').value || 'ر.س',
+          adminContact: document.getElementById('adminContact').value || 'تواصلي مع الإدارة',
+          enableVoiceReplies: document.getElementById('enableVoiceReplies').checked
+        };
+
+        const keyInput = document.getElementById('openaiKey').value;
+        if (keyInput && !keyInput.includes('•')) {
+          data.openaiKey = keyInput;
+        }
+
+        await api('POST', '/api/ai/settings', data);
+        showAlert('تم حفظ الإعدادات بنجاح ✅');
+      } catch (err) {
+        showAlert('فشل حفظ الإعدادات: ' + err.message, 'error');
+      }
+    });
+
+    // File upload
+    const fileUploadArea = document.getElementById('fileUploadArea');
+    const salaryFileInput = document.getElementById('salaryFile');
+    let uploadedFileData = null;
+
+    fileUploadArea.addEventListener('click', () => salaryFileInput.click());
+    fileUploadArea.addEventListener('dragover', e => { e.preventDefault(); fileUploadArea.classList.add('dragover'); });
+    fileUploadArea.addEventListener('dragleave', () => fileUploadArea.classList.remove('dragover'));
+    fileUploadArea.addEventListener('drop', e => {
+      e.preventDefault();
+      fileUploadArea.classList.remove('dragover');
+      if (e.dataTransfer.files.length) {
+        salaryFileInput.files = e.dataTransfer.files;
+        handleFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+
+    salaryFileInput.addEventListener('change', e => {
+      if (e.target.files.length) handleFileSelect(e.target.files[0]);
+    });
+
+    async function handleFileSelect(file) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const preview = await api('POST', '/api/ai/salary/upload/preview', formData);
+        uploadedFileData = { file, preview };
+
+        // Populate column selects
+        const idCol = document.getElementById('idColumn');
+        const salaryCol = document.getElementById('salaryColumn');
+        idCol.innerHTML = '';
+        salaryCol.innerHTML = '';
+
+        preview.columns.forEach(col => {
+          idCol.innerHTML += `<option value="${col}">${col}</option>`;
+          salaryCol.innerHTML += `<option value="${col}">${col}</option>`;
+        });
+
+        // Try to auto-detect columns
+        const idGuess = preview.columns.find(c => c.toLowerCase().includes('id'));
+        const salaryGuess = preview.columns.find(c => c.toLowerCase().includes('salary') || c.toLowerCase().includes('راتب'));
+        if (idGuess) idCol.value = idGuess;
+        if (salaryGuess) salaryCol.value = salaryGuess;
+
+        // Show preview table
+        let tableHtml = '<table class="clients-table"><thead><tr>';
+        preview.columns.forEach(col => tableHtml += `<th>${col}</th>`);
+        tableHtml += '</tr></thead><tbody>';
+        preview.sampleRows.forEach(row => {
+          tableHtml += '<tr>';
+          preview.columns.forEach(col => tableHtml += `<td>${row[col] || ''}</td>`);
+          tableHtml += '</tr>';
+        });
+        tableHtml += '</tbody></table>';
+        document.getElementById('previewTable').innerHTML = tableHtml;
+        document.getElementById('rowCount').textContent = `إجمالي الصفوف: ${preview.totalRows}`;
+
+        document.getElementById('filePreview').style.display = 'block';
+        fileUploadArea.style.display = 'none';
+
+      } catch (err) {
+        showAlert('فشل قراءة الملف: ' + err.message, 'error');
+      }
+    }
+
+    document.getElementById('cancelUploadBtn').addEventListener('click', () => {
+      document.getElementById('filePreview').style.display = 'none';
+      fileUploadArea.style.display = 'block';
+      uploadedFileData = null;
+      salaryFileInput.value = '';
+    });
+
+    document.getElementById('uploadBtn').addEventListener('click', async () => {
+      if (!uploadedFileData) return;
+
+      const periodName = document.getElementById('periodName').value.trim();
+      if (!periodName) {
+        showAlert('يرجى إدخال اسم القسم', 'error');
+        return;
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append('file', uploadedFileData.file);
+        formData.append('name', periodName);
+        formData.append('idColumn', document.getElementById('idColumn').value);
+        formData.append('salaryColumn', document.getElementById('salaryColumn').value);
+        formData.append('agencyPercent', document.getElementById('uploadAgencyPercent').value || 0);
+
+        await api('POST', '/api/ai/salary/upload', formData);
+        showAlert('تم رفع القسم بنجاح');
+
+        document.getElementById('filePreview').style.display = 'none';
+        fileUploadArea.style.display = 'block';
+        uploadedFileData = null;
+        salaryFileInput.value = '';
+        document.getElementById('periodName').value = '';
+
+        loadPeriods();
+
+      } catch (err) {
+        showAlert('فشل الرفع: ' + err.message, 'error');
+      }
+    });
+
+    // Load periods
+    async function loadPeriods() {
+      try {
+        const periods = await api('GET', '/api/ai/salary/periods');
+        const container = document.getElementById('periodsList');
+
+        if (!periods.length) {
+          container.innerHTML = '<p style="color: #666; text-align: center;">لا توجد أقسام مرفوعة</p>';
+          return;
+        }
+
+        container.innerHTML = periods.map(p => `
+          <div class="period-item">
+            <div class="period-info">
+              <h4>${p.name} ${p.isCurrent ? '<span class="period-badge">الحالي</span>' : ''}</h4>
+              <span>${p.recordCount} سجل • رفع: ${new Date(p.uploadedAt).toLocaleDateString('ar')} • نسبة: ${p.agencyPercent}%</span>
+            </div>
+            <div>
+              ${!p.isCurrent ? `<button class="btn btn-secondary btn-sm" onclick="setCurrentPeriod('${p.id}')">تعيين كحالي</button>` : ''}
+              <button class="btn btn-danger btn-sm" onclick="deletePeriod('${p.id}')">حذف</button>
+            </div>
+          </div>
+        `).join('');
+
+      } catch (err) {
+        showAlert('فشل تحميل الأقسام: ' + err.message, 'error');
+      }
+    }
+
+    window.setCurrentPeriod = async (id) => {
+      try {
+        await api('POST', `/api/ai/salary/period/${id}/current`);
+        showAlert('تم تعيين القسم كحالي');
+        loadPeriods();
+      } catch (err) {
+        showAlert('فشل: ' + err.message, 'error');
+      }
+    };
+
+    window.deletePeriod = async (id) => {
+      if (!confirm('هل أنت متأكد من حذف هذا القسم؟')) return;
+      try {
+        await api('DELETE', `/api/ai/salary/period/${id}`);
+        showAlert('تم حذف القسم');
+        loadPeriods();
+      } catch (err) {
+        showAlert('فشل الحذف: ' + err.message, 'error');
+      }
+    };
+
+    // Load usage
+    async function loadUsage() {
+      try {
+        const summary = await api('GET', '/api/ai/usage');
+        document.getElementById('totalChats').textContent = summary.totalChatCalls || 0;
+        document.getElementById('totalStt').textContent = summary.totalSttCalls || 0;
+        document.getElementById('totalTts').textContent = summary.totalTtsCalls || 0;
+        document.getElementById('totalTokens').textContent = (summary.totalInputTokens + summary.totalOutputTokens) || 0;
+        document.getElementById('estimatedCost').textContent = '$' + (summary.estimatedCost || 0).toFixed(4);
+
+        const log = await api('GET', '/api/ai/usage/log');
+        const logContainer = document.getElementById('usageLog');
+
+        if (!log.length) {
+          logContainer.innerHTML = '<p style="color: #666; text-align: center;">لا توجد عمليات مسجلة</p>';
+          return;
+        }
+
+        logContainer.innerHTML = log.reverse().map(entry => `
+          <div class="log-entry">
+            <span class="log-type ${entry.type}">${entry.type}</span>
+            <span class="log-details">
+              ${entry.type === 'CHAT' ? `${entry.inputTokens}+${entry.outputTokens} tokens` : ''}
+              ${entry.type === 'STT' ? `${entry.durationSeconds?.toFixed(1)}s` : ''}
+              ${entry.type === 'TTS' ? `${entry.characterCount} chars` : ''}
+              • ${entry.model}
+            </span>
+            <span class="log-cost">$${entry.cost?.toFixed(4) || 0}</span>
+            <span style="color: #666; font-size: 0.8rem;">${new Date(entry.time).toLocaleString('ar')}</span>
+          </div>
+        `).join('');
+
+      } catch (err) {
+        showAlert('فشل تحميل الاستهلاك: ' + err.message, 'error');
+      }
+    }
+
+    document.getElementById('refreshUsageBtn').addEventListener('click', loadUsage);
+    document.getElementById('resetUsageBtn').addEventListener('click', async () => {
+      if (!confirm('هل أنت متأكد من إعادة تعيين إحصائيات الاستهلاك؟')) return;
+      try {
+        await api('POST', '/api/ai/usage/reset');
+        showAlert('تم إعادة تعيين الاستهلاك');
+        loadUsage();
+      } catch (err) {
+        showAlert('فشل: ' + err.message, 'error');
+      }
+    });
+
+    // Load clients
+    async function loadClients() {
+      try {
+        const clients = await api('GET', '/api/ai/clients');
+        const tbody = document.getElementById('clientsBody');
+
+        const clientsArray = Object.values(clients);
+        if (!clientsArray.length) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #666;">لا يوجد عملاء</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = clientsArray.map(c => `
+          <tr>
+            <td style="font-family: monospace; font-size: 0.85rem;">${c.whatsappId}</td>
+            <td>${c.profile?.fullName || '-'}</td>
+            <td>${c.profile?.city || '-'}</td>
+            <td>${c.profile?.agencyName || '-'}</td>
+            <td>${c.profile?.ids?.join(', ') || '-'}</td>
+            <td><span class="status-badge status-${c.status}">${c.status === 'complete' ? 'مكتمل' : 'غير مكتمل'}</span></td>
+            <td>${c.createdAt ? new Date(c.createdAt).toLocaleDateString('ar') : '-'}</td>
+          </tr>
+        `).join('');
+
+      } catch (err) {
+        showAlert('فشل تحميل العملاء: ' + err.message, 'error');
+      }
+    }
+
+    document.getElementById('refreshLinkedClientsBtn').addEventListener('click', loadLinkedClients);
+
+    // =====================================================
+    // Registered Clients Management
+    // =====================================================
+
+    async function loadRegisteredClients() {
+      try {
+        const clients = await api('GET', '/api/ai/registered-clients');
+        const tbody = document.getElementById('regClientsBody');
+        const countEl = document.getElementById('regClientCount');
+
+        const clientsArray = Object.values(clients);
+        countEl.textContent = `إجمالي: ${clientsArray.length} عميل`;
+
+        renderClientsList(clientsArray);
+
+      } catch (err) {
+        showAlert('فشل تحميل العملاء: ' + err.message, 'error');
+      }
+    }
+
+    document.getElementById('refreshRegClientsBtn').addEventListener('click', loadRegisteredClients);
+
+    document.getElementById('addRegClientBtn').addEventListener('click', async () => {
+      // Gather inputs first to avoid errors
+      // const idStr = document.getElementById('regClientId').value; // OLD
+      const fullName = document.getElementById('regFullName').value.trim();
+      const phone = document.getElementById('regPhone').value.trim();
+      const agencyName = document.getElementById('regAgency').value.trim();
+      const country = document.getElementById('regCountry').value.trim();
+      const city = document.getElementById('regCity').value.trim();
+      const address = document.getElementById('regAddress').value.trim();
+
+      if (!fullName) {
+        showAlert('الاسم الكامل مطلوب', 'error');
+        return;
+      }
+
+      // Parse IDs from dynamic fields
+      const ids = [];
+      document.querySelectorAll('input[name="regClientId"]').forEach(input => {
+        const val = input.value.trim();
+        if (val) ids.push(val);
+      });
+
+      if (ids.length === 0) {
+        showAlert('يجب إدخال ID واحد على الأقل', 'error');
+        return;
+      }
+
+      // Collect Custom Fields
+      const customFields = {};
+      const customFieldInputs = document.querySelectorAll('#customFieldsContainer input, #customFieldsContainer select');
+
+      customFieldInputs.forEach(input => {
+        // Skip sub-field inputs here, we handle them with their parent
+        if (input.classList.contains('sub-field-input')) return;
+
+        if (input.id.startsWith('customField_')) {
+          const key = input.id.replace('customField_', '');
+          const value = input.value.trim() || null;
+
+          if (value) {
+            customFields[key] = value;
+
+            // Check for sub-field value if this is a dropdown
+            if (input.tagName === 'SELECT') {
+              const subInput = document.getElementById(`${input.id}_sub`);
+              if (subInput && subInput.offsetParent !== null) { // Check if visible
+                const subKey = `${key}__sub`;
+                customFields[subKey] = subInput.value.trim() || null;
+              }
+            }
+          }
+        }
+      });
+
+      try {
+        if (editingRegClientKey) {
+          // Update Mode
+          const data = {
+            ids, // NOW WE SEND IDS
+            fullName, phone, agencyName, country, city, address, customFields
+          };
+          await api('PUT', `/api/ai/registered-clients/${editingRegClientKey}`, data);
+          showAlert('تم تحديث العميل بنجاح');
+          editingRegClientKey = null;
+          document.getElementById('addRegClientBtn').innerHTML = '➕ إضافة العميل';
+          document.getElementById('addRegClientBtn').classList.remove('btn-success');
+          document.getElementById('addRegClientBtn').classList.add('btn-primary');
+          // document.getElementById('regClientId').disabled = false; // It's always enabled now
+        } else {
+          // Create Mode
+          // const idVal = idStr.trim(); // Removed single ID logic
+          // if (!idVal) { showAlert('رقم ID مطلوب للإضافة', 'error'); return; }
+
+          const data = {
+            ids, // Send array directly
+            fullName, phone, agencyName, country, city, address, customFields
+          };
+          await api('POST', '/api/ai/registered-clients', data);
+          showAlert('تم إضافة العميل بنجاح');
+        }
+
+        clearRegForm();
+        loadRegisteredClients();
+
+      } catch (err) {
+        showAlert('فشل العملية: ' + err.message, 'error');
+      }
+    });
+
+    document.getElementById('clearRegFormBtn').addEventListener('click', clearRegForm);
+
+    function clearRegForm() {
+      // Reset IDs container to single empty input
+      document.getElementById('regIdsContainer').innerHTML = `
+           <div class="input-group" style="margin-bottom: 5px; display: flex; gap: 5px;">
+              <input type="text" name="regClientId" placeholder="مثال: 7099026" style="flex: 1;">
+           </div>
+      `;
+
+      document.getElementById('regFullName').value = '';
+      document.getElementById('regPhone').value = '';
+      document.getElementById('regAgency').value = '';
+      document.getElementById('regCountry').value = '';
+      document.getElementById('regCity').value = '';
+      document.getElementById('regAddress').value = '';
+
+      document.querySelectorAll('#customFieldsContainer input, #customFieldsContainer select').forEach(i => {
+        if (i.tagName === 'SELECT') {
+          i.selectedIndex = 0;
+        } else {
+          i.value = '';
+        }
+      });
+
+      // Hide all sub fields
+      document.querySelectorAll('[id$="_subFieldContainer"]').forEach(el => {
+        el.style.display = 'none';
+        el.innerHTML = '';
+      });
+
+      // Reset Edit Mode
+      editingRegClientKey = null;
+      const btn = document.getElementById('addRegClientBtn');
+      btn.innerHTML = '➕ إضافة العميل';
+      btn.classList.remove('btn-success');
+      btn.classList.add('btn-primary');
+    }
+
+    window.deleteRegClient = async (key) => {
+      if (!confirm('هل أنت متأكد من حذف هذا العميل؟')) return;
+      try {
+        await api('DELETE', `/api/ai/registered-clients/${key}`);
+        showAlert('تم حذف العميل');
+        loadRegisteredClients();
+      } catch (err) {
+        showAlert('فشل الحذف: ' + err.message, 'error');
+      }
+    };
+
+    window.promptAddId = async (key) => {
+      const newId = prompt('أدخل رقم الـ ID الجديد:');
+      if (!newId || !newId.trim()) return;
+
+      try {
+        await api('POST', '/api/ai/registered-clients/${key}/add-id', { newId: newId.trim() });
+        showAlert('تم إضافة الـ ID بنجاح');
+        loadRegisteredClients();
+      } catch (err) {
+        showAlert('فشل إضافة الـ ID: ' + err.message, 'error');
+      }
+    };
+
+    // Reset Client PIN
+    window.resetClientPin = async (clientKey, clientName) => {
+      if (!confirm(`هل تريد تجديد رمز PIN للعميل "${clientName}"؟\n\nسيتم إرسال الرمز الجديد عبر واتساب.`)) return;
+      
+      try {
+        const result = await api('POST', `/api/admin/clients/${clientKey}/reset-pin`);
+        
+        if (result.warning) {
+          // WhatsApp failed but PIN was generated
+          showAlert(`⚠️ ${result.warning}\n\nالرمز الجديد: ${result.newPin}`, 'error');
+        } else {
+          showAlert(`✅ تم تجديد PIN للعميل ${result.clientName} وإرسال رسالة واتساب بنجاح`);
+        }
+      } catch (err) {
+        showAlert('❌ فشل تجديد PIN: ' + err.message, 'error');
+      }
+    };
+
+    // Generate Portal Link
+    window.generatePortalLink = async (clientKey, clientName) => {
+      try {
+        const result = await api('POST', `/api/admin/portal/generate/${clientKey}`);
+        const fullUrl = window.location.origin + result.url;
+        
+        // Copy to clipboard
+        await navigator.clipboard.writeText(fullUrl);
+        
+        showAlert(`✅ رابط البوابة للعميل "${clientName}":\n\n${fullUrl}\n\n📋 تم نسخ الرابط!`);
+      } catch (err) {
+        showAlert('❌ فشل إنشاء الرابط: ' + err.message, 'error');
+      }
+    };
+
+    // Send Portal Links to All Main Agency Clients
+    window.sendPortalLinksToAll = async () => {
+      if (!confirm('هل تريد إرسال روابط البوابة لكل عملاء الوكالة الرئيسية (Main)?\n\nسيتم إرسال رسالة واتساب لكل عميل لديه رقم هاتف.')) return;
+      
+      try {
+        showAlert('⏳ جاري إرسال الروابط...');
+        const result = await api('POST', '/api/admin/portal/send-all');
+        
+        showAlert(`✅ تم الإرسال!\n\n📤 أُرسل: ${result.results.sent}\n❌ فشل: ${result.results.failed}\n⏭️ تخطي: ${result.results.skipped}`);
+      } catch (err) {
+        showAlert('❌ فشل الإرسال: ' + err.message, 'error');
+      }
+    };
+
+    // =====================================================
+    // Linked Clients (WhatsApp linked users)
+    // =====================================================
+
+    async function loadLinkedClients() {
+      try {
+        const clients = await api('GET', '/api/ai/clients');
+        const tbody = document.getElementById('linkedClientsBody');
+
+        const clientsArray = Object.values(clients);
+        
+        // Reset select all checkbox
+        document.getElementById('selectAllLinked').checked = false;
+        updateLinkedDeleteButton();
+        
+        if (!clientsArray.length) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #666;">لا يوجد عملاء مربوطين</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = clientsArray.map(c => `
+          <tr data-whatsapp-id="${c.whatsappId}">
+            <td><input type="checkbox" class="linked-checkbox" data-whatsapp-id="${c.whatsappId}" onchange="updateLinkedDeleteButton()"></td>
+            <td style="font-family: monospace; font-size: 0.85rem;">${c.whatsappId}</td>
+            <td>${c.profile?.fullName || '-'}</td>
+            <td>${c.profile?.city || '-'}</td>
+            <td>${c.profile?.agencyName || '-'}</td>
+            <td>${c.linkedClientId || c.profile?.ids?.join(', ') || '-'}</td>
+            <td><span class="status-badge status-${c.status}">${c.status === 'complete' ? 'مربوط' : 'قيد الربط'}</span></td>
+            <td>
+              <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.8rem;" onclick="deleteLinkedClient('${c.whatsappId}')">🗑️</button>
+            </td>
+          </tr>
+        `).join('');
+
+      } catch (err) {
+        showAlert('فشل تحميل العملاء المربوطين: ' + err.message, 'error');
+      }
+    }
+
+    // Toggle select all linked checkboxes
+    window.toggleSelectAllLinked = (checkbox) => {
+      const checkboxes = document.querySelectorAll('.linked-checkbox');
+      checkboxes.forEach(cb => cb.checked = checkbox.checked);
+      updateLinkedDeleteButton();
+    };
+
+    // Update linked delete button visibility and count
+    window.updateLinkedDeleteButton = () => {
+      const checkboxes = document.querySelectorAll('.linked-checkbox:checked');
+      const count = checkboxes.length;
+      const btn = document.getElementById('deleteSelectedLinkedBtn');
+      const countEl = document.getElementById('selectedLinkedCount');
+      
+      if (count > 0) {
+        btn.style.display = 'inline-block';
+        countEl.textContent = count;
+      } else {
+        btn.style.display = 'none';
+      }
+    };
+
+    // Delete single linked client
+    window.deleteLinkedClient = async (whatsappId) => {
+      if (!confirm('هل أنت متأكد من حذف هذا العميل المربوط؟')) return;
+      
+      try {
+        await api('DELETE', `/api/ai/clients/${encodeURIComponent(whatsappId)}`);
+        showAlert('تم حذف العميل المربوط بنجاح 🗑️');
+        loadLinkedClients();
+      } catch (err) {
+        showAlert('فشل الحذف: ' + err.message, 'error');
+      }
+    };
+
+    // Delete selected linked clients
+    window.deleteSelectedLinkedClients = async () => {
+      const checkboxes = document.querySelectorAll('.linked-checkbox:checked');
+      const ids = Array.from(checkboxes).map(cb => cb.dataset.whatsappId);
+      
+      if (ids.length === 0) {
+        showAlert('لم يتم تحديد أي عميل', 'error');
+        return;
+      }
+      
+      if (!confirm(`هل أنت متأكد من حذف ${ids.length} عميل مربوط؟\n\n⚠️ لا يمكن التراجع عن هذا الإجراء!`)) return;
+      
+      try {
+        const result = await api('POST', '/api/ai/clients/bulk-delete', { ids });
+        showAlert(`✅ تم حذف ${result.deleted} عميل${result.failed > 0 ? `\n❌ فشل حذف ${result.failed}` : ''}`);
+        loadLinkedClients();
+      } catch (err) {
+        showAlert('❌ فشل الحذف: ' + err.message, 'error');
+      }
+    };
+
+    // =====================================================
+    // Custom Fields Management
+    // =====================================================
+
+    // Toggle dropdown options visibility
+    document.getElementById('fieldType').addEventListener('change', function () {
+      document.getElementById('dropdownOptionsSection').style.display =
+        this.value === 'dropdown' ? 'block' : 'none';
+    });
+
+    async function loadCustomFields() {
+      try {
+        const fields = await api('GET', '/api/ai/custom-fields');
+        const container = document.getElementById('fieldsList');
+
+        if (!fields.length) {
+          container.innerHTML = '<p style="color: #666; text-align: center;">لا توجد حقول مخصصة</p>';
+          return;
+        }
+
+        container.innerHTML = fields.map(f => `
+          <div class="period-item">
+            <div class="period-info">
+              <h4>${f.name} <span class="period-badge">${f.type}</span> ${f.required ? '<span style="color: #dc2626;">*</span>' : ''}</h4>
+              <span>${f.type === 'dropdown' ? 'الخيارات: ' + (f.options?.join(', ') || 'لا يوجد') : ''}</span>
+            </div>
+            <div>
+              ${f.type === 'dropdown' ? `<button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="promptAddOption('${f.id}')">+ خيار</button>` : ''}
+              <button class="btn btn-danger" style="padding: 6px 12px; font-size: 0.8rem;" onclick="deleteField('${f.id}')">حذف</button>
+            </div>
+          </div>
+        `).join('');
+
+      } catch (err) {
+        showAlert('فشل تحميل الحقول: ' + err.message, 'error');
+      }
+    }
+
+    // State for editing
+    let editingFieldId = null;
+
+    document.getElementById('refreshFieldsBtn').addEventListener('click', loadCustomFields);
+
+    // Cancel edit mode
+    function cancelEdit() {
+      editingFieldId = null;
+      document.getElementById('addFieldBtn').innerHTML = '➕ إضافة الحقل';
+      document.getElementById('cancelEditBtn').style.display = 'none';
+      document.getElementById('fieldName').value = '';
+      document.getElementById('fieldType').value = 'text';
+      document.getElementById('fieldRequired').value = 'false';
+      document.getElementById('fieldType').disabled = false; // Allow changing type only when adding
+      document.getElementById('dropdownOptionsSection').style.display = 'none';
+      document.getElementById('dropdownOptionsInputs').innerHTML = `
+        <div class="option-row" style="display: flex; gap: 8px; margin-bottom: 12px; align-items: flex-start; flex-wrap: wrap;">
+          <input type="text" class="dropdown-option-value" placeholder="اسم الخيار" style="flex: 2; min-width: 150px;">
+          <select class="dropdown-option-subtype" style="flex: 1; min-width: 100px;" onchange="this.nextElementSibling.style.display = this.value ? 'block' : 'none'">
+            <option value="">بدون حقل فرعي</option>
+            <option value="text">نص</option>
+            <option value="number">رقم</option>
+            <option value="date">تاريخ</option>
+          </select>
+          <input type="text" class="dropdown-option-sublabel" placeholder="عنوان الحقل الفرعي" style="flex: 2; min-width: 150px; display: none;">
+        </div>
+      `;
+      document.querySelector('.ai-card h2').textContent = 'إضافة حقل جديد';
+    }
+
+    // Add dropdown option input field with sub-field support
+    window.addDropdownOptionInputWithSubField = function (value = '', subType = '', subLabel = '') {
+      const container = document.getElementById('dropdownOptionsInputs');
+      const div = document.createElement('div');
+      div.className = 'option-row';
+      div.style.cssText = 'display: flex; gap: 8px; margin-bottom: 12px; align-items: flex-start; flex-wrap: wrap;';
+
+      const subDisplay = subType ? 'block' : 'none';
+
+      div.innerHTML = `
+        <input type="text" class="dropdown-option-value" placeholder="اسم الخيار" value="${value}" style="flex: 2; min-width: 150px;">
+        <select class="dropdown-option-subtype" style="flex: 1; min-width: 100px;" onchange="this.nextElementSibling.style.display = this.value ? 'block' : 'none'">
+          <option value="" ${subType === '' ? 'selected' : ''}>بدون حقل فرعي</option>
+          <option value="text" ${subType === 'text' ? 'selected' : ''}>نص</option>
+          <option value="number" ${subType === 'number' ? 'selected' : ''}>رقم</option>
+          <option value="date" ${subType === 'date' ? 'selected' : ''}>تاريخ</option>
+        </select>
+        <input type="text" class="dropdown-option-sublabel" placeholder="عنوان الحقل الفرعي" value="${subLabel}" style="flex: 2; min-width: 150px; display: ${subDisplay};">
+        <button type="button" class="btn btn-danger" style="padding: 6px 12px;" onclick="this.parentElement.remove()">✕</button>
+      `;
+      container.appendChild(div);
+    };
+
+    // Edit field
+    window.editField = function (id) {
+      // Lookup by ID since cache uses key
+      const f = window.customFieldsCache[id];
+
+      if (!f) return;
+
+      editingFieldId = id;
+
+      // Update UI
+      document.querySelector('.ai-card h2').textContent = 'تعديل الحقل: ' + f.name;
+      document.getElementById('addFieldBtn').innerHTML = '💾 حفظ التعديلات';
+      document.getElementById('cancelEditBtn').style.display = 'inline-block';
+
+      // Set values
+      document.getElementById('fieldName').value = f.name;
+      document.getElementById('fieldType').value = f.type;
+      document.getElementById('fieldRequired').value = f.required.toString();
+
+      // Type cannot be changed during edit to avoid data inconsistency
+      document.getElementById('fieldType').disabled = true;
+
+      // Handle dropdown options
+      const dropdownSection = document.getElementById('dropdownOptionsSection');
+      const dropdownInputs = document.getElementById('dropdownOptionsInputs');
+
+      if (f.type === 'dropdown') {
+        dropdownSection.style.display = 'block';
+        dropdownInputs.innerHTML = ''; // Clear existing inputs
+
+        f.options.forEach(opt => {
+          let val = opt;
+          let subType = '';
+          let subLabel = '';
+
+          if (typeof opt === 'object') {
+            val = opt.value;
+            if (opt.subField) {
+              subType = opt.subField.type;
+              subLabel = opt.subField.label;
+            }
+          }
+
+          addDropdownOptionInputWithSubField(val, subType, subLabel);
+        });
+      } else {
+        dropdownSection.style.display = 'none';
+      }
+
+      // Scroll to form
+      document.querySelector('.ai-card').scrollIntoView({ behavior: 'smooth' });
+    };
+
+    document.getElementById('addFieldBtn').addEventListener('click', async () => {
+      const name = document.getElementById('fieldName').value.trim();
+      const type = document.getElementById('fieldType').value;
+      const required = document.getElementById('fieldRequired').value === 'true';
+
+      // Get dropdown options from inputs
+      let options = [];
+      let validationError = null;
+
+      if (type === 'dropdown') {
+        const rows = document.querySelectorAll('#dropdownOptionsInputs .option-row');
+        rows.forEach(row => {
+          const value = row.querySelector('.dropdown-option-value').value.trim();
+          const subType = row.querySelector('.dropdown-option-subtype').value;
+          const subLabel = row.querySelector('.dropdown-option-sublabel').value.trim();
+
+          if (value) {
+            if (subType) {
+              if (!subLabel) {
+                validationError = `الرجاء كتابة عنوان الحقل الفرعي للخيار "${value}"`;
+                return;
+              }
+              options.push({
+                value: value,
+                subField: { type: subType, label: subLabel }
+              });
+            } else {
+              options.push(value);
+            }
+          }
+        });
+      }
+
+      if (validationError) {
+        showAlert(validationError, 'error');
+        return;
+      }
+
+      if (!name) {
+        showAlert('اسم الحقل مطلوب', 'error');
+        return;
+      }
+
+      if (type === 'dropdown' && options.length === 0) {
+        showAlert('يجب إضافة خيار واحد على الأقل للقائمة المنسدلة', 'error');
+        return;
+      }
+
+      try {
+        if (editingFieldId) {
+          // Update existing field
+          await api('PUT', `/api/ai/custom-fields/${editingFieldId}`, { name, required, options });
+          showAlert('تم تحديث الحقل بنجاح');
+          cancelEdit(); // Reset mode
+        } else {
+          // Create new field
+          await api('POST', '/api/ai/custom-fields', { name, type, required, options });
+          showAlert('تم إضافة الحقل بنجاح');
+
+          // Clear inputs
+          document.getElementById('fieldName').value = '';
+          document.getElementById('fieldType').value = 'text';
+          document.getElementById('dropdownOptionsSection').style.display = 'none';
+          document.getElementById('dropdownOptionsInputs').innerHTML = `
+            <div class="option-row" style="display: flex; gap: 8px; margin-bottom: 12px; align-items: flex-start; flex-wrap: wrap;">
+              <input type="text" class="dropdown-option-value" placeholder="اسم الخيار" style="flex: 2; min-width: 150px;">
+              <select class="dropdown-option-subtype" style="flex: 1; min-width: 100px;" onchange="this.nextElementSibling.style.display = this.value ? 'block' : 'none'">
+                <option value="">بدون حقل فرعي</option>
+                <option value="text">نص</option>
+                <option value="number">رقم</option>
+                <option value="date">تاريخ</option>
+              </select>
+              <input type="text" class="dropdown-option-sublabel" placeholder="عنوان الحقل الفرعي" style="flex: 2; min-width: 150px; display: none;">
+            </div>
+          `;
+        }
+
+        loadCustomFields();
+        renderCustomFieldsInForm();
+      } catch (err) {
+        showAlert('فشل العملية: ' + err.message, 'error');
+      }
+    });
+
+    // Store fields data globally to avoid HTML attribute escaping issues
+    window.customFieldsCache = {};
+    window.customFieldsCacheByKey = {}; // Also store by key for easier lookup in form rendering
+
+    // Render custom fields in client registration form
+    async function renderCustomFieldsInForm() {
+      try {
+        const fields = await api('GET', '/api/ai/custom-fields');
+        const container = document.getElementById('customFieldsContainer');
+
+        // Update cache
+        window.customFieldsCache = {}; // Clear previous cache
+        window.customFieldsCacheByKey = {}; // New cache for lookup by key
+        fields.forEach(f => {
+          window.customFieldsCache[f.id] = f; // Cache by ID
+          window.customFieldsCacheByKey[f.key] = f; // Cache by key
+        });
+
+        if (!fields.length) {
+          container.innerHTML = '';
+          return;
+        }
+
+        container.innerHTML = fields.map(f => {
+          let inputHtml = '';
+          const fieldId = `customField_${f.key}`;
+
+          if (f.type === 'dropdown') {
+            inputHtml = `
+              <select id="${fieldId}" onchange="handleDropdownSubField(this, '${f.key}')">
+                <option value="">اختر...</option>
+                ${f.options.map(o => {
+              const val = typeof o === 'object' ? o.value : o;
+              return `<option value="${val}">${val}</option>`;
+            }).join('')}
+              </select>
+              <div id="${fieldId}_subFieldContainer" style="margin-top: 8px; display: none; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                <!-- Sub field will be injected here -->
+              </div>
+            `;
+          } else if (f.type === 'date') {
+            inputHtml = `<input type="date" id="${fieldId}">`;
+          } else if (f.type === 'number') {
+            inputHtml = `<input type="number" id="${fieldId}">`;
+          } else {
+            inputHtml = `<input type="text" id="${fieldId}" placeholder="${f.name}">`;
+          }
+
+          return `
+            <div class="field-group" style="margin-bottom: 12px;">
+               <label style="display: block; margin-bottom: 4px; color: #a0a0b0;">${f.name} ${f.required ? '<span style="color: #ef4444">*</span>' : ''}</label>
+               ${inputHtml}
+            </div>
+          `;
+        }).join('');
+
+      } catch (err) {
+        console.error('Failed to render custom fields', err);
+      }
+    }
+
+    // Lookups Logic
+    async function loadLookups() {
+      try {
+        const data = await api('GET', '/api/ai/lookups');
+        // Store lookups if needed, or just populate (but we don't have lookup dropdowns in add form YET, only input text)
+        // Wait, the plan was to replace inputs with dropdowns? "update Dashboard: Selects".
+        // The user code seems to rely on simple inputs still or I missed the selects update.
+        // Effectively, if the inputs are IDs "agency", "country", "city", we can try to populate them if they are selects.
+        // Let's check if elements are selects.
+
+        const agencySelect = document.getElementById('agency');
+        if (agencySelect && agencySelect.tagName === 'SELECT') {
+          agencySelect.innerHTML = '<option value="">اختر الوكالة...</option>' +
+            data.agencies.map(a => `<option value="${a}">${a}</option>`).join('');
+        }
+
+        const countrySelect = document.getElementById('country');
+        if (countrySelect && countrySelect.tagName === 'SELECT') {
+          countrySelect.innerHTML = '<option value="">اختر الدولة...</option>' +
+            Object.keys(data.countries).map(c => `<option value="${c}">${c}</option>`).join('');
+
+          // City logic
+          countrySelect.onchange = () => {
+            const citySelect = document.getElementById('city');
+            if (citySelect) {
+              const cities = data.countries[countrySelect.value] || [];
+              citySelect.innerHTML = '<option value="">اختر المدينة...</option>' +
+                cities.map(c => `<option value="${c}">${c}</option>`).join('');
+            }
+          };
+        }
+
+      } catch (err) {
+        console.error('Failed to load lookups', err);
+      }
+    }
+
+
+    // Load custom fields for management
+    async function loadCustomFields() {
+      try {
+        const fields = await api('GET', '/api/ai/custom-fields');
+        const container = document.getElementById('fieldsList');
+        container.innerHTML = fields.map(f => `
+          <div class="period-item">
+            <div class="period-info">
+              <h4>${f.name} <span class="period-badge">${f.type}</span> ${f.required ? '<span style="color: #dc2626;">*</span>' : ''}</h4>
+              <span>${f.type === 'dropdown' ? 'الخيارات: ' + (f.options?.map(o => typeof o === 'object' ? o.value : o).join(', ') || 'لا يوجد') : ''}</span>
+            </div>
+            <div>
+              ${f.type === 'dropdown' ? `<button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="promptAddOption('${f.id}')">+ خيار</button>` : ''}
+              <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.8rem; background: #3b82f6;" onclick="editField('${f.id}')">تعديل</button>
+              <button class="btn btn-danger" style="padding: 6px 12px; font-size: 0.8rem;" onclick="deleteField('${f.id}')">حذف</button>
+            </div>
+          </div>
+        `).join('');
+
+      } catch (err) {
+        showAlert('فشل تحميل الحقول: ' + err.message, 'error');
+      }
+    }
+
+    // Handle showing/hiding sub-fields for dropdowns
+    window.handleDropdownSubField = function (selectEl, fieldKey) {
+      const field = window.customFieldsCacheByKey[fieldKey];
+      if (!field) return;
+
+      const selectedValue = selectEl.value;
+      const subContainer = document.getElementById(`${selectEl.id}_subFieldContainer`);
+
+      const selectedOption = field.options.find(o => (typeof o === 'object' ? o.value : o) === selectedValue);
+
+      if (selectedOption && typeof selectedOption === 'object' && selectedOption.subField) {
+        const sf = selectedOption.subField;
+        const subId = `${selectEl.id}_sub`;
+
+        let subInput = '';
+        if (sf.type === 'date') subInput = `<input type="date" id="${subId}" class="sub-field-input">`;
+        else if (sf.type === 'number') subInput = `<input type="number" id="${subId}" class="sub-field-input" placeholder="${sf.label}">`;
+        else subInput = `<input type="text" id="${subId}" class="sub-field-input" placeholder="${sf.label}">`;
+
+        subContainer.innerHTML = `
+          <label style="font-size: 0.85em; color: #a0a0b0; display: block; margin-bottom: 4px;">${sf.label}</label>
+          ${subInput}
+        `;
+        subContainer.style.display = 'block';
+      } else {
+        subContainer.style.display = 'none';
+        subContainer.innerHTML = '';
+      }
+    };
+
+    // Import / Export Logic
+    window.exportClients = async () => {
+      try {
+        const token = getCookie('token');
+        const response = await fetch('/api/ai/registered-clients/export', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(`${response.status} ${response.statusText}: ${text}`);
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'clients_export.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch (err) {
+        showAlert('فشل التصدير: ' + err.message, 'error');
+      }
+    };
+
+    window.downloadTemplate = async () => {
+      try {
+        const token = getCookie('token');
+        const response = await fetch('/api/ai/registered-clients/template', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(`${response.status} ${response.statusText}: ${text}`);
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'clients_template.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch (err) {
+        showAlert('فشل تحميل القالب: ' + err.message, 'error');
+      }
+    };
+
+    window.importClients = async (input) => {
+      if (!input.files || !input.files[0]) return;
+
+      const file = input.files[0];
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        showAlert('جاري رفع الملف ومعالجة البيانات... ⏳');
+        const token = getCookie('token');
+        const response = await fetch('/api/ai/registered-clients/import', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          let msg = `تم الاستيراد بنجاح! ✅\nإضافة: ${result.imported}\nتحديث: ${result.updated}`;
+          if (result.errors && result.errors.length > 0) {
+            msg += `\n\n⚠️ أخطاء (${result.errors.length}):\n` + result.errors.slice(0, 5).join('\n') + (result.errors.length > 5 ? '\n...' : '');
+          }
+          showAlert(msg, result.errors.length > 0 ? 'warning' : 'success');
+          loadRegisteredClients(); // Refresh list
+        } else {
+          throw new Error(result.error || 'Unknown error');
+        }
+      } catch (err) {
+        showAlert('فشل الاستيراد: ' + err.message, 'error');
+      } finally {
+        input.value = ''; // Reset input
+      }
+    };
+
+    // Send Salary To All
+    window.sendSalaryToAll = async () => {
+      if (!confirm('هل أنت متأكد من إرسال إشعارات الراتب لجميع العملاء الذين لديهم راتب في الفترة الحالية؟\nهذا قد يستغرق بعض الوقت.')) return;
+
+      try {
+        showAlert('جاري الإرسال... ⏳', 'info');
+        const token = getCookie('token');
+        const response = await fetch('/api/ai/notify/salary-all', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          let msg = `تم الإنتهاء! ✅\nتم الإرسال: ${result.sent}\nتجاوز (لا يوجد راتب): ${result.skipped}`;
+          if (result.errors > 0) msg += `\nأخطاء: ${result.errors}`;
+          showAlert(msg, 'success');
+        } else {
+          throw new Error(result.error);
+        }
+      } catch (err) {
+        showAlert('فشل الإرسال الجماعي: ' + err.message, 'error');
+      }
+    };
+
+    window.deleteField = async (id) => {
+      if (!confirm('هل أنت متأكد من حذف هذا الحقل؟')) return;
+      try {
+        await api('DELETE', `/api/ai/custom-fields/${id}`);
+        showAlert('تم حذف الحقل');
+        loadCustomFields();
+        renderCustomFieldsInForm();
+      } catch (err) {
+        showAlert('فشل الحذف: ' + err.message, 'error');
+      }
+    };
+
+    window.promptAddOption = async (id) => {
+      const option = prompt('أدخل الخيار الجديد:');
+      if (!option || !option.trim()) return;
+
+      try {
+        await api('POST', `/api/ai/custom-fields/${id}/options`, { option: option.trim() });
+        showAlert('تم إضافة الخيار');
+        loadCustomFields();
+        renderCustomFieldsInForm();
+      } catch (err) {
+        showAlert('فشل إضافة الخيار: ' + err.message, 'error');
+      }
+    };
+
+    // Dynamic ID Fields Logic
+    window.addIdField = (value = '') => {
+      const container = document.getElementById('regIdsContainer');
+      const div = document.createElement('div');
+      div.className = 'input-group';
+      div.style.cssText = 'margin-bottom: 5px; display: flex; gap: 5px;';
+
+      div.innerHTML = `
+           <input type="text" name="regClientId" value="${value}" placeholder="ID إضافي" style="flex: 1;">
+           <button class="btn btn-danger" style="padding: 0 8px;" onclick="this.parentElement.remove()">✕</button>
+        `;
+      container.appendChild(div);
+    };
+
+    // Initial load
+    loadSettings();
+    loadPeriods();
+    loadUsage();
+    loadLookups(); // NEW
+    loadRegisteredClients();
+    loadLinkedClients();
+    loadCustomFields();
+    renderCustomFieldsInForm();
+    loadSettingsFromBackend(); // NEW: Load initial settings
+
+    // Settings Logic
+    async function loadSettingsFromBackend() {
+      try {
+        const settings = await api('GET', '/api/ai/settings');
+
+      } catch (err) {
+        console.error('Failed to load settings', err);
+      }
+    }
+
+    // Template Variable Insertion
+
+
+    document.getElementById('saveSettingsBtn').addEventListener('click', async (e) => {
+      e.preventDefault();
+      const btn = e.target;
+      const originalText = btn.innerText;
+      btn.innerText = 'جاري الحفظ...';
+      btn.disabled = true;
+
+      try {
+        const data = {
+          // AI Settings
+          enabled: document.getElementById('aiEnabled')?.checked || false,
+          openaiKey: document.getElementById('openaiKey')?.value || '',
+          modelChat: document.getElementById('modelChat')?.value || 'gpt-4-turbo',
+          modelStt: document.getElementById('modelStt')?.value || 'whisper-1',
+          modelTts: document.getElementById('modelTts')?.value || 'tts-1',
+          voiceTts: document.getElementById('voiceTts')?.value || 'alloy',
+          trustedSessionMinutes: parseInt(document.getElementById('trustedSessionMinutes')?.value) || 15,
+          agencyPercent: parseFloat(document.getElementById('agencyPercent')?.value) || 0
+        };
+
+        // Send all to unified endpoint
+        await api('POST', '/api/ai/settings', data);
+        showAlert('تم حفظ جميع الإعدادات والقوالب بنجاح ✅');
+
+      } catch (err) {
+        console.error(err);
+        showAlert('خطأ في حفظ الإعدادات: ' + err.message, 'error');
+      } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+      }
+    });
+
+
+
+    // Broadcast Logic
+    let currentBroadcastTargets = [];
+
+    function promptBroadcast() {
+      const searchQ = document.getElementById('searchRegClientInput').value.trim();
+      const filterText = searchQ ? `نتائج البحث عن: "${searchQ}"` : 'كل العملاء المسجلين';
+
+      // Collect current list IDs (or fetch fresh if needed, but UI list is easiest reference)
+      // Ideally we fetch from backend search if we want to be robust, but for now lets use the ones we have in memory 
+      // Or better yet, pass the current query to the backend to resolve targets.
+      // Let's rely on the frontend list logic since we have `renderClientsList` populating `clientsArray`.
+      // BUT `clientsArray` is local scope to `loadRegisteredClients`. Let's assume we send ALL or Filtered.
+
+      // Strategy: We will fetch all clients again to be safe.
+      // If search is active, we use search endpoint.
+
+      document.getElementById('broadcastFilterInfo').textContent = filterText;
+      document.getElementById('broadcastMessage').value = '';
+      document.getElementById('broadcastModal').style.display = 'flex';
+    }
+
+    async function sendBroadcast() {
+      const message = document.getElementById('broadcastMessage').value.trim();
+      if (!message) {
+        alert('يرجى كتابة رسالة');
+        return;
+      }
+
+      if (!confirm('هل أنت متأكد من بدء الإرسال؟ لا يمكن التراجع.')) return;
+
+      const q = document.getElementById('searchRegClientInput').value.trim();
+      let targets = [];
+
+      try {
+        if (q) {
+          targets = await api('GET', `/api/ai/registered-clients/search/query?q=${encodeURIComponent(q)}`);
+        } else {
+          targets = await api('GET', '/api/ai/registered-clients'); // Get all (key-value map)
+          targets = Object.values(targets);
+        }
+
+        if (targets.length === 0) {
+          alert('لا يوجد عملاء مستهدفين!');
+          return;
+        }
+
+        const res = await api('POST', '/api/ai/notify/broadcast', { clients: targets, message });
+
+        document.getElementById('broadcastModal').style.display = 'none';
+        showAlert(`تمت جدولة الإرسال لـ ${res.queued} عميل 🚀`);
+
+      } catch (err) {
+        showAlert('فشل الإرسال: ' + err.message, 'error');
+      }
+    }
+  </script>
+
+  <!-- Notification Modal -->
+  <div id="notifyModal" class="modal"
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;">
+    <div class="ai-card" style="width: 90%; max-width: 500px; margin: 0;">
+      <h3 style="margin-top: 0;">إرسال إشعار <span id="notifyModalClientName" style="color: #3b82f6;"></span></h3>
+
+      <div class="form-group">
+        <label>نوع الإشعار</label>
+        <select id="notifyType" onchange="toggleNotifyType(this.value)">
+          <option value="custom">رسالة مخصصة</option>
+          <option value="salary">إشعار الراتب</option>
+        </select>
+      </div>
+
+      <div id="notifyCustomSection">
+        <div class="form-group">
+          <label>الرسالة</label>
+          <textarea id="notifyMessage" rows="5" placeholder="اكتب رسالتك هنا..."></textarea>
+        </div>
+      </div>
+
+      <div id="notifySalarySection" style="display: none;">
+        <p style="color: #ccc; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px;">
+          سيتم إرسال إشعار يتضمن تفاصيل الراتب للفترة الحالية (إن وجد).
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px;">
+        <button class="btn btn-secondary" onclick="closeNotifyModal()">إلغاء</button>
+        <button class="btn btn-primary" onclick="sendNotification()">إرسال 🚀</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Broadcast Modal -->
+  <div id="broadcastModal" class="modal"
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;">
+    <div class="ai-card" style="width: 90%; max-width: 600px; margin: 0;">
+      <h3 style="margin-top: 0;">📢 إرسال جماعي (Broadcast)</h3>
+
+      <div class="alert alert-warning" style="font-size: 0.9em; margin-bottom: 15px;">
+        ⚠️ سيتم إرسال الرسائل بفواصل زمنية عشوائية (5-15 ثانية) لتجنب الحظر.
+      </div>
+
+      <div class="form-group">
+        <label>الفلترة الحالية:</label>
+        <div id="broadcastFilterInfo"
+          style="padding: 10px; background: rgba(255,255,255,0.05); border-radius: 4px; font-family: monospace;">
+          كل العملاء
+        </div>
+        <p style="font-size: 0.8em; color: #a0a0b0; margin-top: 5px;">* سيتم الإرسال لجميع العملاء الظاهرين في الجدول
+          حالياً (بناءً على البحث).</p>
+      </div>
+
+      <div class="form-group">
+        <label>الرسالة</label>
+        <textarea id="broadcastMessage" rows="6" placeholder="اكتب رسالتك هنا..."></textarea>
+      </div>
+
+      <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px;">
+        <button class="btn btn-secondary"
+          onclick="document.getElementById('broadcastModal').style.display='none'">إلغاء</button>
+        <button class="btn btn-primary" onclick="sendBroadcast()">بدء الإرسال 🚀</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Lookups Management Modal -->
+  <div id="lookupModal" class="modal"
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;">
+    <div class="ai-card" style="width: 90%; max-width: 500px; margin: 0;">
+      <h3 id="lookupModalTitle" style="margin-top: 0;">إدارة القوائم</h3>
+      <div id="lookupList"
+        style="max-height: 300px; overflow-y: auto; margin-bottom: 20px; border: 1px solid #333; padding: 10px;">
+        <!-- Items will be here -->
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <input type="text" id="newLookupItem" placeholder="عنصر جديد" style="flex: 1;">
+        <button class="btn btn-primary" onclick="addLookupItem()">إضافة</button>
+      </div>
+      <div style="margin-top: 20px; text-align: right;">
+        <button class="btn btn-secondary"
+          onclick="document.getElementById('lookupModal').style.display='none'">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Global Lookups State
+    let globalLookups = { agencies: [], countries: [] };
+    let currentLookupType = ''; // agency, country, city
+    let currentLookupParent = ''; // for city (country name)
+
+    async function loadLookups() {
+      try {
+        globalLookups = await api('GET', '/api/ai/lookups');
+        renderLookupSelects();
+      } catch (err) {
+        console.error('Failed to load lookups', err);
+      }
+    }
+
+    function renderLookupSelects() {
+      // Agency
+      const agencySelect = document.getElementById('regAgency');
+      const currentAgency = agencySelect.value;
+      agencySelect.innerHTML = '<option value="">اختر الوكالة...</option>' +
+        globalLookups.agencies.map(a => `<option value="${a}">${a}</option>`).join('');
+      agencySelect.value = currentAgency;
+
+      // Country
+      const countrySelect = document.getElementById('regCountry');
+      const currentCountry = countrySelect.value;
+      countrySelect.innerHTML = '<option value="">اختر الدولة...</option>' +
+        globalLookups.countries.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+      countrySelect.value = currentCountry;
+
+      renderCityOptions();
+    }
+
+    function renderCityOptions() {
+      const countryName = document.getElementById('regCountry').value;
+      const citySelect = document.getElementById('regCity');
+      const currentCity = citySelect.value; // Store if possible
+
+      citySelect.innerHTML = '<option value="">اختر المدينة...</option>';
+
+      if (!countryName) return;
+
+      const country = globalLookups.countries.find(c => c.name === countryName);
+      if (country && country.cities) {
+        citySelect.innerHTML += country.cities.map(c => `<option value="${c}">${c}</option>`).join('');
+      }
+
+      // Restore if valid
+      if (currentCity) citySelect.value = currentCity;
+    }
+
+    // Management UI
+    function promptManageLookups(type) {
+      currentLookupType = type;
+      document.getElementById('lookupModal').style.display = 'flex';
+
+      if (type === 'city') {
+        const country = document.getElementById('regCountry').value;
+        if (!country) {
+          alert('يرجى اختيار الدولة أولاً لإدارة مدنها.');
+          document.getElementById('lookupModal').style.display = 'none';
+          return;
+        }
+        currentLookupParent = country;
+        document.getElementById('lookupModalTitle').textContent = `إدارة مدن: ${country}`;
+      } else if (type === 'country') {
+        document.getElementById('lookupModalTitle').textContent = 'إدارة الدول';
+      } else {
+        document.getElementById('lookupModalTitle').textContent = 'إدارة الوكالات';
+      }
+
+      renderLookupList();
+    }
+
+    function renderLookupList() {
+      const list = document.getElementById('lookupList');
+      let items = [];
+
+      if (currentLookupType === 'agency') {
+        items = globalLookups.agencies;
+      } else if (currentLookupType === 'country') {
+        items = globalLookups.countries.map(c => c.name);
+      } else if (currentLookupType === 'city') {
+        const c = globalLookups.countries.find(x => x.name === currentLookupParent);
+        items = c ? c.cities : [];
+      }
+
+      list.innerHTML = items.map(item => `
+            <div style="display: flex; justify-content: space-between; padding: 5px; border-bottom: 1px solid #444;">
+                <span>${item}</span>
+                <button onclick="removeLookupItem('${item}')" style="background: none; border: none; cursor: pointer;">🗑️</button>
+            </div>
+        `).join('');
+    }
+
+    async function addLookupItem() {
+      const val = document.getElementById('newLookupItem').value.trim();
+      if (!val) return;
+
+      try {
+        if (currentLookupType === 'agency') {
+          await api('POST', '/api/ai/lookups/agency', { name: val });
+        } else if (currentLookupType === 'country') {
+          await api('POST', '/api/ai/lookups/country', { name: val });
+        } else if (currentLookupType === 'city') {
+          await api('POST', '/api/ai/lookups/city', { country: currentLookupParent, city: val });
+        }
+
+        document.getElementById('newLookupItem').value = '';
+        await loadLookups(); // Reload all
+        renderLookupList(); // Re-render list
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    async function removeLookupItem(val) {
+      if (!confirm('حذف؟')) return;
+      try {
+        if (currentLookupType === 'agency') {
+          await api('DELETE', `/api/ai/lookups/agency/${encodeURIComponent(val)}`);
+        } else if (currentLookupType === 'country') {
+          await api('DELETE', `/api/ai/lookups/country/${encodeURIComponent(val)}`);
+        } else if (currentLookupType === 'city') {
+          await api('DELETE', `/api/ai/lookups/city/${encodeURIComponent(currentLookupParent)}/${encodeURIComponent(val)}`);
+        }
+
+        await loadLookups(); // Reload all
+        renderLookupList(); // Re-render list
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    // Existing notification logic
+    let currentNotifyClientKey = null;
+    let currentNotifyPhone = null;
+
+    function promptNotify(key, name, phone) {
+      if (!phone) {
+        showAlert('لا يوجد رقم هاتف مسجل لهذا العميل', 'error');
+        return;
+      }
+      currentNotifyClientKey = key;
+      currentNotifyPhone = phone;
+      document.getElementById('notifyModalClientName').textContent = ` - ${name}`;
+      document.getElementById('notifyModal').style.display = 'flex';
+      document.getElementById('notifyType').value = 'custom';
+      toggleNotifyType('custom');
+    }
+
+    function closeNotifyModal() {
+      document.getElementById('notifyModal').style.display = 'none';
+      currentNotifyClientKey = null;
+      currentNotifyPhone = null;
+      document.getElementById('notifyMessage').value = '';
+    }
+
+    function toggleNotifyType(type) {
+      document.getElementById('notifyCustomSection').style.display = type === 'custom' ? 'block' : 'none';
+      document.getElementById('notifySalarySection').style.display = type === 'salary' ? 'block' : 'none';
+    }
+
+    async function sendNotification() {
+      const type = document.getElementById('notifyType').value;
+      try {
+        if (type === 'custom') {
+          const message = document.getElementById('notifyMessage').value.trim();
+          if (!message) {
+            showAlert('يرجى كتابة نص الرسالة', 'error');
+            return;
+          }
+          await api('POST', '/api/ai/notify/custom', { phone: currentNotifyPhone, message });
+          showAlert('تم إرسال الرسالة بنجاح 🚀');
+        } else {
+          const res = await api('POST', '/api/ai/notify/salary', { clientKey: currentNotifyClientKey });
+          showAlert(res.message ? 'تم إرسال الإشعار ونسخة منه لك ✅' : 'تم الإرسال');
+        }
+        closeNotifyModal();
+      } catch (err) {
+        showAlert('فشل الإرسال: ' + err.message, 'error');
+      }
+    }
+
+    // Edit Logic
+    let editingRegClientKey = null;
+
+    window.promptEditRegClient = async (key) => {
+      try {
+        const clients = await api('GET', '/api/ai/registered-clients');
+        const client = clients[key];
+        if (!client) return;
+
+        editingRegClientKey = key;
+
+        // Populate IDs
+        const ids = client.ids || [];
+        const container = document.getElementById('regIdsContainer');
+        container.innerHTML = ''; // Clear existing
+
+        if (ids.length > 0) {
+          ids.forEach((id, index) => {
+            if (index === 0) {
+              // First one always exists (or recreate it)
+              container.innerHTML = `
+                       <div class="input-group" style="margin-bottom: 5px; display: flex; gap: 5px;">
+                          <input type="text" name="regClientId" value="${id}" placeholder="مثال: 7099026" style="flex: 1;">
+                       </div>
+                   `;
+            } else {
+              addIdField(id);
+            }
+          });
+        } else {
+          // Default empty
+          container.innerHTML = `
+               <div class="input-group" style="margin-bottom: 5px; display: flex; gap: 5px;">
+                  <input type="text" name="regClientId" placeholder="مثال: 7099026" style="flex: 1;">
+               </div>
+            `;
+        }
+
+        document.getElementById('regFullName').value = client.fullName || '';
+        document.getElementById('regPhone').value = client.phone || '';
+        document.getElementById('regAgency').value = client.agencyName || '';
+        document.getElementById('regCountry').value = client.country || '';
+        document.getElementById('regCity').value = client.city || '';
+        document.getElementById('regAddress').value = client.address || '';
+
+        // Delete Logic
+        window.promptDeleteRegClient = async (key) => {
+          if (!confirm('هل أنت متأكد من حذف هذا العميل؟ لا يمكن التراجع.')) return;
+          try {
+            await api('DELETE', `/api/ai/registered-clients/${key}`);
+            showAlert('تم حذف العميل بنجاح 🗑️');
+            loadRegisteredClients();
+          } catch (err) {
+            showAlert('فشل الحذف: ' + err.message, 'error');
+          }
+        };
+
+        // Populate custom fields
+        renderCustomFieldsInForm().then(() => {
+          // Fill custom fields values
+          if (client.customFields) {
+            Object.entries(client.customFields).forEach(([k, v]) => {
+              // Try to find main field
+              const fieldId = `customField_${k}`;
+              const el = document.getElementById(fieldId);
+              if (el) {
+                el.value = v;
+                // Trigger change for dropdowns to show subfields
+                if (el.tagName === 'SELECT') {
+                  // We need to look up the field key to pass to handler
+                  // Assuming 'k' is the key
+                  if (window.handleDropdownSubField) {
+                    try { window.handleDropdownSubField(el, k); } catch (e) { }
+                  }
+                }
+              }
+
+              // Try subfield
+              if (k.includes('__sub')) {
+                const originalKey = k.split('__sub')[0];
+                const subId = `customField_${originalKey}_sub`;
+                const subEl = document.getElementById(subId);
+                if (subEl) subEl.value = v;
+              }
+            });
+          }
+        });
+
+        // Change button state
+        const btn = document.getElementById('addRegClientBtn');
+        btn.innerHTML = '💾 حفظ التعديلات';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-success');
+
+        // Scroll to form
+        document.querySelector('#registered .ai-card').scrollIntoView({ behavior: 'smooth' });
+
+      } catch (err) {
+        showAlert('خطأ: ' + err.message, 'error');
+      }
+    };
+
+    // Search Logic
+    document.getElementById('searchRegClientInput').addEventListener('input', async (e) => {
+      const q = e.target.value.trim();
+      if (q.length < 1) {
+        loadRegisteredClients();
+        return;
+      }
+
+      try {
+        const results = await api('GET', `/api/ai/registered-clients/search/query?q=${encodeURIComponent(q)}`);
+        renderClientsList(results);
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    function renderClientsList(clientsArray) {
+      const tbody = document.getElementById('regClientsBody');
+      const countEl = document.getElementById('regClientCount');
+      countEl.textContent = `النتائج: ${clientsArray.length}`;
+
+      // Reset select all checkbox
+      document.getElementById('selectAllClients').checked = false;
+      updateDeleteButton();
+
+      if (!clientsArray.length) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #666;">لا يوجد نتائج</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = clientsArray.map(c => `
+          <tr data-key="${c.key}">
+            <td><input type="checkbox" class="client-checkbox" data-key="${c.key}" onchange="updateDeleteButton()"></td>
+            <td style="font-family: monospace; font-size: 0.85rem;">
+              ${(c.ids || []).join('<br>')}
+              <button class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.7rem; margin-top: 4px;" onclick="promptAddId('${c.key}')">+ ID</button>
+            </td>
+            <td>${c.fullName || '-'}</td>
+            <td>${c.phone || '-'}</td>
+            <td>${c.city || '-'}</td>
+            <td>${c.agencyName || '-'}</td>
+            <td>${c.createdAt ? new Date(c.createdAt).toLocaleDateString('ar') : '-'}</td>
+            <td>
+              <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem; background: #3b82f6;" onclick="promptEditRegClient('${c.key}')">✏️</button>
+                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem; background: #10b981;" onclick="promptNotify('${c.key}', '${c.fullName}', '${c.phone}')">🔔</button>
+                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem; background: #f59e0b;" onclick="resetClientPin('${c.key}', '${c.fullName}')" title="تجديد PIN">🔐</button>
+                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem; background: #8b5cf6;" onclick="generatePortalLink('${c.key}', '${c.fullName}')" title="رابط البوابة">🔗</button>
+                <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.8rem;" onclick="promptDeleteRegClient('${c.key}')">🗑️</button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+    }
+
+    // Toggle select all checkboxes
+    window.toggleSelectAll = (checkbox) => {
+      const checkboxes = document.querySelectorAll('.client-checkbox');
+      checkboxes.forEach(cb => cb.checked = checkbox.checked);
+      updateDeleteButton();
+    };
+
+    // Update delete button visibility and count
+    window.updateDeleteButton = () => {
+      const checkboxes = document.querySelectorAll('.client-checkbox:checked');
+      const count = checkboxes.length;
+      const btn = document.getElementById('deleteSelectedBtn');
+      const countEl = document.getElementById('selectedCount');
+      
+      if (count > 0) {
+        btn.style.display = 'inline-block';
+        countEl.textContent = count;
+      } else {
+        btn.style.display = 'none';
+      }
+    };
+
+    // Delete selected clients
+    window.deleteSelectedClients = async () => {
+      const checkboxes = document.querySelectorAll('.client-checkbox:checked');
+      const keys = Array.from(checkboxes).map(cb => cb.dataset.key);
+      
+      if (keys.length === 0) {
+        showAlert('لم يتم تحديد أي عميل', 'error');
+        return;
+      }
+      
+      if (!confirm(`هل أنت متأكد من حذف ${keys.length} عميل؟\n\n⚠️ لا يمكن التراجع عن هذا الإجراء!`)) return;
+      
+      try {
+        const result = await api('POST', '/api/ai/registered-clients/bulk-delete', { keys });
+        showAlert(`✅ تم حذف ${result.deleted} عميل${result.failed > 0 ? `\n❌ فشل حذف ${result.failed}` : ''}`);
+        loadRegisteredClients();
+      } catch (err) {
+        showAlert('❌ فشل الحذف: ' + err.message, 'error');
+      }
+    };
+
+  </script>
+</body>
+
+</html>
