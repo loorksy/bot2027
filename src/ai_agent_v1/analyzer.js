@@ -1,6 +1,6 @@
 /**
  * AI Analyzer - JSON-only intent and field extraction
- * Uses OpenAI to analyze messages and extract structured data
+ * Uses OpenAI or OpenRouter to analyze messages and extract structured data
  */
 
 const OpenAI = require('openai');
@@ -13,7 +13,10 @@ const SETTINGS_FILE = path.join(__dirname, '../../data/ai_settings.json');
 // Default settings
 const DEFAULT_SETTINGS = {
     enabled: false,
+    aiProvider: 'openai', // 'openai' or 'openrouter'
     openaiKey: '',
+    openrouterKey: '',
+    openrouterModel: 'openai/gpt-4o-mini',
     modelChat: 'gpt-4o-mini',
     modelStt: 'whisper-1',
     modelTts: 'tts-1',
@@ -32,6 +35,7 @@ const DEFAULT_SETTINGS = {
 };
 
 let openaiClient = null;
+let openrouterClient = null;
 let settingsCache = null;
 
 /**
@@ -57,6 +61,14 @@ async function loadSettings() {
     // Initialize OpenAI client if key exists
     if (settingsCache.openaiKey) {
         openaiClient = new OpenAI({ apiKey: settingsCache.openaiKey });
+    }
+    
+    // Initialize OpenRouter client if key exists
+    if (settingsCache.openrouterKey) {
+        openrouterClient = new OpenAI({ 
+            apiKey: settingsCache.openrouterKey,
+            baseURL: 'https://openrouter.ai/api/v1'
+        });
     }
 
     return settingsCache;
