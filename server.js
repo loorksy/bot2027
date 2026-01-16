@@ -1386,6 +1386,250 @@ io.use((socket, next) => {
 });
 */
 
+// ==========================================================
+// CLIENT PORTAL APIs
+// ==========================================================
+const portal = require('./src/ai_agent_v1/portal');
+const receipts = require('./src/ai_agent_v1/receipts');
+
+// Configure multer for receipt uploads
+const receiptStorage = multer.memoryStorage();
+const receiptUpload = multer({ 
+  storage: receiptStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('نوع الملف غير مدعوم'));
+    }
+  }
+});
+
+// Serve portal page
+app.get('/portal/:token', async (req, res) => {
+  const { token } = req.params;
+  const isValid = await portal.isValidToken(token);
+  
+  if (!isValid) {
+    // Still serve the page - it will show error state
+    return res.sendFile(path.join(__dirname, 'public', 'portal.html'));
+  }
+  
+  res.sendFile(path.join(__dirname, 'public', 'portal.html'));
+});
+
+// Get client profile by portal token
+app.get('/api/portal/:token/profile', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const clientKey = await portal.getClientKeyByToken(token);
+    
+    if (!clientKey) {
+      return res.status(404).json({ error: 'رابط غير صالح' });
+    }
+    
+    const registeredClients = require('./src/ai_agent_v1/registeredClients');
+    const client = await registeredClients.getClientByKey(clientKey);
+    
+    if (!client) {
+      return res.status(404).json({ error: 'العميل غير موجود' });
+    }
+    
+    // Return client data (excluding sensitive fields)
+    res.json({
+      fullName: client.fullName,
+      phone: client.phone,
+      country: client.country,
+      city: client.city,
+      address: client.address,
+      agencyName: client.agencyName,
+      ids: client.ids || []
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update client profile by portal token
+app.put('/api/portal/:token/profile', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const clientKey = await portal.getClientKeyByToken(token);
+    
+    if (!clientKey) {
+      return res.status(404).json({ error: 'رابط غير صالح' });
+    }
+    
+    const registeredClients = require('./src/ai_agent_v1/registeredClients');
+    
+    // Only allow certain fields to be updated
+    const allowedFields = ['fullName', 'phone', 'city', 'address'];
+    const updates = {};
+    
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        updates[field] = req.body[field];
+      }
+    }
+    
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'لا توجد بيانات للتحديث' });
+    }
+    
+    const updated = await registeredClients.updateClient(clientKey, updates);
+    
+    res.json({
+      success: true,
+      fullName: updated.fullName,
+      phone: updated.phone,
+      country: updated.country,
+      city: updated.city,
+      address: updated.address
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get client salaries by portal token
+app.get('/api/portal/:token/salaries', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const clientKey = await portal.getClientKeyByToken(token);
+    
+    if (!clientKey) {
+      return res.status(404).json({ error: 'رابط غير صالح' });
+    }
+    
+    const registeredClients = require('./src/ai_agent_v1/registeredClients');
+    const client = await registeredClients.getClientByKey(clientKey);
+    
+    if (!client) {
+      return res.status(404).json({ error: 'العميل غير موجود' });
+    }
+    
+    // Get salaries from salary module
+    const salary = require('./src/ai_agent_v1/salary');
+    const clientIds = client.ids || [];
+    
+    if (clientIds.length === 0) {
+      return res.json([]);
+    }
+    
+    // Get all salaries for this client
+    const salariesData = await salary.getAllSalariesForClient(clientIds);
+    
+    // Add receipt info to each salary
+    for (const sal of salariesData) {
+      const receipt = await receipts.getReceipt(sal.clientId, sal.periodId);
+      sal.receipt = receipt;
+    }
+    
+    res.json(salariesData);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Regenerate portal token
+app.post('/api/portal/:token/regenerate', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const clientKey = await portal.getClientKeyByToken(token);
+    
+    if (!clientKey) {
+      return res.status(404).json({ error: 'رابط غير صالح' });
+    }
+    
+    const registeredClients = require('./src/ai_agent_v1/registeredClients');
+    const client = await registeredClients.getClientByKey(clientKey);
+    
+    if (!client) {
+      return res.status(404).json({ error: 'العميل غير موجود' });
+    }
+    
+    const newToken = await portal.regenerateToken(clientKey, client.agencyName);
+    
+    if (!newToken) {
+      return res.status(403).json({ error: 'غير مسموح بتوليد رابط جديد' });
+    }
+    
+    res.json({ success: true, newToken });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: Generate portal link for a client
+app.post('/api/admin/portal/generate/:clientKey', requireAdmin, async (req, res) => {
+  try {
+    const { clientKey } = req.params;
+    const registeredClients = require('./src/ai_agent_v1/registeredClients');
+    const client = await registeredClients.getClientByKey(clientKey);
+    
+    if (!client) {
+      return res.status(404).json({ error: 'العميل غير موجود' });
+    }
+    
+    if (!portal.isMainAgency(client.agencyName)) {
+      return res.status(403).json({ error: 'هذا العميل تابع لوكالة فرعية - البوابة متاحة فقط للوكالة الرئيسية' });
+    }
+    
+    const token = await portal.getOrCreateToken(clientKey, client.agencyName);
+    
+    res.json({ 
+      success: true, 
+      token,
+      url: `/portal/${token}`
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: Upload receipt for a client
+app.post('/api/admin/receipt/upload', requireAdmin, receiptUpload.single('receipt'), async (req, res) => {
+  try {
+    const { clientId, periodId, transferDate } = req.body;
+    
+    if (!req.file) {
+      return res.status(400).json({ error: 'الرجاء اختيار صورة الوصل' });
+    }
+    
+    if (!clientId || !periodId) {
+      return res.status(400).json({ error: 'بيانات ناقصة' });
+    }
+    
+    const receipt = await receipts.uploadReceipt(
+      clientId,
+      periodId,
+      req.file.buffer,
+      req.file.originalname,
+      transferDate
+    );
+    
+    res.json({ success: true, receipt });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: Delete receipt
+app.delete('/api/admin/receipt/:clientId/:periodId', requireAdmin, async (req, res) => {
+  try {
+    const { clientId, periodId } = req.params;
+    await receipts.deleteReceipt(clientId, periodId);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Serve receipt images
+app.use('/uploads/receipts', express.static(path.join(__dirname, 'uploads/receipts')));
+
 io.on('connection', (socket) => {
   const logHandler = (msg) => socket.emit('log', msg);
   const qrHandler = (qr) => socket.emit('qr', qr);
