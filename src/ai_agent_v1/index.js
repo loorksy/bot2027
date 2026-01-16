@@ -315,6 +315,10 @@ async function handleLinkedClient(message, linkedClient, messageText, isVoice) {
             await sendReply(message, offTopicReply, isVoice);
             break;
 
+        case 'ASK_PORTAL_LINK':
+            await handlePortalLinkRequest(message, linkedClient, isVoice);
+            break;
+
         default:
             // Natural AI response
             await handleGeneralQuery(message, linkedClient, messageText, isVoice);
