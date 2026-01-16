@@ -420,6 +420,25 @@ async function showSubAgencies() {
             return;
         }
 
+        // كارد المستخدمين المعلقين أولاً
+        try {
+            const suspended = await api.get('/suspended-users');
+            if (suspended.count > 0) {
+                const suspendedCard = document.createElement('div');
+                suspendedCard.className = 'ai-card';
+                suspendedCard.style.cssText = 'cursor: pointer; text-align: center; padding: 20px; border: 2px solid #f44336; background: linear-gradient(135deg, #4a1a1a 0%, #2a0a0a 100%);';
+                suspendedCard.onmouseover = () => suspendedCard.style.borderColor = '#ff5722';
+                suspendedCard.onmouseout = () => suspendedCard.style.borderColor = '#f44336';
+                suspendedCard.innerHTML = `
+                    <h3 style="margin: 0 0 10px 0; color: #f44336;">⏸️ المستخدمين المعلقين</h3>
+                    <p style="margin: 0; color: #ff9800; font-size: 24px; font-weight: bold;">${suspended.count}</p>
+                    <p style="margin: 5px 0 0 0; color: #888; font-size: 12px;">بحاجة لتحديد الوكالة</p>
+                `;
+                suspendedCard.onclick = () => showSuspendedUsers();
+                grid.appendChild(suspendedCard);
+            }
+        } catch (e) { console.warn('Could not load suspended users:', e); }
+
         allAgencies.forEach(ag => {
             const count = allUsersCache.filter(u => getAgencyName(u) === ag).length;
             const card = document.createElement('div');
@@ -451,6 +470,24 @@ async function openAgencyProfile(agencyName) {
 
     const users = allUsersCache.filter(u => getAgencyName(u) === agencyName);
     document.getElementById('profile-user-count').innerText = users.length;
+
+    // Show suspended users warning badge
+    try {
+        const warnings = await api.get(`/agency-warnings/${encodeURIComponent(agencyName)}`);
+        const warningContainer = document.getElementById('agency-warning-badge');
+        if (warningContainer) {
+            if (warnings.hasWarning && warnings.suspendedCount > 0) {
+                warningContainer.innerHTML = `
+                    <button onclick="showSuspendedUsers()" style="background: linear-gradient(90deg, #f44336 0%, #ff5722 100%); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;">
+                        🔴 ${warnings.suspendedCount} مستخدمين معلقين
+                    </button>
+                `;
+                warningContainer.style.display = 'block';
+            } else {
+                warningContainer.style.display = 'none';
+            }
+        }
+    } catch (e) { console.warn('Could not load agency warnings:', e); }
 
     const tbody = document.getElementById('profile-users-list');
     renderUsersTable(tbody, users, true); // Allow delete for Sub-Agencies
@@ -779,7 +816,13 @@ async function addUser() {
             } catch (err) {
                 // Check if it's a duplicate ID error
                 if (err.message.includes('مستخدم بالفعل') || err.message.includes('already exists')) {
-                    const forceAdd = confirm(err.message + '\n\n⚠️ هل تريد الإضافة على أي حال وتخصيصه لهذه الوكالة؟');
+                    const confirmMsg = err.message +
+                        `\n\n⚠️ تعارض في الوكالات!` +
+                        `\n🔴 الوكالة الموجود فيها حالياً: (مذكورة أعلاه)` +
+                        `\n🟢 الوكالة التي تحاول إضافته إليها: ${agency}` +
+                        `\n\nهل تريد تأكيد النقل وتخصيصه لهذه الوكالة (${agency})؟`;
+
+                    const forceAdd = confirm(confirmMsg);
                     if (forceAdd) {
                         // Force update to reassign to this agency
                         await api.put(`/users/${id}`, {
@@ -932,7 +975,7 @@ async function processBulkImport() {
     }
 
     // Build a map from sheet data: ID -> user info
-    // Columns: A=ID, B=Name, C=Gender, D=Room, E=Agency, F=AgencyId, G=Region, H=Country, I=RegDate, ...
+    // Columns: A=ID, B=Name, C=Gender, D=Room, E=Agency, F=AgencyId, G=Region, H=Country, I=RegDate
     const sheetMap = {};
     for (const row of sheetData.records) {
         const id = row[0]?.toString();
@@ -941,25 +984,26 @@ async function processBulkImport() {
                 id: id,
                 name: row[1] || '',
                 gender: row[2] || '',
-                room: row[3] || '',
-                sheetAgency: row[4] || '',
+                roomNumber: row[3] || '',
+                agencyName: row[4] || '',
                 agencyId: row[5] || '',
                 region: row[6] || '',
                 country: row[7] || '',
                 regDate: row[8] || '',
-                hasOtherAccount: row[9] || '',
-                hours: row[10] || '',
-                goldReceived: row[11] || '',
-                goldFromLastMonth: row[12] || '',
-                goldFromRatio: row[13] || '',
-                totalTarget: row[14] || '',
+                hasOtherAccount: row[9] === '1' || row[9] === 1,
+                hours: parseFloat(row[10]) || 0,
+                goldReceived: parseFloat(row[11]) || 0,
+                goldFromLastMonth: parseFloat(row[12]) || 0,
+                goldFromRatio: parseFloat(row[13]) || 0,
+                totalTarget: parseFloat(row[14]) || 0,
                 lastMonthLevel: row[15] || '',
                 level: row[16] || '',
-                targetSalary: row[17] || '',
-                activityBonus: row[18] || '',
-                firstWeekBonus: row[19] || '',
-                monthlyBonus: row[20] || '',
-                totalSalary: row[21] || ''
+                targetSalary: parseFloat(row[17]) || 0,
+                activityBonus: parseFloat(row[18]) || 0,
+                firstWeekBonus: parseFloat(row[19]) || 0,
+                monthlyBonus: parseFloat(row[20]) || 0,
+                totalSalary: parseFloat(row[21]) || 0,
+                profit: parseFloat(row[22]) || 0 // Map Agency Profit from Col 22
             };
         }
     }
@@ -985,89 +1029,93 @@ async function processBulkImport() {
     if (notFound.length > 0) {
         message += `\n⚠️ لم يتم العثور على ${notFound.length}: ${notFound.slice(0, 5).join(', ')}${notFound.length > 5 ? '...' : ''}`;
     }
+
+    // Check for Agency Mismatch (Sheet vs Target)
+    const mismatched = foundUsers.filter(u => {
+        // Normalize: 'Main' vs empty/Main
+        const sheetAg = u.agencyName || 'Main';
+        const targetAg = targetAgency || 'Main';
+        return sheetAg !== targetAg;
+    });
+
+    if (mismatched.length > 0) {
+        message += `\n\n⚠️ تــنــبــيــه:`;
+        message += `\nهناك ${mismatched.length} مستخدم مسجلين في وكالات أخرى في الشيت!`;
+        message += `\n(سيتم نقلهم إلى ${targetAgency})`;
+    }
+
     message += `\n\nهل تريد استيرادهم إلى وكالة "${targetAgency}"؟`;
 
     if (!confirm(message)) return;
 
-    // Import users
-    let imported = 0;
-    let updated = 0;
-    let errors = [];
+    // Use Backend Import Logic via /users/import-json (supports JSON rows)
+    const rows = foundUsers.map(u => ({
+        ...u,
+        originalAgency: u.agencyName, // Preserve original for Anti-Poaching check
+        agencyName: targetAgency // Target agency
+    }));
 
-    for (const user of foundUsers) {
-        // Build extended user data with all sheet fields
-        const userData = {
-            id: user.id,
-            name: user.name,
-            country: user.country,
-            agencyName: targetAgency,
-            type: 'Host',
-            // Extended fields from sheet
-            gender: user.gender,
-            roomNumber: user.room,
-            agencyId: user.agencyId,
-            region: user.region,
-            regDate: user.regDate,
-            hasOtherAccount: user.hasOtherAccount === '1' || user.hasOtherAccount === 1,
-            hours: parseFloat(user.hours) || null,
-            goldReceived: parseFloat(user.goldReceived) || null,
-            goldFromLastMonth: parseFloat(user.goldFromLastMonth) || null,
-            goldFromRatio: parseFloat(user.goldFromRatio) || null,
-            totalTarget: parseFloat(user.totalTarget) || null,
-            lastMonthLevel: user.lastMonthLevel,
-            level: user.level,
-            targetSalary: parseFloat(user.targetSalary) || null,
-            activityBonus: parseFloat(user.activityBonus) || null,
-            firstWeekBonus: parseFloat(user.firstWeekBonus) || null,
-            monthlyBonus: parseFloat(user.monthlyBonus) || null,
-            totalSalary: parseFloat(user.totalSalary) || null
-        };
+    const btn = document.querySelector('button[onclick="processBulkImport()"]');
+    const oldText = btn.textContent;
+    btn.textContent = 'جاري المعالجة...';
+    btn.disabled = true;
 
-        try {
-            // Try to add, if exists update
-            try {
-                await api.post('/users', userData);
-                imported++;
-            } catch (e) {
-                // If duplicate, update
-                if (e.message.includes('مستخدم بالفعل') || e.message.includes('already exists')) {
-                    await api.put(`/users/${user.id}`, userData);
-                    updated++;
-                } else {
-                    throw e;
-                }
-            }
-        } catch (e) {
-            errors.push({ id: user.id, error: e.message });
-        }
-    }
-
-    // Show result
-    let result = `تم الاستيراد بنجاح!`;
-    result += `\n✅ جديد: ${imported}`;
-    result += `\n🔄 تحديث: ${updated}`;
-    if (errors.length > 0) {
-        result += `\n❌ أخطاء: ${errors.length}`;
-    }
-
-    // Auto-recalculate profit
     try {
-        await api.post(`/periods/${periodId}/recalculate`);
-        result += `\n\n💰 تم تحديث الأرباح تلقائياً بناءً على التغييرات.`;
+        const res = await api.post('/users/import-json', {
+            rows: rows,
+            agencyOverride: targetAgency
+        });
+
+        handleImportResponse(res, closeBulkImportModal);
     } catch (e) {
-        result += `\n\n⚠️ فشل تحديث الأرباح: ${e.message}`;
+        alert('خطأ في الاستيراد: ' + e.message);
+    } finally {
+        btn.textContent = oldText;
+        btn.disabled = false;
     }
-
-    alert(result);
-
-    closeBulkImportModal();
-
-    // Refresh
-    if (currentAgency === 'Main') showMainAgency();
-    else openAgencyProfile(currentAgency);
 }
 
 // ================= IMPORT USERS =================
+
+function handleImportResponse(res, modalToClose = null) {
+    let message = `تم التحميل!\nجديد: ${res.newUsers}`;
+    if (res.updatedUsers > 0) message += `\nتحديث: ${res.updatedUsers}`;
+
+    // Check for cross-agency conflicts (SUSPENDED)
+    if (res.crossAgencyConflicts && res.crossAgencyConflicts.length > 0) {
+        const conflicts = res.crossAgencyConflicts;
+        message += `\n\n🔴 تم تعليق ${conflicts.length} مستخدم بسبب تعارض بين الوكالات!`;
+        message += `\n\nالمستخدمين المعلقين موجودين في أكثر من وكالة`;
+        message += `\nيرجى تحديد الوكالة الصحيحة من صفحة المعلقين.`;
+        alert(message);
+        if (modalToClose) modalToClose();
+        showSuspendedUsers();
+        return;
+    }
+
+    // Check for duplicates (same agency) or just show success
+    if (res.duplicates && res.duplicates.length > 0) {
+        message += `\n\n⚠️ تم العثور على ${res.duplicates.length} مستخدم مكرر`;
+        alert(message);
+        window.pendingDuplicates = res.duplicates;
+        if (modalToClose) modalToClose();
+        showDuplicatesReviewModal();
+    } else {
+        alert(message);
+        if (modalToClose) modalToClose();
+        refreshCurrentView();
+    }
+}
+
+function refreshCurrentView() {
+    if (document.getElementById('page-sub-agencies').style.display === 'block') {
+        showSubAgencies();
+    } else if (document.getElementById('page-main-agency').style.display === 'block') {
+        showMainAgency();
+    } else if (document.getElementById('page-agency-profile').style.display === 'block') {
+        openAgencyProfile(currentAgency);
+    }
+}
 function openImportUsersModal(forCurrentAgency = false) {
     window.isAgencyImport = forCurrentAgency;
     const title = forCurrentAgency ? `استيراد مستخدمين لـ (${currentAgency})` : 'استيراد قاعدة بيانات المستخدمين';
@@ -1102,30 +1150,7 @@ async function importUsers() {
 
         const res = await api.upload('/users/import', fd);
 
-        let message = `تم التحميل!\nجديد: ${res.newUsers}`;
-        if (res.updatedUsers > 0) message += `\nتحديث: ${res.updatedUsers}`;
-
-        // Check for duplicates
-        if (res.duplicates && res.duplicates.length > 0) {
-            message += `\n\n⚠️ تم العثور على ${res.duplicates.length} مستخدم مكرر`;
-            alert(message);
-
-            // Store duplicates for review and show modal
-            window.pendingDuplicates = res.duplicates;
-            showDuplicatesReviewModal();
-        } else {
-            alert(message);
-            closeModalUsers();
-        }
-
-        // Refresh Lists
-        if (document.getElementById('page-sub-agencies').style.display === 'block') {
-            showSubAgencies();
-        } else if (document.getElementById('page-main-agency').style.display === 'block') {
-            showMainAgency();
-        } else if (document.getElementById('page-agency-profile').style.display === 'block') {
-            openAgencyProfile(currentAgency);
-        }
+        handleImportResponse(res, closeModalUsers);
 
     } catch (err) {
         alert('خطأ: ' + err.message);
@@ -1156,6 +1181,7 @@ function showDuplicatesReviewModal() {
                             <th>الاسم (جديد)</th>
                             <th>موجود حالياً</th>
                             <th>الوكالة الحالية</th>
+                            <th>الوكالة الجديدة (الهدف)</th>
                             <th>إجراء</th>
                         </tr>
                     </thead>
@@ -1181,9 +1207,10 @@ function showDuplicatesReviewModal() {
             <td><span style="color: #f39c12;">⚠️</span> ${dup.existingUser.id}</td>
             <td>${dup.importData.name}</td>
             <td>${dup.existingUser.name}</td>
-            <td>${dup.existingUser.agencyName}</td>
+            <td style="color: #f44336; font-weight: bold;">${dup.existingUser.agencyName || 'غير محدد'}</td>
+            <td style="color: #4caf50; font-weight: bold;">${dup.importData.agencyName || 'Main'}</td>
             <td>
-                <button class="btn btn-secondary btn-sm" onclick="resolveDuplicate(${index}, 'approve')">✅ قبول ونقل</button>
+                <button class="btn btn-secondary btn-sm" onclick="resolveDuplicate(${index}, 'approve')">✅ قبول وتحديث</button>
                 <button class="btn btn-danger btn-sm" onclick="resolveDuplicate(${index}, 'skip')" style="margin-right: 5px;">❌ تخطي</button>
             </td>
         `;
@@ -1417,35 +1444,7 @@ async function showAgencyWallets() {
             grid.appendChild(card);
         });
 
-        // Add "Unknown" مجهول Card
-        try {
-            const unknownSummary = await api.get('/unknown-users-summary');
-            if (unknownSummary && unknownSummary.length > 0) {
-                const totalUnknown = unknownSummary.reduce((sum, p) => sum + p.count, 0);
-                const totalCustody = unknownSummary.reduce((sum, p) => sum + p.totalCustody, 0);
-
-                const unknownCard = document.createElement('div');
-                unknownCard.className = 'ai-card';
-                unknownCard.style.cssText = 'padding: 20px; cursor: pointer; transition: transform 0.2s; background: linear-gradient(135deg, #4a1a1a 0%, #8b0000 100%);';
-                unknownCard.onmouseover = () => unknownCard.style.transform = 'scale(1.02)';
-                unknownCard.onmouseout = () => unknownCard.style.transform = 'scale(1)';
-                unknownCard.onclick = () => showUnknownUsers();
-
-                unknownCard.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <h3 style="margin: 0;">❓ مجهول</h3>
-                        <span style="background: #ff5722; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px;">${totalUnknown} مستخدم</span>
-                    </div>
-                    <div style="font-size: 28px; font-weight: bold; margin: 15px 0; color: #ff9800;">
-                        $${totalCustody.toLocaleString()}
-                    </div>
-                    <div style="font-size: 12px; color: #ccc;">مستخدمين غير مسجلين في أي وكالة</div>
-                `;
-                grid.appendChild(unknownCard);
-            }
-        } catch (e) {
-            console.warn('Could not load unknown users summary:', e);
-        }
+        // المجهولين موجودين في مودال تفاصيل الأمانات، تم حذفهم من هنا
 
     } catch (e) {
         grid.innerHTML = `<p class="text-red">${e.message}</p>`;
@@ -1613,13 +1612,350 @@ async function loadUnknownUsers() {
 }
 
 // =====================================================
-// CUSTODY DETAILS MODAL
+// CUSTODY DETAILS MODAL (Enhanced Design)
 // =====================================================
 async function showCustodyDetails() {
-    // بدلاً من فتح مودال، نذهب لصفحة المستخدمين المجهولين
-    showUnknownUsers();
+    try {
+        const data = await api.get('/treasury/custody-details');
+
+        // Calculate totals
+        const totalUsers = data.byAgency?.reduce((sum, a) => sum + a.users.length, 0) || 0;
+        const totalAgencies = data.byAgency?.length || 0;
+
+        // Update summary stats
+        document.getElementById('custody-total').textContent = `$${data.totalCustody.toFixed(2)}`;
+        document.getElementById('custody-user-count').textContent = totalUsers.toLocaleString();
+        document.getElementById('custody-agency-count').textContent = totalAgencies;
+        document.getElementById('custody-period').innerHTML = data.periodName
+            ? `📅 الدورة: <strong>${data.periodName}</strong>`
+            : '';
+
+        // ✅ Store data for search filtering
+        custodyDataCache = data;
+        document.getElementById('custody-search').value = ''; // Clear search on open
+        document.getElementById('custody-search-count').textContent = ''; // Clear count
+
+        const container = document.getElementById('custody-by-agency');
+        container.innerHTML = '';
+
+        if (!data.byAgency || data.byAgency.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px; background: rgba(76, 175, 80, 0.1); border-radius: 12px; border: 1px dashed #4caf50;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">✅</div>
+                    <p style="color: #4caf50; font-size: 16px; margin: 0;">لا توجد أمانات معلقة حالياً</p>
+                </div>
+            `;
+        } else {
+            // Sort agencies by total (highest first)
+            const sortedAgencies = [...data.byAgency].sort((a, b) => b.total - a.total);
+
+            // Agency color palette
+            const colors = [
+                { bg: 'linear-gradient(135deg, #1a472a 0%, #2e7d32 100%)', accent: '#4caf50', icon: '🏢' },
+                { bg: 'linear-gradient(135deg, #1a3a4a 0%, #0277bd 100%)', accent: '#03a9f4', icon: '🏛️' },
+                { bg: 'linear-gradient(135deg, #4a1a4a 0%, #7b1fa2 100%)', accent: '#ab47bc', icon: '🏠' },
+                { bg: 'linear-gradient(135deg, #4a3a1a 0%, #f57c00 100%)', accent: '#ff9800', icon: '🏪' },
+                { bg: 'linear-gradient(135deg, #4a1a1a 0%, #c62828 100%)', accent: '#ef5350', icon: '❓' }
+            ];
+
+            sortedAgencies.forEach((agency, index) => {
+                const color = colors[index % colors.length];
+                const percentage = ((agency.total / data.totalCustody) * 100).toFixed(1);
+                const isUnknown = agency.agencyName === 'مجهول';
+
+                const agencyCard = document.createElement('div');
+                agencyCard.style.cssText = `
+                    background: rgba(255,255,255,0.03);
+                    border: 1px solid rgba(255,255,255,0.1);
+                    border-radius: 12px;
+                    margin-bottom: 15px;
+                    overflow: hidden;
+                    transition: all 0.3s ease;
+                `;
+                agencyCard.onmouseenter = () => agencyCard.style.borderColor = color.accent;
+                agencyCard.onmouseleave = () => agencyCard.style.borderColor = 'rgba(255,255,255,0.1)';
+
+                // Build users list HTML
+                let usersHtml = '';
+                agency.users.forEach((u, i) => {
+                    const initial = (u.userName || u.userId).charAt(0).toUpperCase();
+                    usersHtml += `
+                        <div data-user-id="${u.userId}" data-user-name="${u.userName || ''}" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.03)'" onmouseleave="this.style.background='transparent'">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 32px; height: 32px; border-radius: 50%; background: ${color.bg}; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; color: white;">${initial}</div>
+                                <div>
+                                    <div style="font-size: 13px; color: #fff;">${u.userName || u.userId}</div>
+                                    <div style="font-size: 11px; color: #666;">ID: ${u.userId}</div>
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 14px; font-weight: bold; color: ${color.accent};">$${u.custody.toFixed(2)}</div>
+                                <div style="font-size: 10px; color: #666;">⏳ معلق</div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                agencyCard.innerHTML = `
+                    <!-- Agency Header -->
+                    <div style="background: ${color.bg}; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span style="font-size: 24px;">${isUnknown ? '❓' : color.icon}</span>
+                            <div>
+                                <h4 style="margin: 0; color: white; font-size: 16px;">${agency.agencyName}</h4>
+                                <div style="font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 2px;">
+                                    👤 ${agency.users.length} مستخدم
+                                </div>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 22px; font-weight: bold; color: white;">$${agency.total.toFixed(2)}</div>
+                            <div style="font-size: 11px; color: rgba(255,255,255,0.7);">${percentage}% من الإجمالي</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div style="height: 4px; background: rgba(255,255,255,0.1);">
+                        <div style="height: 100%; width: ${percentage}%; background: ${color.accent}; transition: width 0.5s ease;"></div>
+                    </div>
+                    
+                    <!-- Users List -->
+                    <div style="max-height: 250px; overflow-y: auto;">
+                        ${usersHtml}
+                    </div>
+                `;
+
+                container.appendChild(agencyCard);
+            });
+        }
+
+        document.getElementById('modal-custody-details').style.display = 'flex';
+    } catch (e) {
+        console.error('Error loading custody details:', e);
+        alert('❌ خطأ في تحميل تفاصيل الأمانات: ' + e.message);
+    }
 }
 
 function closeCustodyDetailsModal() {
     document.getElementById('modal-custody-details').style.display = 'none';
+    document.getElementById('custody-search').value = ''; // مسح البحث عند الإغلاق
 }
+
+// Store custody data globally for filtering
+let custodyDataCache = null;
+
+// Filter custody users by ID or name
+function filterCustodyUsers(searchQuery) {
+    if (!custodyDataCache) return;
+
+    const query = searchQuery.toLowerCase().trim();
+    const container = document.getElementById('custody-by-agency');
+    const userRows = container.querySelectorAll('[data-user-id]');
+
+    let visibleCount = 0;
+    let totalCount = userRows.length;
+
+    userRows.forEach(row => {
+        const userId = row.getAttribute('data-user-id')?.toLowerCase() || '';
+        const userName = row.getAttribute('data-user-name')?.toLowerCase() || '';
+
+        if (!query || userId.includes(query) || userName.includes(query)) {
+            row.style.display = 'flex';
+            visibleCount++;
+            // تمييز النتائج المطابقة
+            if (query) {
+                row.style.background = 'rgba(102, 126, 234, 0.15)';
+                row.style.borderLeft = '3px solid #667eea';
+            } else {
+                row.style.background = 'transparent';
+                row.style.borderLeft = 'none';
+            }
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    // Update search count
+    const countEl = document.getElementById('custody-search-count');
+    if (query) {
+        countEl.textContent = `${visibleCount} / ${totalCount}`;
+    } else {
+        countEl.textContent = '';
+    }
+}
+
+// =====================================================
+// SUSPENDED USERS - المستخدمين المعلقين
+// =====================================================
+
+async function showSuspendedUsers() {
+    // Create modal if not exists
+    let modal = document.getElementById('modal-suspended');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-suspended';
+        modal.style.cssText = 'display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; overflow-y: auto;';
+        modal.innerHTML = `
+            <div style="max-width: 900px; margin: 30px auto; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 20px; padding: 30px; border: 1px solid rgba(255,255,255,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                    <h2 style="margin: 0; font-size: 24px; color: #f44336;">⏸️ المستخدمين المعلقين</h2>
+                    <button onclick="closeSuspendedModal()" style="background: none; border: none; color: #888; font-size: 28px; cursor: pointer;">&times;</button>
+                </div>
+                <div style="background: linear-gradient(135deg, #4a1a1a 0%, #8b0000 100%); padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 20px;">
+                    <div style="font-size: 11px; color: #ccc;">إجمالي المعلقين</div>
+                    <div id="suspended-count" style="font-size: 32px; font-weight: bold; color: #fff;">0</div>
+                </div>
+                <div id="suspended-list" style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 20px; max-height: 500px; overflow-y: auto;">
+                    <div style="text-align: center; padding: 30px; color: #888;">⏳ جاري التحميل...</div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    modal.style.display = 'block';
+    const list = document.getElementById('suspended-list');
+    list.innerHTML = '<div style="text-align: center; padding: 30px; color: #888;">⏳ جاري التحميل...</div>';
+
+    try {
+        const [suspended, agencies] = await Promise.all([
+            api.get('/suspended-users'),
+            api.get('/agencies')
+        ]);
+
+        document.getElementById('suspended-count').textContent = suspended.count || 0;
+
+        if (!suspended.users || suspended.users.length === 0) {
+            list.innerHTML = `
+                <div style="text-align: center; padding: 50px; background: rgba(76, 175, 80, 0.1); border-radius: 12px; border: 1px dashed #4caf50;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">✅</div>
+                    <div style="color: #4caf50; font-size: 16px; font-weight: bold;">لا يوجد مستخدمين معلقين</div>
+                </div>
+            `;
+            return;
+        }
+
+        const agencyOptions = agencies.map(a => `<option value="${a.name}">${a.name}</option>`).join('');
+
+        // Global ref for bulk action
+        window.currentSuspendedUsers = suspended.users;
+
+        let html = `
+            <div style="background: rgba(33, 150, 243, 0.1); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px dashed #2196F3; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div style="font-weight: bold; color: #fff;">⚡ تسوية جماعية (${suspended.users.length} مستخدم)</div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <span style="color:#aaa; font-size:12px;">نقل الكل إلى:</span>
+                    <select id="bulk-agency-select" style="padding: 8px; border-radius: 8px; background: #0b1021; color: #fff; border: 1px solid #444;">
+                         <option value="">-- اختر الوكالة --</option>
+                         ${agencyOptions}
+                    </select>
+                    <button onclick="resolveBulkSuspended()" style="background: #2196F3; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer;">تطبيق</button>
+                </div>
+            </div>
+        `;
+        for (const user of suspended.users) {
+            const conflictBadges = (user.conflictAgencies || []).map(a =>
+                `<span style="background: rgba(244,67,54,0.2); color: #f44336; padding: 2px 8px; border-radius: 5px; font-size: 12px; margin-left: 5px;">${a}</span>`
+            ).join('');
+
+            html += `
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                        <div>
+                            <div style="font-size: 15px; font-weight: bold; color: #fff;">${user.name || user.id}</div>
+                            <div style="font-size: 12px; color: #888; display: flex; align-items: center; gap: 5px; margin-bottom: 5px;">
+                                ID: ${user.id}
+                                <span onclick="navigator.clipboard.writeText('${user.id}').then(() => alert('تم النسخ: ${user.id}'))" 
+                                      style="cursor: pointer; font-size: 14px; opacity: 0.7;" 
+                                      title="نسخ ID">📋</span>
+                            </div>
+                            <div style="font-size: 13px; color: #ddd;">
+                                الوكالة الحالية: <strong style="color: #4caf50;">${user.currentAgency || 'غير محدد'}</strong>
+                            </div>
+                        </div>
+                        <div style="text-align: left;">
+                            <div style="font-size: 12px; color: #aaa; margin-bottom: 4px;">الوكالات المتنازعة:</div>
+                            <div style="display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end;">
+                                ${conflictBadges || '<span style="color:#666;">لا يوجد</span>'}
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <select id="agency-select-${user.id}" style="flex: 1; padding: 8px; border-radius: 8px; background: #1a1a2e; color: #fff; border: 1px solid #444;">
+                            <option value="">اختر الوكالة...</option>
+                            ${agencyOptions}
+                        </select>
+                        <button onclick="confirmUserAgency('${user.id}')" style="background: #4caf50; color: white; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer;">✓ تأكيد</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        list.innerHTML = html;
+
+    } catch (e) {
+        console.error('Error loading suspended users:', e);
+        list.innerHTML = `<div style="text-align: center; padding: 30px; color: #f44336;">❌ ${e.message}</div>`;
+    }
+}
+
+function closeSuspendedModal() {
+    const modal = document.getElementById('modal-suspended');
+    if (modal) modal.style.display = 'none';
+}
+
+async function confirmUserAgency(userId) {
+    const select = document.getElementById(`agency-select-${userId}`);
+    const targetAgency = select?.value;
+
+    if (!targetAgency) {
+        alert('الرجاء اختيار الوكالة أولاً');
+        return;
+    }
+
+    if (!confirm(`هل تريد تأكيد المستخدم ${userId} في وكالة "${targetAgency}"؟`)) {
+        return;
+    }
+
+    try {
+        const res = await api.post('/users/confirm-agency', { userId, targetAgency });
+        alert(res.message);
+        showSuspendedUsers(); // Refresh list
+        refreshCurrentView(); // Refresh background
+    } catch (e) {
+        alert('خطأ: ' + e.message);
+    }
+}
+
+async function resolveBulkSuspended() {
+    const targetAgency = document.getElementById('bulk-agency-select').value;
+    if (!targetAgency) return alert('يرجى اختيار وكالة للتطبيق على الجميع');
+
+    const users = window.currentSuspendedUsers || [];
+    if (users.length === 0) return alert('لا يوجد مستخدمين');
+
+    if (!confirm(`⚠️ تحذير: هل أنت متأكد من نقل ${users.length} مستخدم معلق دفعة واحدة إلى وكالة "${targetAgency}"؟\n\nتأكد من اختيار الوكالة الصحيحة!`)) return;
+
+    // Show Loading
+    const btn = document.querySelector('button[onclick="resolveBulkSuspended()"]');
+    const oldText = btn.textContent;
+    btn.textContent = 'جاري...';
+    btn.disabled = true;
+
+    try {
+        const userIds = users.map(u => u.id);
+        const res = await api.post('/users/confirm-agency-bulk', { userIds, targetAgency });
+
+        alert(res.message);
+        showSuspendedUsers(); // Refresh
+        refreshCurrentView();
+    } catch (e) {
+        alert('خطأ: ' + e.message);
+    } finally {
+        btn.textContent = oldText;
+        btn.disabled = false;
+    }
+}
+
+
+

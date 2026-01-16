@@ -54,7 +54,7 @@ class WhatsAppBot extends EventEmitter {
 
     const puppeteerArgs = {
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--ignore-certificate-errors'],
     };
     if (process.env.PUPPETEER_EXECUTABLE_PATH) {
       puppeteerArgs.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
@@ -67,7 +67,19 @@ class WhatsAppBot extends EventEmitter {
 
     this.registerEvents();
     this.linkState = 'linking';
-    this.client.initialize();
+
+    // Wrap initialize in try-catch to prevent crashes
+    try {
+      this.client.initialize().catch(err => {
+        this.emitLog(`WhatsApp initialize error: ${err.message}`);
+        this.linkState = 'error';
+        this.emitStatus();
+      });
+    } catch (err) {
+      this.emitLog(`WhatsApp init exception: ${err.message}`);
+      this.linkState = 'error';
+    }
+
     this.initialized = true;
     this.emitLog('Bot initialized.');
     this.emitStatus();
@@ -134,6 +146,17 @@ class WhatsAppBot extends EventEmitter {
       this.linkState = 'ready';
       this.emitStatus();
       this.emitLog('WhatsApp client ready.');
+
+      // Patch sendSeen to prevent crash (WWebJS v1.23.1 Incompatibility)
+      try {
+        this.client.pupPage.evaluate(() => {
+          window.WWebJS.sendSeen = async () => { return true; };
+        });
+        this.emitLog('Applied sendSeen patch.');
+      } catch (e) {
+        this.emitLog('Patch failed: ' + e.message);
+      }
+
       this.refreshGroupDirectory();
       if (this.queue.length > 0 && this.running) {
         this.processQueue();

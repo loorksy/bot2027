@@ -44,6 +44,18 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Global error handlers to prevent server crash from WhatsApp/Puppeteer errors
+process.on('uncaughtException', (err) => {
+  console.error('[UNCAUGHT ERROR]', err.message);
+  // Don't exit - keep server running
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[UNHANDLED REJECTION]', reason);
+  // Don't exit - keep server running
+});
+
+
 
 
 // Multer setup for file uploads
@@ -224,7 +236,7 @@ app.post('/api/stop', requireAny(['is_admin', 'can_control_bot']), async (req, r
 });
 
 app.get('/api/qr', (req, res) => {
-  res.json({ qr: bot.getLastQr() });
+  res.json({ qr: bot.lastQr });
 });
 
 app.post('/api/session/clear', requireAny(['is_admin', 'can_control_bot']), async (req, res) => {

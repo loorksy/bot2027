@@ -15,80 +15,10 @@
     "status": "complete",
     "pinHash": "d1ef5241dbedc1e0dac73c2999a800867db9f519845cfd7cbcc71624ffcb7a5e",
     "trustedSession": {
-      "expiresAt": "2026-01-11T22:14:44.041Z"
+      "expiresAt": "2026-01-13T23:13:36.760Z"
     },
     "lastAskedField": "ids",
     "conversationHistory": [
-      {
-        "role": "user",
-        "content": "بدي اضيف ايدي جديد",
-        "timestamp": "2026-01-11T20:47:46.700Z"
-      },
-      {
-        "role": "assistant",
-        "content": "ما الذي تريد تعديله؟ يمكنك تغيير: الاسم، الهاتف، العنوان، المدينة، الدولة، الوكالة.\n\n⚠️ لا يمكن تغيير رقم الـ ID - تواصل مع الإدارة.",
-        "timestamp": "2026-01-11T20:47:50.778Z"
-      },
-      {
-        "role": "user",
-        "content": "شكرا",
-        "timestamp": "2026-01-11T20:53:39.564Z"
-      },
-      {
-        "role": "assistant",
-        "content": "أهلاً وسهلاً بك، شكرًا لك على ملاحظتك. إذا كنت بحاجة إلى أي مساعدة إضافية، فلا تتردد في إخباري.",
-        "timestamp": "2026-01-11T20:53:45.864Z"
-      },
-      {
-        "role": "user",
-        "content": "م",
-        "timestamp": "2026-01-11T21:09:40.106Z"
-      },
-      {
-        "role": "assistant",
-        "content": "عذراً، حدث خطأ. يرجى المحاولة لاحقاً.",
-        "timestamp": "2026-01-11T21:09:44.702Z"
-      },
-      {
-        "role": "user",
-        "content": "م",
-        "timestamp": "2026-01-11T21:10:31.462Z"
-      },
-      {
-        "role": "assistant",
-        "content": "عذراً، حدث خطأ. يرجى المحاولة لاحقاً.",
-        "timestamp": "2026-01-11T21:10:33.031Z"
-      },
-      {
-        "role": "user",
-        "content": "م",
-        "timestamp": "2026-01-11T21:14:30.306Z"
-      },
-      {
-        "role": "assistant",
-        "content": "عذراً، حدث خطأ. يرجى المحاولة لاحقاً.",
-        "timestamp": "2026-01-11T21:14:32.087Z"
-      },
-      {
-        "role": "user",
-        "content": "م",
-        "timestamp": "2026-01-11T21:16:31.283Z"
-      },
-      {
-        "role": "assistant",
-        "content": "شكرًا لتواصلك. يُرجى تزويدنا برقم التعريف الشخصي (PIN) للمتابعة في العمليات الحساسة.",
-        "timestamp": "2026-01-11T21:16:40.990Z"
-      },
-      {
-        "role": "user",
-        "content": ".",
-        "timestamp": "2026-01-11T21:50:44.155Z"
-      },
-      {
-        "role": "assistant",
-        "content": "شكرًا لتواصلك. نعم، تحتاج إلى إدخال PIN للقيام بأي عمليات حساسة لضمان أمان حسابك. إذا كنت بحاجة إلى مساعدة إضافية، لا تتردد في إخباري.",
-        "timestamp": "2026-01-11T21:50:57.268Z"
-      },
       {
         "role": "user",
         "content": "مثل ماذا",
@@ -118,10 +48,80 @@
         "role": "assistant",
         "content": "✅ تم التحقق! كيف يمكنني مساعدتك؟",
         "timestamp": "2026-01-11T21:59:44.485Z"
+      },
+      {
+        "role": "user",
+        "content": "م",
+        "timestamp": "2026-01-12T23:58:19.469Z"
+      },
+      {
+        "role": "assistant",
+        "content": "شكرًا لملاحظتك. يُرجى تزويدنا برقم التعريف الشخصي (PIN) لإتمام العمليات الحساسة.",
+        "timestamp": "2026-01-12T23:58:26.754Z"
+      },
+      {
+        "role": "user",
+        "content": "315827",
+        "timestamp": "2026-01-12T23:58:42.363Z"
+      },
+      {
+        "role": "assistant",
+        "content": "✅ تم التحقق! كيف يمكنني مساعدتك؟",
+        "timestamp": "2026-01-12T23:58:42.604Z"
+      },
+      {
+        "role": "user",
+        "content": "كم راتبي",
+        "timestamp": "2026-01-12T23:58:47.723Z"
+      },
+      {
+        "role": "assistant",
+        "content": "راتبك في قسم \"12.31\":\n\nالمجموع الإجمالي: 37 ر.س\nخصم الوكالة (7%): 2.59 ر.س\nالصافي: 34.41 ر.س",
+        "timestamp": "2026-01-12T23:58:52.030Z"
+      },
+      {
+        "role": "user",
+        "content": "مرحبا",
+        "timestamp": "2026-01-13T22:58:19.422Z"
+      },
+      {
+        "role": "assistant",
+        "content": "مرحبًا، شكرًا لتواصلك. يرجى تزويدنا برقم الـ PIN الخاص بك لإتمام العمليات الحساسة.",
+        "timestamp": "2026-01-13T22:58:27.173Z"
+      },
+      {
+        "role": "user",
+        "content": "315827",
+        "timestamp": "2026-01-13T22:58:36.754Z"
+      },
+      {
+        "role": "assistant",
+        "content": "✅ تم التحقق! كيف يمكنني مساعدتك؟",
+        "timestamp": "2026-01-13T22:58:36.919Z"
+      },
+      {
+        "role": "user",
+        "content": "اريد معلوماتي",
+        "timestamp": "2026-01-13T22:58:45.894Z"
+      },
+      {
+        "role": "assistant",
+        "content": "📋 بياناتك:\n\n• الاسم: احمد حاج عيسى\n• الهاتف: 963998071548\n• الدولة: سوريا\n• المدينة: حمص\n• العنوان: الادخار\n• الوكالة: السلطان\n• ID: 50450161",
+        "timestamp": "2026-01-13T22:58:49.466Z"
+      },
+      {
+        "role": "user",
+        "content": "ماذا عن عنوان شام كاش",
+        "timestamp": "2026-01-13T22:59:13.217Z"
+      },
+      {
+        "role": "assistant",
+        "content": "مرحبًا بك، سأساعدك في ذلك. عنوان \"شام كاش\" هو [أدخل العنوان المحدد]. إذا كان لديك أي استفسارات أخرى، فلا تتردد في طرحها.",
+        "timestamp": "2026-01-13T22:59:19.497Z"
       }
     ],
     "createdAt": "2026-01-11T15:58:06.225Z",
-    "updatedAt": "2026-01-11T21:59:44.488Z",
+    "updatedAt": "2026-01-13T22:59:19.497Z",
     "hasReceivedGreeting": true,
     "pendingLinkId": null,
     "linkedClientId": "50450161"
@@ -189,91 +189,6 @@
     "lastAskedField": null,
     "conversationHistory": [
       {
-        "role": "user",
-        "content": "مرحبا",
-        "timestamp": "2026-01-11T23:08:50.308Z"
-      },
-      {
-        "role": "assistant",
-        "content": "مرحباً بك! 👋\n\nللبدء، يرجى إرسال رقم الـ ID الخاص بك للتحقق من هويتك.",
-        "timestamp": "2026-01-11T23:08:50.956Z"
-      },
-      {
-        "role": "user",
-        "content": "23878741",
-        "timestamp": "2026-01-11T23:09:18.850Z"
-      },
-      {
-        "role": "assistant",
-        "content": "لم أجد رقم ID \"23878741\" في السجلات. تأكد من صحة الرقم أو تواصل مع الإدارة.",
-        "timestamp": "2026-01-11T23:09:19.214Z"
-      },
-      {
-        "role": "user",
-        "content": "بدي سجل",
-        "timestamp": "2026-01-11T23:10:04.071Z"
-      },
-      {
-        "role": "assistant",
-        "content": "لربط حسابك، أرسل رقم الـ ID الخاص بك. إذا لم يكن لديك ID، تواصل مع الإدارة.",
-        "timestamp": "2026-01-11T23:10:04.323Z"
-      },
-      {
-        "role": "user",
-        "content": "23878741",
-        "timestamp": "2026-01-11T23:10:18.211Z"
-      },
-      {
-        "role": "assistant",
-        "content": "لم أجد رقم ID \"23878741\" في السجلات. تأكد من صحة الرقم أو تواصل مع الإدارة.",
-        "timestamp": "2026-01-11T23:10:18.604Z"
-      },
-      {
-        "role": "user",
-        "content": "23878741",
-        "timestamp": "2026-01-11T23:12:04.865Z"
-      },
-      {
-        "role": "assistant",
-        "content": "وجدت حسابك! هل أنت \"روان بكار\"؟ أجب بـ \"نعم\" للتأكيد.",
-        "timestamp": "2026-01-11T23:12:05.227Z"
-      },
-      {
-        "role": "user",
-        "content": "نعم",
-        "timestamp": "2026-01-11T23:12:16.018Z"
-      },
-      {
-        "role": "assistant",
-        "content": "مرحباً روان بكار! ✅\n\nتم ربط حسابك بنجاح.\nرمز الحماية الخاص بك: 215636\n\nاحتفظ بهذا الرمز ولا تشاركه مع أحد.",
-        "timestamp": "2026-01-11T23:12:16.334Z"
-      },
-      {
-        "role": "user",
-        "content": "تمام",
-        "timestamp": "2026-01-11T23:12:43.805Z"
-      },
-      {
-        "role": "assistant",
-        "content": "شكرًا لتأكيدك، نحن هنا لمساعدتك في أي استفسار آخر.",
-        "timestamp": "2026-01-11T23:12:49.067Z"
-      },
-      {
-        "role": "user",
-        "content": "شقد راتبي",
-        "timestamp": "2026-01-11T23:12:51.959Z"
-      },
-      {
-        "role": "assistant",
-        "content": "راتبك في قسم \"12.31\":\n\nالمجموع الإجمالي: 164 ر.س\nخصم الوكالة (7%): 11.48 ر.س\nالصافي: 152.52 ر.س",
-        "timestamp": "2026-01-11T23:12:56.439Z"
-      },
-      {
-        "role": "user",
-        "content": "اشعار",
-        "timestamp": "2026-01-11T23:13:06.466Z"
-      },
-      {
         "role": "assistant",
         "content": "أهلاً بك، شكراً لتواصلك. هل يمكنك توضيح المزيد حول الإشعار أو الجلسة الموثوقة التي ترغب في مناقشتها؟ سأكون سعيدًا بمساعدتك.",
         "timestamp": "2026-01-11T23:13:13.328Z"
@@ -287,10 +202,95 @@
         "role": "assistant",
         "content": "راتبك في قسم \"12.31\":\n\nالمجموع الإجمالي: 164 ر.س\nخصم الوكالة (7%): 11.48 ر.س\nالصافي: 152.52 ر.س",
         "timestamp": "2026-01-11T23:13:51.958Z"
+      },
+      {
+        "role": "user",
+        "content": "ابعتلن هاد",
+        "timestamp": "2026-01-13T02:34:43.875Z"
+      },
+      {
+        "role": "assistant",
+        "content": "شكرًا لتواصلك. يرجى تزويدنا برقم الـ PIN الخاص بك لنتمكن من مساعدتك في هذه العملية.",
+        "timestamp": "2026-01-13T02:34:53.357Z"
+      },
+      {
+        "role": "user",
+        "content": "احمد",
+        "timestamp": "2026-01-13T02:34:53.875Z"
+      },
+      {
+        "role": "assistant",
+        "content": "مرحبًا أحمد، شكرًا على الملاحظة. تأكد من إدخال رقم التعريف الشخصي (PIN) عند إجراء العمليات الحساسة. إذا كنت بحاجة إلى مساعدة إضافية، أنا هنا لمساعدتك.",
+        "timestamp": "2026-01-13T02:34:59.471Z"
+      },
+      {
+        "role": "assistant",
+        "content": "لم أفهم رسالتك. يرجى إرسال نص أو رسالة صوتية.",
+        "timestamp": "2026-01-13T19:20:24.238Z"
+      },
+      {
+        "role": "user",
+        "content": "شو قياس هي الصورة",
+        "timestamp": "2026-01-13T19:20:26.446Z"
+      },
+      {
+        "role": "assistant",
+        "content": "شكرًا لك على تواصلك. يُرجى تزويدي بمزيد من التفاصيل حول الصورة لنتمكن من مساعدتك بشكل أفضل.",
+        "timestamp": "2026-01-13T19:20:35.456Z"
+      },
+      {
+        "role": "user",
+        "content": ".",
+        "timestamp": "2026-01-13T19:27:30.484Z"
+      },
+      {
+        "role": "assistant",
+        "content": "شكرًا لتواصلك! يمكنك استخدام الـ PIN الخاص بك للعمليات الحساسة. إذا كنت بحاجة لمزيد من المساعدة، فلا تتردد في السؤال.",
+        "timestamp": "2026-01-13T19:27:43.881Z"
+      },
+      {
+        "role": "user",
+        "content": "🙂🙂🙂🙂",
+        "timestamp": "2026-01-13T19:27:44.406Z"
+      },
+      {
+        "role": "assistant",
+        "content": "أهلاً بك! شكرًا لتواصلك. نعم، تحتاج إلى إدخال PIN للعمليات الحساسة لضمان الأمان. كيف يمكنني مساعدتك أكثر؟",
+        "timestamp": "2026-01-13T19:27:50.336Z"
+      },
+      {
+        "role": "user",
+        "content": "تقريبا",
+        "timestamp": "2026-01-13T19:36:23.949Z"
+      },
+      {
+        "role": "assistant",
+        "content": "شكرًا لتواصلك. نعم، تحتاج إلى إدخال الرقم السري (PIN) لإتمام العمليات الحساسة. إذا كان لديك أي استفسار آخر، أنا هنا للمساعدة.",
+        "timestamp": "2026-01-13T19:36:32.334Z"
+      },
+      {
+        "role": "user",
+        "content": "يعني",
+        "timestamp": "2026-01-13T19:36:32.856Z"
+      },
+      {
+        "role": "assistant",
+        "content": "شكرًا على ملاحظتك. نعم، يجب استخدام PIN للعمليات الحساسة لضمان الأمان. إذا كان لديك أي استفسار آخر، فلا تتردد في طرحه.",
+        "timestamp": "2026-01-13T19:36:41.001Z"
+      },
+      {
+        "role": "user",
+        "content": "ضروري",
+        "timestamp": "2026-01-13T19:36:41.517Z"
+      },
+      {
+        "role": "assistant",
+        "content": "شكرًا لتواصلك. يرجى تزويدنا برقم التعريف الشخصي (PIN) لإتمام العمليات الحساسة.",
+        "timestamp": "2026-01-13T19:36:47.157Z"
       }
     ],
     "createdAt": "2026-01-11T23:08:50.296Z",
-    "updatedAt": "2026-01-11T23:13:51.959Z",
+    "updatedAt": "2026-01-13T19:36:47.179Z",
     "pendingLinkId": null,
     "linkedClientId": "23878741"
   },
@@ -320,5 +320,305 @@
     ],
     "createdAt": "2026-01-12T18:30:30.194Z",
     "updatedAt": "2026-01-12T18:30:31.039Z"
+  },
+  "103247389966406@lid": {
+    "whatsappId": "103247389966406@lid",
+    "profile": {
+      "fullName": null,
+      "country": null,
+      "city": null,
+      "address": null,
+      "phone": null,
+      "agencyName": null,
+      "ids": []
+    },
+    "status": "new",
+    "pinHash": null,
+    "trustedSession": {
+      "expiresAt": null
+    },
+    "lastAskedField": null,
+    "conversationHistory": [
+      {
+        "role": "user",
+        "content": "حكى معي من هاد الرقم",
+        "timestamp": "2026-01-14T16:44:29.710Z"
+      },
+      {
+        "role": "user",
+        "content": "بعدين انت شو عرفك مو يوسف",
+        "timestamp": "2026-01-14T16:44:30.148Z"
+      },
+      {
+        "role": "user",
+        "content": "عم تاخود راي اريج",
+        "timestamp": "2026-01-14T16:44:35.867Z"
+      },
+      {
+        "role": "user",
+        "content": "اسال اريج معناها",
+        "timestamp": "2026-01-14T16:44:46.162Z"
+      },
+      {
+        "role": "user",
+        "content": "وشو عرفك هاد مو رقمو وإذا عندك رقمو ليش عم تتطلبوا مني",
+        "timestamp": "2026-01-14T17:02:54.050Z"
+      },
+      {
+        "role": "user",
+        "content": "انا قلي يوسف",
+        "timestamp": "2026-01-14T17:03:03.441Z"
+      },
+      {
+        "role": "user",
+        "content": "شوي وبتصل",
+        "timestamp": "2026-01-14T17:36:14.477Z"
+      }
+    ],
+    "createdAt": "2026-01-14T16:44:29.703Z",
+    "updatedAt": "2026-01-14T17:36:14.481Z"
+  },
+  "237074259140746@lid": {
+    "whatsappId": "237074259140746@lid",
+    "profile": {
+      "fullName": null,
+      "country": null,
+      "city": null,
+      "address": null,
+      "phone": null,
+      "agencyName": null,
+      "ids": []
+    },
+    "status": "new",
+    "pinHash": null,
+    "trustedSession": {
+      "expiresAt": null
+    },
+    "lastAskedField": null,
+    "conversationHistory": [
+      {
+        "role": "user",
+        "content": "طلع نفسو ؟",
+        "timestamp": "2026-01-14T16:47:40.260Z"
+      },
+      {
+        "role": "user",
+        "content": "لا",
+        "timestamp": "2026-01-14T17:01:08.777Z"
+      },
+      {
+        "role": "user",
+        "content": "زاتا هوا بتركيا ليش ليكون عندو رقم يوناني",
+        "timestamp": "2026-01-14T17:01:20.499Z"
+      },
+      {
+        "role": "user",
+        "content": "هاد الرقم يوناني صح",
+        "timestamp": "2026-01-14T17:01:30.269Z"
+      }
+    ],
+    "createdAt": "2026-01-14T16:47:40.237Z",
+    "updatedAt": "2026-01-14T17:01:30.272Z"
+  },
+  "131452373086273@lid": {
+    "whatsappId": "131452373086273@lid",
+    "profile": {
+      "fullName": null,
+      "country": null,
+      "city": null,
+      "address": null,
+      "phone": null,
+      "agencyName": null,
+      "ids": []
+    },
+    "status": "new",
+    "pinHash": null,
+    "trustedSession": {
+      "expiresAt": null
+    },
+    "lastAskedField": null,
+    "conversationHistory": [],
+    "createdAt": "2026-01-14T17:18:15.507Z",
+    "updatedAt": "2026-01-14T17:18:15.508Z"
+  },
+  "119125816909998@lid": {
+    "whatsappId": "119125816909998@lid",
+    "profile": {
+      "fullName": null,
+      "country": null,
+      "city": null,
+      "address": null,
+      "phone": null,
+      "agencyName": null,
+      "ids": []
+    },
+    "status": "new",
+    "pinHash": null,
+    "trustedSession": {
+      "expiresAt": null
+    },
+    "lastAskedField": null,
+    "conversationHistory": [
+      {
+        "role": "user",
+        "content": "السلام وعليكم",
+        "timestamp": "2026-01-14T19:29:56.886Z"
+      }
+    ],
+    "createdAt": "2026-01-14T17:20:29.091Z",
+    "updatedAt": "2026-01-14T19:29:56.887Z"
+  },
+  "0@c.us": {
+    "whatsappId": "0@c.us",
+    "profile": {
+      "fullName": null,
+      "country": null,
+      "city": null,
+      "address": null,
+      "phone": null,
+      "agencyName": null,
+      "ids": []
+    },
+    "status": "new",
+    "pinHash": null,
+    "trustedSession": {
+      "expiresAt": null
+    },
+    "lastAskedField": null,
+    "conversationHistory": [
+      {
+        "role": "user",
+        "content": "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",
+        "timestamp": "2026-01-15T16:59:24.198Z"
+      }
+    ],
+    "createdAt": "2026-01-15T16:59:23.741Z",
+    "updatedAt": "2026-01-15T16:59:24.228Z"
+  },
+  "963998071548@c.us": {
+    "whatsappId": "963998071548@c.us",
+    "profile": {
+      "fullName": "Ahmed",
+      "country": null,
+      "city": null,
+      "address": null,
+      "phone": "963998071548",
+      "agencyName": null,
+      "ids": [
+        "50450161"
+      ]
+    },
+    "status": "complete",
+    "pinHash": "3eccd922ff54b7b21cc4961f9e2ff9a2ac9786644e9bc727d49360a65ba5a675",
+    "trustedSession": {
+      "expiresAt": "2026-01-16T03:06:36.020Z"
+    },
+    "lastAskedField": null,
+    "conversationHistory": [
+      {
+        "role": "user",
+        "content": "مرحبا",
+        "timestamp": "2026-01-16T02:31:06.070Z"
+      },
+      {
+        "role": "user",
+        "content": "مرحبا",
+        "timestamp": "2026-01-16T02:34:06.693Z"
+      },
+      {
+        "role": "user",
+        "content": "مرحبا",
+        "timestamp": "2026-01-16T02:41:09.140Z"
+      },
+      {
+        "role": "user",
+        "content": "ممكن",
+        "timestamp": "2026-01-16T02:44:10.143Z"
+      },
+      {
+        "role": "user",
+        "content": "مرحبا",
+        "timestamp": "2026-01-16T02:51:14.929Z"
+      },
+      {
+        "role": "assistant",
+        "content": "لربط حسابك، أرسل رقم الـ ID الخاص بك. إذا لم يكن لديك ID، تواصل مع الإدارة.",
+        "timestamp": "2026-01-16T02:51:15.575Z"
+      },
+      {
+        "role": "user",
+        "content": "50450161",
+        "timestamp": "2026-01-16T02:51:28.418Z"
+      },
+      {
+        "role": "assistant",
+        "content": "وجدت حسابك! هل أنت \"Ahmed\"؟ أجب بـ \"نعم\" للتأكيد.",
+        "timestamp": "2026-01-16T02:51:28.952Z"
+      },
+      {
+        "role": "user",
+        "content": "نعم",
+        "timestamp": "2026-01-16T02:51:35.989Z"
+      },
+      {
+        "role": "assistant",
+        "content": "مرحباً Ahmed! ✅\n\nتم ربط حسابك بنجاح.\nرمز الحماية الخاص بك: 301019\n\nاحتفظ بهذا الرمز ولا تشاركه مع أحد.",
+        "timestamp": "2026-01-16T02:51:36.235Z"
+      },
+      {
+        "role": "user",
+        "content": "عندي شي بدي قولو",
+        "timestamp": "2026-01-16T02:52:19.198Z"
+      },
+      {
+        "role": "assistant",
+        "content": "مرحبًا بك، كيف يمكنني مساعدتك فيما تود قوله؟",
+        "timestamp": "2026-01-16T02:52:26.324Z"
+      },
+      {
+        "role": "user",
+        "content": "فينك تحكي سوري",
+        "timestamp": "2026-01-16T02:52:37.966Z"
+      },
+      {
+        "role": "assistant",
+        "content": "أهلاً بك، أنا هنا لمساعدتك. كيف يمكنني مساعدتك اليوم؟",
+        "timestamp": "2026-01-16T02:52:47.032Z"
+      },
+      {
+        "role": "user",
+        "content": "بدي معلوماتي",
+        "timestamp": "2026-01-16T02:53:00.221Z"
+      },
+      {
+        "role": "assistant",
+        "content": "📋 بياناتك:\n\n• الاسم: Ahmed\n• الهاتف: 963998071548\n• الدولة: -\n• المدينة: -\n• العنوان: -\n• الوكالة: -\n• ID: 50450161",
+        "timestamp": "2026-01-16T02:53:04.430Z"
+      },
+      {
+        "role": "user",
+        "content": "شكرا",
+        "timestamp": "2026-01-16T02:57:29.907Z"
+      },
+      {
+        "role": "assistant",
+        "content": "عفواً، سعيد بأن الجلسة كانت موثوقة. إذا احتجت لأي مساعدة أخرى، أنا هنا للمساعدة.",
+        "timestamp": "2026-01-16T02:57:39.231Z"
+      },
+      {
+        "role": "user",
+        "content": "ممكن سوائل",
+        "timestamp": "2026-01-16T03:02:24.590Z"
+      },
+      {
+        "role": "assistant",
+        "content": "مرحبًا، سأكون سعيدًا بمساعدتك. هل تقصد أنك تحتاج إلى معلومات حول سوائل معينة أو طلب محدد؟",
+        "timestamp": "2026-01-16T03:02:32.754Z"
+      }
+    ],
+    "createdAt": "2026-01-16T02:31:05.971Z",
+    "updatedAt": "2026-01-16T03:02:32.757Z",
+    "pendingLinkId": null,
+    "linkedClientId": "50450161"
   }
 }

@@ -184,7 +184,18 @@ function renderStatus(status) {
   if (qrBtn) {
     const disableQr = statusState.linkState === 'ready';
     qrBtn.disabled = disableQr;
-    if (disableQr) document.getElementById('qr-modal')?.classList.add('hidden');
+    const modal = document.getElementById('qr-modal');
+    if (disableQr) {
+      modal?.classList.add('hidden');
+    } else if (statusState.linkState === 'qr' && modal?.classList.contains('hidden')) {
+      // Auto-show QR if we are in QR state but modal is closed (e.g. refresh)
+      api.request('/api/qr').then(res => {
+        if (res.qr && document.getElementById('qr-image')) {
+          document.getElementById('qr-image').src = res.qr;
+          modal.classList.remove('hidden');
+        }
+      });
+    }
   }
   renderForwardState(statusState.forward || {});
   renderCheckpoints(statusState.lastChecked || {});
@@ -578,9 +589,8 @@ function renderGroups(groups) {
   groups.forEach((g) => {
     const item = document.createElement('div');
     item.className = 'group-item';
-    item.innerHTML = `<label>${g.name}</label><label class="switch"><input type="checkbox" value="${g.id}" ${
-      g.selected ? 'checked' : ''
-    }/><span class="slider"></span></label>`;
+    item.innerHTML = `<label>${g.name}</label><label class="switch"><input type="checkbox" value="${g.id}" ${g.selected ? 'checked' : ''
+      }/><span class="slider"></span></label>`;
     container.appendChild(item);
   });
   updateForwardTargetOptions(groups);

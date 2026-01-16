@@ -250,30 +250,161 @@ class UserService {
         let newUsers = 0;
         let updatedUsers = 0;
         const duplicates = []; // Track duplicates for user review
+        const crossAgencyConflicts = []; // Track cross-agency conflicts
+
+        // --- BATCH PROFIT CALCULATION SETUP ---
+        const agencyProfits = {}; // { 'AgencyName': { amount: 0, count: 0, agencyId: null } }
+        let adminRows = null;
+        let agencyMap = {};
+        let periodId = null;
+
+        try {
+            const openPeriods = await prisma.period.findMany({ where: { status: 'OPEN' }, take: 1 });
+            if (openPeriods.length > 0) {
+                const period = openPeriods[0];
+                periodId = period.id;
+                const adminSheetPath = path.join(__dirname, `../data/sheet_admin_${period.id}.json`);
+                if (fs.existsSync(adminSheetPath)) {
+                    adminRows = JSON.parse(fs.readFileSync(adminSheetPath, 'utf8'));
+                    const agencies = await prisma.agency.findMany();
+                    agencies.forEach(a => agencyMap[a.name] = a);
+                }
+            }
+        } catch (e) { console.error('Error loading admin sheet for batch profit:', e); }
+
+        // Helper to parse numbers
+        const parseNumber = (val) => {
+            if (val === null || val === undefined || val === '') return 0;
+            let str = val.toString().trim();
+            str = str.replace(/[$€£¥₹]/g, '').replace(/\s/g, '');
+            str = str.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+            str = str.replace(/٫/g, '.');
+            if (str.includes('.') && str.includes(',') && str.lastIndexOf(',') > str.lastIndexOf('.')) {
+                str = str.replace(/\./g, '').replace(',', '.');
+            } else if (str.includes(',') && str.includes('.') && str.lastIndexOf('.') > str.lastIndexOf(',')) {
+                str = str.replace(/,/g, '');
+            } else if (str.includes(',') && !str.includes('.')) {
+                const parts = str.split(',');
+                if (parts.length === 2 && parts[1].length === 3 && /^\d+$/.test(parts[1])) {
+                    str = str.replace(',', '');
+                } else {
+                    str = str.replace(',', '.');
+                }
+            }
+            const num = parseFloat(str);
+            return isNaN(num) ? 0 : num;
+        };
+
+        // Helper to accumulate profit
+        const accumulateProfit = (userId, agencyName, manualProfit = null) => {
+            if (!periodId && (manualProfit === null || manualProfit === undefined)) return;
+            const agency = agencyMap[agencyName];
+            if (!agency) return;
+
+            let w_profit = 0;
+
+            if (manualProfit !== null && manualProfit !== undefined) {
+                // Manual profit from JSON
+                w_profit = parseFloat(manualProfit);
+            } else if (adminRows) {
+                // CSV Mode lookup
+                const row = adminRows.find(r => Object.values(r)[0]?.toString().trim() === userId.toString().trim());
+                if (row) {
+                    const vals = Object.values(row);
+                    if (vals.length > 22) {
+                        w_profit = parseNumber(vals[22]);
+                    }
+                }
+            }
+
+            if (w_profit > 0) {
+                const managementRatio = (agency.managementRatio ?? 10) / 100;
+                const subAgencyRatio = 1 - managementRatio;
+                const userProfit = w_profit * subAgencyRatio;
+
+                if (userProfit > 0) {
+                    if (!agencyProfits[agencyName]) {
+                        agencyProfits[agencyName] = { amount: 0, count: 0, agencyId: agency.id };
+                    }
+                    agencyProfits[agencyName].amount += userProfit;
+                    agencyProfits[agencyName].count++;
+                }
+            }
+        };
 
         for (const row of rows) {
-            const vals = Array.isArray(row) ? row : Object.values(row);
-            const id = vals[0]?.toString();
-            const name = vals[1];
-            const phone = vals[2];
-            const country = vals[3];
-            const agencyName = overrideAgency || vals[4];
+            let id, name, phone, country, importAgency;
+            let dbData = {};
+            let originalAgency = null;
+            let manualProfit = 0;
+
+            if (row && typeof row === 'object' && !Array.isArray(row) && row.id) {
+                // Object Mode (from JSON API)
+                id = row.id.toString();
+                name = row.name;
+                phone = row.phone;
+                country = row.country;
+                importAgency = overrideAgency || row.agencyName || 'Main';
+                originalAgency = row.originalAgency || row.agencyName; // Source of truth from sheet
+                manualProfit = row.profit || 0; // Capture profit from JSON
+
+                const { id: _id, name: _name, agencyName: _agn, originalAgency: _org, profit: _prf, ...rest } = row;
+                dbData = rest;
+            } else {
+                // Array Mode (CSV)
+                const vals = Array.isArray(row) ? row : Object.values(row);
+                id = vals[0]?.toString();
+                name = vals[1];
+                phone = vals[2];
+                country = vals[3];
+                importAgency = overrideAgency || vals[4] || 'Main';
+
+                if (vals[7]) dbData.address = vals[7];
+            }
 
             if (!id || !name) continue;
 
             try {
                 const existing = await prisma.user.findUnique({ where: { id } });
+
                 if (existing) {
+                    const existingAgency = existing.agencyName || 'Main';
+
+                    // Conflict Source: DB vs Target
+                    if (existingAgency !== importAgency && existingAgency !== 'Main' && importAgency !== 'Main') {
+                        // تعارض بين وكالتين - تعليق المستخدم
+                        const conflictAgencies = [...new Set([existingAgency, importAgency])];
+
+                        await prisma.user.update({
+                            where: { id },
+                            data: {
+                                status: 'suspended',
+                                conflictAgencies: conflictAgencies
+                            }
+                        });
+
+                        crossAgencyConflicts.push({
+                            userId: id,
+                            userName: existing.name || name,
+                            existingAgency: existingAgency,
+                            importAgency: importAgency,
+                            conflictAgencies: conflictAgencies
+                        });
+                        continue;
+                    }
+
                     if (autoResolve) {
                         // Auto-update if requested
                         const oldAgencyName = existing.agencyName || 'Main';
-                        const newAgencyName = agencyName || existing.agencyName || 'Main';
+                        const newAgencyName = importAgency || existing.agencyName || 'Main';
 
                         await prisma.user.update({
                             where: { id },
                             data: {
                                 name,
-                                agencyName: newAgencyName
+                                agencyName: newAgencyName,
+                                status: 'active', // تفعيل إذا كان معلق
+                                ...dbData
                             }
                         });
 
@@ -282,43 +413,41 @@ class UserService {
                         const isNowSubAgency = !['Soulchill', 'WhiteAgency', 'Main', '', null, undefined].includes(newAgencyName);
 
                         if (wasSubAgency !== isNowSubAgency || (isNowSubAgency && oldAgencyName !== newAgencyName)) {
-                            await this.adjustSafeForSubAgencyUser(id, newAgencyName);
+                            // Accumulate profit instead of direct transaction
+                            if (isNowSubAgency) accumulateProfit(id, newAgencyName, manualProfit);
                         }
 
                         updatedUsers++;
                         count++;
                     } else {
-                        // Track duplicate for user review
+                        // Track duplicate for user review (same agency)
                         duplicates.push({
-                            importData: { id, name, phone, country, agencyName },
+                            importData: { id, name, phone, country, agencyName: importAgency },
                             existingUser: {
                                 id: existing.id,
                                 name: existing.name,
-                                agencyName: existing.agencyName || 'Main',
+                                agencyName: existingAgency,
                                 phone: existing.phone
                             }
                         });
                     }
                 } else {
-                    const newUser = await prisma.user.create({
+                    // NEW USER
+                    // Always create as Active (Ignore Sheet Conflict as per user request to fix profit/agency issue)
+                    await prisma.user.create({
                         data: {
-                            id,
-                            name,
-                            agencyName: agencyName || 'Main',
-                            type: 'Host',
-                            phone,
-                            country,
-                            address: vals[7]
+                            id, name, agencyName: importAgency, type: 'Host', phone, country,
+                            address: dbData.address,
+                            status: 'active',
+                            ...dbData
                         }
                     });
 
                     // إذا كان المستخدم يتبع وكالة فرعية، تعديل الخزينة
-                    const finalAgencyName = agencyName || 'Main';
-                    const isSubAgency = !['Soulchill', 'WhiteAgency', 'Main', '', null, undefined].includes(finalAgencyName);
+                    const isSubAgency = !['Soulchill', 'WhiteAgency', 'Main', '', null, undefined].includes(importAgency);
                     if (isSubAgency) {
-                        await this.adjustSafeForSubAgencyUser(id, finalAgencyName);
+                        accumulateProfit(id, importAgency, manualProfit);
                     }
-
                     newUsers++;
                     count++;
                 }
@@ -327,7 +456,40 @@ class UserService {
             }
         }
 
-        return { count, newUsers, updatedUsers, duplicates };
+        // --- COMMIT AGGREGATED TRANSACTIONS ---
+        if (periodId && Object.keys(agencyProfits).length > 0) {
+            const safeName = 'الخزينة الرئيسية (Safe)';
+            const safe = await prisma.company.findUnique({ where: { name: safeName } });
+
+            if (safe) {
+                for (const [agencyName, data] of Object.entries(agencyProfits)) {
+                    if (data.amount > 0) {
+                        // 1. Create Transaction
+                        await prisma.transaction.create({
+                            data: {
+                                periodId: periodId,
+                                companyId: safe.id,
+                                type: 'EXPENSE',
+                                category: 'Agency Profit',
+                                agencyId: data.agencyId,
+                                amount: data.amount,
+                                description: `AUTO_PROFIT: ${agencyName} (Import Batch: ${data.count} users)`,
+                                date: new Date()
+                            }
+                        });
+
+                        // 2. Update Safe Balance
+                        await prisma.company.update({
+                            where: { id: safe.id },
+                            data: { balance: { decrement: data.amount } }
+                        });
+                        console.log(`[UserService] Batch profit deducted for ${agencyName}: -${data.amount} (${data.count} users)`);
+                    }
+                }
+            }
+        }
+
+        return { count, newUsers, updatedUsers, duplicates, crossAgencyConflicts };
     }
 
     /**
@@ -459,7 +621,30 @@ class UserService {
                 const rowUserId = vals[0]?.toString().trim();
 
                 if (rowUserId === userId.toString()) {
-                    const w_profit = parseFloat(vals[22]) || 0; // Col W
+                    // parseNumber للتعامل مع الفواصل والعملات
+                    function parseNumber(val) {
+                        if (val === null || val === undefined || val === '') return 0;
+                        let str = val.toString().trim();
+                        str = str.replace(/[$€£¥₹]/g, '').replace(/\s/g, '');
+                        str = str.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+                        str = str.replace(/٫/g, '.');
+                        if (str.includes('.') && str.includes(',') && str.lastIndexOf(',') > str.lastIndexOf('.')) {
+                            str = str.replace(/\./g, '').replace(',', '.');
+                        } else if (str.includes(',') && str.includes('.') && str.lastIndexOf('.') > str.lastIndexOf(',')) {
+                            str = str.replace(/,/g, '');
+                        } else if (str.includes(',') && !str.includes('.')) {
+                            const parts = str.split(',');
+                            if (parts.length === 2 && parts[1].length === 3 && /^\d+$/.test(parts[1])) {
+                                str = str.replace(',', '');
+                            } else {
+                                str = str.replace(',', '.');
+                            }
+                        }
+                        const num = parseFloat(str);
+                        return isNaN(num) ? 0 : num;
+                    }
+
+                    const w_profit = parseNumber(vals[22]); // Col W - تم إصلاحه
                     if (w_profit > 0) {
                         // حساب ربح الوكالة الفرعية (90% أو حسب الإعدادات)
                         const agency = agencyMap[agencyName];

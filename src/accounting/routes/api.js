@@ -431,14 +431,14 @@ router.post('/reports/import-agent', upload.single('file'), async (req, res) => 
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Import Users DB
+// Import Users DB (File)
 router.post('/users/import', upload.single('file'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
         const fs = require('fs');
         const parse = require('csv-parse/sync').parse;
-        const fileContent = fs.readFileSync(req.file.path, 'utf8');
 
+        const fileContent = fs.readFileSync(req.file.path, 'utf8');
         // Assume Header Row exists
         const records = parse(fileContent, {
             columns: false,
@@ -446,8 +446,22 @@ router.post('/users/import', upload.single('file'), async (req, res) => {
             from_line: 2
         });
 
-        const result = await userService.importBulkUsers(records, req.body.agencyOverride);
         fs.unlinkSync(req.file.path);
+
+        const result = await userService.importBulkUsers(records, req.body.agencyOverride, req.body.autoResolve === 'true' || req.body.autoResolve === true);
+        res.json(result);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Import Users DB (JSON)
+router.post('/users/import-json', async (req, res) => {
+    try {
+        const rows = req.body.rows;
+        if (!rows || !Array.isArray(rows)) {
+            return res.status(400).json({ error: 'No rows provided' });
+        }
+
+        const result = await userService.importBulkUsers(rows, req.body.agencyOverride, req.body.autoResolve === 'true' || req.body.autoResolve === true);
         res.json(result);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -459,6 +473,142 @@ router.post('/users/resolve-duplicate', async (req, res) => {
         const result = await userService.resolveDuplicateUser(id, importData, action);
         res.json(result);
     } catch (err) { res.status(400).json({ error: err.message }); }
+});
+
+// =====================================================
+// SUSPENDED USERS - نظام التعليق
+// =====================================================
+
+// GET /suspended-users - قائمة المستخدمين المعلقين
+router.get('/suspended-users', async (req, res) => {
+    try {
+        const suspendedUsers = await prisma.user.findMany({
+            where: { status: 'suspended' },
+            orderBy: { updatedAt: 'desc' }
+        });
+
+        res.json({
+            users: suspendedUsers.map(u => ({
+                id: u.id,
+                name: u.name,
+                phone: u.phone,
+                conflictAgencies: u.conflictAgencies || [],
+                currentAgency: u.agencyName,
+                updatedAt: u.updatedAt
+            })),
+            count: suspendedUsers.length
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /users/confirm-agency - تأكيد المستخدم في الوكالة الجديدة
+router.post('/users/confirm-agency', async (req, res) => {
+    try {
+        const { userId, targetAgency } = req.body;
+
+        if (!userId || !targetAgency) {
+            return res.status(400).json({ error: 'userId و targetAgency مطلوبان' });
+        }
+
+        // تحديث المستخدم: وكالة جديدة + تفعيل + مسح التعارض
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                agencyName: targetAgency,
+                status: 'active',
+                conflictAgencies: []
+            }
+        });
+
+        res.json({
+            success: true,
+            message: `تم تأكيد المستخدم ${userId} في وكالة ${targetAgency}`
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /users/confirm-agency-bulk - تأكيد مجموعة مستخدمين دفعة واحدة
+router.post('/users/confirm-agency-bulk', async (req, res) => {
+    try {
+        const { userIds, targetAgency } = req.body;
+
+        if (!userIds || !Array.isArray(userIds) || userIds.length === 0 || !targetAgency) {
+            return res.status(400).json({ error: 'userIds (array) و targetAgency مطلوبان' });
+        }
+
+        // Update Many
+        const updateResult = await prisma.user.updateMany({
+            where: {
+                id: { in: userIds }
+            },
+            data: {
+                agencyName: targetAgency,
+                status: 'active',
+                conflictAgencies: []
+            } // Note: accumulateProfit is PER USER. For bulk update, we might miss profit accumulation if we don't loop.
+            // Given this is a database fix tool, avoiding complex logic is safer. Use Recalculate Period if needed.
+        });
+
+        res.json({
+            success: true,
+            message: `تم تحديث ${updateResult.count} مستخدم بنجاح إلى وكالة ${targetAgency}`
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /users/suspend - تعليق المستخدم (لا يُحسب لأي وكالة)
+router.post('/users/suspend', async (req, res) => {
+    try {
+        const { userId, conflictAgencies } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({ error: 'userId مطلوب' });
+        }
+
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                status: 'suspended',
+                conflictAgencies: conflictAgencies || []
+            }
+        });
+
+        res.json({
+            success: true,
+            message: `تم تعليق المستخدم ${userId}`
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET /agency-warnings/:agencyName - شارات التحذير للوكالة
+router.get('/agency-warnings/:agencyName', async (req, res) => {
+    try {
+        const { agencyName } = req.params;
+
+        // عدد المعلقين الذين يتنازعون على هذه الوكالة
+        const suspendedCount = await prisma.user.count({
+            where: {
+                status: 'suspended',
+                conflictAgencies: { has: agencyName }
+            }
+        });
+
+        res.json({
+            agencyName,
+            suspendedCount,
+            hasWarning: suspendedCount > 0
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // =====================================================
@@ -1074,20 +1224,6 @@ router.get('/treasury/summary', async (req, res) => {
             select: { id: true, name: true, summary: true }
         });
 
-        res.json({
-            safeBalance: safe.balance,
-            totalIncome,
-            totalExpense,
-            netProfit, // صافي الربح بعد استثناء الأمانات
-            totalCustody, // إجمالي الأمانات
-            totalSalaryCommission, // كمسيون التسليم
-            totalCycleIncome, // دخل الدورة (نسبة الإدارة + أرباح الرئيسية)
-            subAgencyProfitPaid: subAgencyProfitExpense, // ربح الوكالات الفرعية المدفوع
-            profitBreakdown, // تفصيل مصادر الربح
-            transactionCount: transactions.length,
-            periodCount: periods.length
-        });
-
         // Get custody summary
         const custodySummary = await financeService.getCustodySummary();
 
@@ -1126,6 +1262,29 @@ router.get('/treasury/custody-details', async (req, res) => {
         const fs = require('fs');
         const path = require('path');
 
+        // Helper to parse numbers with ALL possible formats (same as FinanceService)
+        function parseNumber(val) {
+            if (val === null || val === undefined || val === '') return 0;
+            let str = val.toString().trim();
+            str = str.replace(/[$€£¥₹]/g, '').replace(/\s/g, '');
+            str = str.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+            str = str.replace(/٫/g, '.');
+            if (str.includes('.') && str.includes(',') && str.lastIndexOf(',') > str.lastIndexOf('.')) {
+                str = str.replace(/\./g, '').replace(',', '.');
+            } else if (str.includes(',') && str.includes('.') && str.lastIndexOf('.') > str.lastIndexOf(',')) {
+                str = str.replace(/,/g, '');
+            } else if (str.includes(',') && !str.includes('.')) {
+                const parts = str.split(',');
+                if (parts.length === 2 && parts[1].length === 3 && /^\d+$/.test(parts[1])) {
+                    str = str.replace(',', '');
+                } else {
+                    str = str.replace(',', '.');
+                }
+            }
+            const num = parseFloat(str);
+            return isNaN(num) ? 0 : num;
+        }
+
         // Get latest open period
         const openPeriod = await prisma.period.findFirst({
             where: { status: 'OPEN' },
@@ -1162,7 +1321,7 @@ router.get('/treasury/custody-details', async (req, res) => {
             const vals = Object.values(row);
             const userId = vals[0]?.toString().trim();
             const userName = vals[1]?.toString().trim() || '';
-            const salary = parseFloat(vals[3]) || 0; // العمود D - الراتب (الأمانة)
+            const salary = parseNumber(vals[3]); // استخدام parseNumber للتوحيد
 
             if (userId && salary > 0) {
                 const user = usersMap[userId];
@@ -1187,8 +1346,24 @@ router.get('/treasury/custody-details', async (req, res) => {
             }
         }
 
+        // ✅ FIX: جلب إجمالي الأمانات من المعاملات (مثل الخزينة تماماً)
+        const safeName = 'الخزينة الرئيسية (Safe)';
+        const safe = await prisma.company.findUnique({ where: { name: safeName } });
+        let transactionTotalCustody = 0;
+
+        if (safe) {
+            const transactions = await prisma.transaction.findMany({
+                where: {
+                    companyId: safe.id,
+                    category: 'Salary Deposit'
+                }
+            });
+            transactionTotalCustody = transactions.reduce((sum, tx) => sum + tx.amount, 0);
+        }
+
         res.json({
-            totalCustody,
+            totalCustody: transactionTotalCustody, // استخدام المعاملات للتطابق مع الخزينة
+            calculatedCustody: totalCustody, // المحسوب من الشيت (للمقارنة)
             byAgency: Object.values(custodyByAgency),
             periodName: openPeriod.name
         });
@@ -1402,4 +1577,523 @@ router.get('/unknown-users-summary', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// =====================================================
+// AUDIT SYSTEM - نظام التدقيق (تسليم الرواتب)
+// =====================================================
+
+// GET /audit/pending - الأمانات المعلقة
+router.get('/audit/pending', async (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+
+        // Get latest open period
+        const openPeriod = await prisma.period.findFirst({
+            where: { status: 'OPEN' },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        if (!openPeriod) {
+            return res.json({ users: [], message: 'لا توجد دورة مفتوحة' });
+        }
+
+        // Load Agent Sheet
+        const agentSheetPath = path.join(__dirname, `../data/sheet_agent_${openPeriod.id}.json`);
+        if (!fs.existsSync(agentSheetPath)) {
+            return res.json({ users: [], message: 'لا يوجد Agent Sheet محفوظ' });
+        }
+
+        const agentRows = JSON.parse(fs.readFileSync(agentSheetPath, 'utf8'));
+        const users = await prisma.user.findMany();
+        const usersMap = {};
+        users.forEach(u => usersMap[u.id] = u);
+
+        // Get delivered users in this period
+        const deliveredUserIds = await prisma.delivery.findMany({
+            where: { periodId: openPeriod.id },
+            select: { userId: true }
+        });
+        const deliveredSet = new Set(deliveredUserIds.map(d => d.userId));
+
+        // Parse salary from Agent Sheet
+        function parseNumber(val) {
+            if (val === null || val === undefined || val === '') return 0;
+            let str = val.toString().trim();
+            str = str.replace(/[$€£¥₹]/g, '').replace(/\s/g, '');
+            str = str.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+            str = str.replace(/٫/g, '.');
+            if (str.includes('.') && str.includes(',') && str.lastIndexOf(',') > str.lastIndexOf('.')) {
+                str = str.replace(/\./g, '').replace(',', '.');
+            } else if (str.includes(',') && str.includes('.') && str.lastIndexOf('.') > str.lastIndexOf(',')) {
+                str = str.replace(/,/g, '');
+            } else if (str.includes(',') && !str.includes('.')) {
+                const parts = str.split(',');
+                if (parts.length === 2 && parts[1].length === 3 && /^\d+$/.test(parts[1])) {
+                    str = str.replace(',', '');
+                } else {
+                    str = str.replace(',', '.');
+                }
+            }
+            const num = parseFloat(str);
+            return isNaN(num) ? 0 : num;
+        }
+
+        const pendingUsers = [];
+        for (const row of agentRows) {
+            const vals = Object.values(row);
+            const userId = vals[0]?.toString().trim();
+            const userName = vals[1]?.toString().trim() || '';
+            const salary = parseNumber(vals[3]); // Column D
+
+            if (userId && salary > 0 && !deliveredSet.has(userId)) {
+                const user = usersMap[userId];
+                pendingUsers.push({
+                    userId,
+                    userName: user?.name || userName,
+                    salary,
+                    agencyName: user?.agencyName || 'مجهول'
+                });
+            }
+        }
+
+        res.json({
+            users: pendingUsers,
+            periodId: openPeriod.id,
+            periodName: openPeriod.name
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /audit/deliver - تسليم راتب
+router.post('/audit/deliver', async (req, res) => {
+    try {
+        const { userId, salary, commission, netAmount } = req.body;
+
+        if (!userId || !salary) {
+            return res.status(400).json({ error: 'userId and salary are required' });
+        }
+
+        // Get current period
+        const openPeriod = await prisma.period.findFirst({
+            where: { status: 'OPEN' },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        if (!openPeriod) {
+            return res.status(400).json({ error: 'لا توجد دورة مفتوحة' });
+        }
+
+        // Check if already delivered
+        const existingDelivery = await prisma.delivery.findFirst({
+            where: { userId, periodId: openPeriod.id }
+        });
+
+        if (existingDelivery) {
+            return res.status(400).json({ error: 'تم تسليم هذا الراتب مسبقاً' });
+        }
+
+        // Create delivery record
+        const delivery = await prisma.delivery.create({
+            data: {
+                userId,
+                amount: netAmount || (salary * 0.93), // Net after 7%
+                salary,
+                periodId: openPeriod.id,
+                method: 'MANUAL',
+                notes: `تسليم يدوي - عمولة: $${(commission || salary * 0.07).toFixed(2)}`
+            }
+        });
+
+        // Create commission transaction in treasury
+        const safeName = 'الخزينة الرئيسية (Safe)';
+        let safe = await prisma.company.findUnique({ where: { name: safeName } });
+        if (!safe) {
+            safe = await prisma.company.create({ data: { name: safeName, balance: 0 } });
+        }
+
+        const commissionAmount = commission || salary * 0.07;
+
+        await prisma.transaction.create({
+            data: {
+                companyId: safe.id,
+                type: 'INCOME',
+                category: 'Salary Commission',
+                amount: commissionAmount,
+                description: `عمولة تسليم راتب: ${userId}`,
+                periodId: openPeriod.id
+            }
+        });
+
+        // Update treasury balance
+        await prisma.company.update({
+            where: { id: safe.id },
+            data: { balance: { increment: commissionAmount } }
+        });
+
+        res.json({
+            success: true,
+            delivery,
+            message: `تم تسليم $${(netAmount || salary * 0.93).toFixed(2)} بنجاح`
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET /audit/stats - إحصائيات التدقيق
+router.get('/audit/stats', async (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+
+        // Get open period
+        const openPeriod = await prisma.period.findFirst({
+            where: { status: 'OPEN' },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        let pendingTotal = 0;
+        let pendingCount = 0;
+
+        if (openPeriod) {
+            // Load Agent Sheet
+            const agentSheetPath = path.join(__dirname, `../data/sheet_agent_${openPeriod.id}.json`);
+            if (fs.existsSync(agentSheetPath)) {
+                const agentRows = JSON.parse(fs.readFileSync(agentSheetPath, 'utf8'));
+
+                // Get delivered users
+                const deliveredUserIds = await prisma.delivery.findMany({
+                    where: { periodId: openPeriod.id },
+                    select: { userId: true }
+                });
+                const deliveredSet = new Set(deliveredUserIds.map(d => d.userId));
+
+                // parseNumber - نفس الدالة في /audit/pending
+                function parseNumber(val) {
+                    if (val === null || val === undefined || val === '') return 0;
+                    let str = val.toString().trim();
+                    str = str.replace(/[$€£¥₹]/g, '').replace(/\s/g, '');
+                    str = str.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+                    str = str.replace(/٫/g, '.');
+                    if (str.includes('.') && str.includes(',') && str.lastIndexOf(',') > str.lastIndexOf('.')) {
+                        str = str.replace(/\./g, '').replace(',', '.');
+                    } else if (str.includes(',') && str.includes('.') && str.lastIndexOf('.') > str.lastIndexOf(',')) {
+                        str = str.replace(/,/g, '');
+                    } else if (str.includes(',') && !str.includes('.')) {
+                        const parts = str.split(',');
+                        if (parts.length === 2 && parts[1].length === 3 && /^\d+$/.test(parts[1])) {
+                            str = str.replace(',', '');
+                        } else {
+                            str = str.replace(',', '.');
+                        }
+                    }
+                    const num = parseFloat(str);
+                    return isNaN(num) ? 0 : num;
+                }
+
+                for (const row of agentRows) {
+                    const vals = Object.values(row);
+                    const userId = vals[0]?.toString().trim();
+                    const salary = parseNumber(vals[3]); // استخدام parseNumber بدلاً من parseFloat
+
+                    if (userId && salary > 0 && !deliveredSet.has(userId)) {
+                        pendingTotal += salary;
+                        pendingCount++;
+                    }
+                }
+            }
+        }
+
+        // Today's deliveries
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const todayDeliveries = await prisma.delivery.findMany({
+            where: {
+                date: { gte: today }
+            }
+        });
+
+        const deliveredToday = todayDeliveries.length;
+        const commissionToday = todayDeliveries.reduce((sum, d) => sum + (d.salary * 0.07), 0);
+
+        res.json({
+            pendingTotal,
+            pendingCount,
+            deliveredToday,
+            commissionToday
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET /audit/history - سجل التسليمات
+router.get('/audit/history', async (req, res) => {
+    try {
+        const deliveries = await prisma.delivery.findMany({
+            orderBy: { date: 'desc' },
+            take: 100,
+            include: {
+                user: { select: { name: true } }
+            }
+        });
+
+        res.json({
+            deliveries: deliveries.map(d => ({
+                id: d.id,
+                userId: d.userId,
+                userName: d.user?.name || d.userId,
+                salary: d.salary,
+                amount: d.amount,
+                date: d.date,
+                method: d.method,
+                notes: d.notes
+            }))
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// =====================================================
+// OVERLAP DETECTION - نظام كشف الخش بين الوكالات
+// =====================================================
+
+// GET /overlap/detect - كشف المستخدمين المكررين
+router.get('/overlap/detect', async (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+
+        // الحصول على الدورة المفتوحة
+        const openPeriod = await prisma.period.findFirst({
+            where: { status: 'OPEN' },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        if (!openPeriod) {
+            return res.json({
+                duplicates: [],
+                message: 'لا توجد دورة مفتوحة',
+                stats: { totalDuplicates: 0, affectedSalary: 0 }
+            });
+        }
+
+        // جلب جميع الوكالات
+        const agencies = await prisma.agency.findMany();
+
+        // خريطة: userId -> [{ agency, salary, userName, source }]
+        const userAgencyMap = {};
+
+        // 1. فحص من Agent Sheets
+        const agentSheetPath = path.join(__dirname, `../data/sheet_agent_${openPeriod.id}.json`);
+        if (fs.existsSync(agentSheetPath)) {
+            const agentRows = JSON.parse(fs.readFileSync(agentSheetPath, 'utf8'));
+
+            for (const row of agentRows) {
+                const vals = Object.values(row);
+                const userId = vals[0]?.toString().trim();
+                const userName = vals[1]?.toString().trim() || '';
+                const agencyName = vals[5]?.toString().trim() || 'مجهول'; // Column F
+                const salary = parseFloat(vals[3]) || 0;
+
+                if (userId && salary > 0) {
+                    if (!userAgencyMap[userId]) {
+                        userAgencyMap[userId] = [];
+                    }
+
+                    // تحقق من عدم تكرار نفس الوكالة
+                    const existingAgency = userAgencyMap[userId].find(u => u.agency === agencyName);
+                    if (!existingAgency) {
+                        userAgencyMap[userId].push({
+                            agency: agencyName,
+                            salary,
+                            userName,
+                            source: 'sheet'
+                        });
+                    }
+                }
+            }
+        }
+
+        // 2. فحص من قاعدة البيانات
+        const dbUsers = await prisma.user.findMany({
+            where: {
+                agencyName: { not: null },
+                totalSalary: { gt: 0 }
+            }
+        });
+
+        for (const user of dbUsers) {
+            const userId = user.id;
+            const agencyName = user.agencyName || 'مجهول';
+            const salary = user.totalSalary || 0;
+            const userName = user.name || '';
+
+            if (!userAgencyMap[userId]) {
+                userAgencyMap[userId] = [];
+            }
+
+            // تحقق من عدم تكرار نفس الوكالة
+            const existingAgency = userAgencyMap[userId].find(u => u.agency === agencyName);
+            if (!existingAgency) {
+                userAgencyMap[userId].push({
+                    agency: agencyName,
+                    salary,
+                    userName,
+                    source: 'database'
+                });
+            }
+        }
+
+        // 3. استخراج المكررين (موجودين في أكثر من وكالة)
+        const duplicates = [];
+        let totalAffectedSalary = 0;
+
+        for (const [userId, agencies] of Object.entries(userAgencyMap)) {
+            if (agencies.length > 1) {
+                const totalSalary = agencies.reduce((sum, a) => sum + a.salary, 0);
+                totalAffectedSalary += totalSalary;
+
+                duplicates.push({
+                    userId,
+                    userName: agencies[0].userName,
+                    agencies: agencies.map(a => ({
+                        name: a.agency,
+                        salary: a.salary,
+                        source: a.source
+                    })),
+                    totalSalary
+                });
+            }
+        }
+
+        // ترتيب حسب إجمالي الراتب (الأعلى أولاً)
+        duplicates.sort((a, b) => b.totalSalary - a.totalSalary);
+
+        res.json({
+            duplicates,
+            stats: {
+                totalDuplicates: duplicates.length,
+                affectedSalary: totalAffectedSalary,
+                periodName: openPeriod.name
+            }
+        });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /overlap/resolve - حل التكرار (نقل المستخدم لوكالة محددة)
+router.post('/overlap/resolve', async (req, res) => {
+    try {
+        const { userId, targetAgency } = req.body;
+
+        if (!userId || !targetAgency) {
+            return res.status(400).json({ error: 'userId و targetAgency مطلوبان' });
+        }
+
+        // تحديث الوكالة في قاعدة البيانات
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+
+        if (user) {
+            await prisma.user.update({
+                where: { id: userId },
+                data: { agencyName: targetAgency }
+            });
+        } else {
+            // إنشاء مستخدم جديد إذا لم يكن موجوداً
+            await prisma.user.create({
+                data: {
+                    id: userId,
+                    name: 'Unknown',
+                    agencyName: targetAgency,
+                    type: 'Host'
+                }
+            });
+        }
+
+        res.json({
+            success: true,
+            message: `تم نقل المستخدم ${userId} إلى وكالة ${targetAgency}`
+        });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET /overlap/summary - ملخص الخش لكل وكالة
+router.get('/overlap/summary', async (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+
+        const openPeriod = await prisma.period.findFirst({
+            where: { status: 'OPEN' },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        if (!openPeriod) {
+            return res.json({ agencies: [] });
+        }
+
+        // نفس المنطق للكشف عن المكررين
+        const userAgencyMap = {};
+        const agentSheetPath = path.join(__dirname, `../data/sheet_agent_${openPeriod.id}.json`);
+
+        if (fs.existsSync(agentSheetPath)) {
+            const agentRows = JSON.parse(fs.readFileSync(agentSheetPath, 'utf8'));
+
+            for (const row of agentRows) {
+                const vals = Object.values(row);
+                const userId = vals[0]?.toString().trim();
+                const agencyName = vals[5]?.toString().trim() || 'مجهول';
+                const salary = parseFloat(vals[3]) || 0;
+
+                if (userId && salary > 0) {
+                    if (!userAgencyMap[userId]) {
+                        userAgencyMap[userId] = [];
+                    }
+                    const existing = userAgencyMap[userId].find(u => u.agency === agencyName);
+                    if (!existing) {
+                        userAgencyMap[userId].push({ agency: agencyName, salary });
+                    }
+                }
+            }
+        }
+
+        // حساب الخش لكل وكالة
+        const agencySummary = {};
+
+        for (const [userId, agencies] of Object.entries(userAgencyMap)) {
+            if (agencies.length > 1) {
+                for (const a of agencies) {
+                    if (!agencySummary[a.agency]) {
+                        agencySummary[a.agency] = { duplicateCount: 0, affectedSalary: 0 };
+                    }
+                    agencySummary[a.agency].duplicateCount++;
+                    agencySummary[a.agency].affectedSalary += a.salary;
+                }
+            }
+        }
+
+        const result = Object.entries(agencySummary).map(([name, data]) => ({
+            agency: name,
+            duplicateCount: data.duplicateCount,
+            affectedSalary: data.affectedSalary
+        })).sort((a, b) => b.duplicateCount - a.duplicateCount);
+
+        res.json({ agencies: result });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;
+

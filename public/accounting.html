@@ -28,6 +28,9 @@
                     <button class="btn btn-warning" onclick="showAgencyWallets()">📦 صناديق الوكالات</button>
                     <button class="btn btn-secondary" onclick="showSubAgencies()">🏢 الوكالات الفرعية</button>
                     <button class="btn btn-secondary" onclick="showMainAgency()">👤 الوكالة الرئيسية</button>
+                    <a href="/audit.html" class="btn"
+                        style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); color: white;">🔍 نظام
+                        التدقيق</a>
                     <button class="btn btn-primary" onclick="openCreateModal()">+ دورة جديدة</button>
                 </div>
             </header>
@@ -320,8 +323,7 @@
         <div id="page-unknown-users" style="display: none;">
             <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <div>
-                    <button class="btn btn-secondary btn-sm" onclick="showAgencyWallets()">العودة لصناديق
-                        الوكالات</button>
+                    <button class="btn btn-secondary btn-sm" onclick="showTreasury()">العودة للخزينة</button>
                     <h2 style="display:inline-block; margin:0 10px;">❓ المستخدمين المجهولين</h2>
                 </div>
             </header>
@@ -399,6 +401,9 @@
                     <button class="btn btn-secondary btn-sm" onclick="openRenameAgencyModal()">✏️ تغيير الاسم</button>
                     <span id="agency-status-badge"
                         style="padding: 4px 10px; border-radius: 5px; font-size: 12px;">مفعّلة</span>
+
+                    <!-- Suspended Users Warning Badge -->
+                    <div id="agency-warning-badge" style="display: none; margin-right: 15px;"></div>
                 </div>
                 <div>
                     <button id="btn-toggle-agency" class="btn btn-secondary btn-sm" onclick="toggleAgencyActive()">⏸️
@@ -618,20 +623,68 @@
         </div>
     </div>
 
-    <!-- Modal: Custody Details -->
+    <!-- Modal: Custody Details (Enhanced Design) -->
     <div id="modal-custody-details" class="modal">
-        <div class="modal-content" style="max-width: 700px; max-height: 80vh; overflow-y: auto;">
-            <div class="modal-header">
-                <h3>📦 تفاصيل الأمانات</h3>
-                <span class="modal-close" onclick="closeCustodyDetailsModal()">&times;</span>
+        <div class="modal-content"
+            style="max-width: 900px; max-height: 85vh; overflow-y: auto; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border: 1px solid #2d3748; border-radius: 16px;">
+            <div class="modal-header"
+                style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); padding: 20px 25px; border-radius: 16px 16px 0 0; margin: -20px -25px 20px -25px;">
+                <h3 style="margin: 0; color: white; font-size: 20px;">📦 تفاصيل الأمانات</h3>
+                <span class="modal-close" onclick="closeCustodyDetailsModal()"
+                    style="color: white; font-size: 28px; cursor: pointer; opacity: 0.8;">&times;</span>
             </div>
-            <div class="modal-body">
-                <p class="muted" style="margin-bottom: 15px;">المستخدمون الذين لم يستلموا رواتبهم بعد (حسب الوكالة)</p>
+            <div class="modal-body" style="padding: 0;">
+                <!-- Summary Stats Cards -->
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px;">
+                    <div
+                        style="background: linear-gradient(135deg, #1a472a 0%, #2e7d32 100%); padding: 20px; border-radius: 12px; text-align: center;">
+                        <div style="font-size: 11px; color: #a5d6a7; text-transform: uppercase; letter-spacing: 1px;">
+                            إجمالي الأمانات</div>
+                        <div id="custody-total"
+                            style="font-size: 32px; font-weight: bold; color: #fff; margin-top: 5px;">$0</div>
+                    </div>
+                    <div
+                        style="background: linear-gradient(135deg, #4a1a1a 0%, #c62828 100%); padding: 20px; border-radius: 12px; text-align: center;">
+                        <div style="font-size: 11px; color: #ef9a9a; text-transform: uppercase; letter-spacing: 1px;">
+                            عدد المستخدمين</div>
+                        <div id="custody-user-count"
+                            style="font-size: 32px; font-weight: bold; color: #fff; margin-top: 5px;">0</div>
+                    </div>
+                    <div
+                        style="background: linear-gradient(135deg, #1a3a4a 0%, #0288d1 100%); padding: 20px; border-radius: 12px; text-align: center;">
+                        <div style="font-size: 11px; color: #81d4fa; text-transform: uppercase; letter-spacing: 1px;">
+                            عدد الوكالات</div>
+                        <div id="custody-agency-count"
+                            style="font-size: 32px; font-weight: bold; color: #fff; margin-top: 5px;">0</div>
+                    </div>
+                </div>
 
-                <div style="background: #1a1a1a; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <div style="font-size: 12px; color: #aaa;">إجمالي الأمانات</div>
-                    <div id="custody-total" style="font-size: 28px; font-weight: bold; color: #ff9800;">$0</div>
-                    <div id="custody-period" style="font-size: 11px; color: #666; margin-top: 5px;"></div>
+                <!-- Period Info -->
+                <div id="custody-period"
+                    style="text-align: center; font-size: 13px; color: #888; margin-bottom: 20px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                </div>
+
+                <!-- Search Box -->
+                <div style="margin-bottom: 20px;">
+                    <div style="position: relative;">
+                        <input type="text" id="custody-search" placeholder="🔍 بحث بالـ ID أو الاسم..."
+                            oninput="filterCustodyUsers(this.value)"
+                            style="width: 100%; padding: 12px 15px; padding-right: 40px; border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; background: rgba(255,255,255,0.05); color: #fff; font-size: 14px; outline: none; transition: all 0.3s;"
+                            onfocus="this.style.borderColor='#667eea'; this.style.background='rgba(102,126,234,0.1)'"
+                            onblur="this.style.borderColor='rgba(255,255,255,0.2)'; this.style.background='rgba(255,255,255,0.05)'">
+                        <span
+                            style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #666;">
+                            <span id="custody-search-count" style="font-size: 11px;"></span>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Agencies Section -->
+                <div style="margin-bottom: 15px;">
+                    <h4
+                        style="color: #fff; font-size: 16px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 20px;">🏢</span> توزيع الأمانات حسب الوكالة
+                    </h4>
                 </div>
 
                 <div id="custody-by-agency"></div>
@@ -641,5 +694,7 @@
 
     <script src="accounting.js"></script>
 </body>
+
+</html>
 
 </html>
