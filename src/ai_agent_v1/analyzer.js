@@ -293,7 +293,7 @@ function validateAndCleanAnalysis(result) {
     const clean = createEmptyAnalysis();
 
     // Intent
-    const validIntents = ['GREETING', 'ASK_SALARY', 'ASK_PROFILE', 'UPDATE_PROFILE', 'FORGOT_PIN', 'COMPLAINT', 'GRATITUDE', 'CHITCHAT', 'OFF_TOPIC', 'UNKNOWN'];
+    const validIntents = ['GREETING', 'ASK_SALARY', 'ASK_PROFILE', 'UPDATE_PROFILE', 'FORGOT_PIN', 'COMPLAINT', 'GRATITUDE', 'CHITCHAT', 'OFF_TOPIC', 'ASK_PORTAL_LINK', 'UNKNOWN'];
     clean.intent = validIntents.includes(result.intent) ? result.intent : 'UNKNOWN';
 
     // SubType
