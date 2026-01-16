@@ -1813,8 +1813,8 @@
 
     document.getElementById('addRegClientBtn').addEventListener('click', async () => {
       // Gather inputs first to avoid errors
-      // const idStr = document.getElementById('regClientId').value; // OLD
       const fullName = document.getElementById('regFullName').value.trim();
+      const whatsappPhone = document.getElementById('regWhatsapp').value.trim();
       const phone = document.getElementById('regPhone').value.trim();
       const agencyName = document.getElementById('regAgency').value.trim();
       const country = document.getElementById('regCountry').value.trim();
@@ -1869,8 +1869,8 @@
         if (editingRegClientKey) {
           // Update Mode
           const data = {
-            ids, // NOW WE SEND IDS
-            fullName, phone, agencyName, country, city, address, customFields
+            ids,
+            fullName, phone, whatsappPhone, agencyName, country, city, address, customFields
           };
           await api('PUT', `/api/ai/registered-clients/${editingRegClientKey}`, data);
           showAlert('تم تحديث العميل بنجاح');
@@ -1878,15 +1878,11 @@
           document.getElementById('addRegClientBtn').innerHTML = '➕ إضافة العميل';
           document.getElementById('addRegClientBtn').classList.remove('btn-success');
           document.getElementById('addRegClientBtn').classList.add('btn-primary');
-          // document.getElementById('regClientId').disabled = false; // It's always enabled now
         } else {
           // Create Mode
-          // const idVal = idStr.trim(); // Removed single ID logic
-          // if (!idVal) { showAlert('رقم ID مطلوب للإضافة', 'error'); return; }
-
           const data = {
-            ids, // Send array directly
-            fullName, phone, agencyName, country, city, address, customFields
+            ids,
+            fullName, phone, whatsappPhone, agencyName, country, city, address, customFields
           };
           await api('POST', '/api/ai/registered-clients', data);
           showAlert('تم إضافة العميل بنجاح');
