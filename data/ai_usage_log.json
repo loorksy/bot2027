@@ -1,12 +1,12 @@
 {
-  "totalChatCalls": 37,
+  "totalChatCalls": 41,
   "totalSttCalls": 0,
   "totalTtsCalls": 0,
-  "totalInputTokens": 17791,
-  "totalOutputTokens": 2989,
+  "totalInputTokens": 20267,
+  "totalOutputTokens": 3289,
   "totalSttMinutes": 0,
   "totalTtsCharacters": 0,
-  "estimatedCost": 0.004462049999999999,
+  "estimatedCost": 0.005013449999999998,
   "log": [
     {
       "type": "CHAT",
@@ -303,6 +303,38 @@
       "outputTokens": 117,
       "cost": 0.000214,
       "time": "2026-01-16T10:28:05.900Z"
+    },
+    {
+      "type": "CHAT",
+      "model": "gpt-4o-mini",
+      "inputTokens": 958,
+      "outputTokens": 106,
+      "cost": 0.000207,
+      "time": "2026-01-16T10:29:08.824Z"
+    },
+    {
+      "type": "CHAT",
+      "model": "gpt-4o-mini",
+      "inputTokens": 276,
+      "outputTokens": 38,
+      "cost": 0.000064,
+      "time": "2026-01-16T10:29:10.414Z"
+    },
+    {
+      "type": "CHAT",
+      "model": "gpt-4o-mini",
+      "inputTokens": 956,
+      "outputTokens": 105,
+      "cost": 0.000206,
+      "time": "2026-01-16T10:29:28.053Z"
+    },
+    {
+      "type": "CHAT",
+      "model": "gpt-4o-mini",
+      "inputTokens": 286,
+      "outputTokens": 51,
+      "cost": 0.000073,
+      "time": "2026-01-16T10:29:29.649Z"
     }
   ]
 }
