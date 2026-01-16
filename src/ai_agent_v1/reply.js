@@ -459,7 +459,7 @@ function formatSalaryResponse(context, d, e, currency) {
  * Format profile response
  */
 function formatProfileResponse(context, d, e) {
-    const { profile } = context;
+    const { profile, customFields } = context;
 
     if (!profile) {
         return `${d.sorry}، ${d.notFound} بيانات مسجلة لك.`;
@@ -474,12 +474,22 @@ function formatProfileResponse(context, d, e) {
     response += `• الوكالة: ${profile.agencyName || 'غير محدد'}\n`;
 
     if (profile.ids && profile.ids.length > 0) {
-        response += `• الـ IDs: ${profile.ids.join(', ')}`;
+        response += `• الـ IDs: ${profile.ids.join(', ')}\n`;
     } else {
-        response += `• الـ IDs: غير محدد`;
+        response += `• الـ IDs: غير محدد\n`;
     }
 
-    response += `\n\nإذا بدك تعدلي شي خبريني${e('happy')}`;
+    // Display custom fields if available
+    if (customFields && Object.keys(customFields).length > 0) {
+        response += `\n📝 *معلومات إضافية:*\n`;
+        for (const [key, value] of Object.entries(customFields)) {
+            if (value && value !== '') {
+                response += `• ${key}: ${value}\n`;
+            }
+        }
+    }
+
+    response += `\nإذا بدك تعدلي شي خبريني${e('happy')}`;
 
     return response;
 }
