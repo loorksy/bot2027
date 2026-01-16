@@ -21,6 +21,20 @@ const TOKEN_NAME = 'token';
 const MASTER_EMAIL = 'loorksy@gmail.com';
 const MASTER_PASSWORD = 'Ahmetlork@29cb';
 
+// Google Sheet Auto Sync State
+let googleSheetSyncInterval = null;
+let googleSheetSyncState = {
+  enabled: false,
+  url: '',
+  sheetName: '',
+  interval: 5,
+  lastSync: null,
+  running: false
+};
+
+const MASTER_EMAIL = 'loorksy@gmail.com';
+const MASTER_PASSWORD = 'Ahmetlork@29cb';
+
 const DEFAULT_PERMISSIONS = {
   can_scan_backlog: false,
   can_send_messages: false,
