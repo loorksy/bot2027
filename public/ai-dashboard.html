@@ -716,17 +716,21 @@
             <span id="regClientCount" style="color: #a0a0b0; margin-right: 16px;"></span>
           </div>
         </div>
-        <div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center;">
+        <div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
           <input type="text" id="searchRegClientInput" placeholder="🔍 بحث عن عميل (الاسم، الهاتف، ID)..."
-            style="flex: 1; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; color: white;">
+            style="flex: 1; min-width: 200px; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; color: white;">
           <button class="btn btn-primary" style="background: #8b5cf6; padding: 10px 15px; white-space: nowrap;" onclick="sendPortalLinksToAll()">
             📤 إرسال روابط البوابة لكل عملاء Main
+          </button>
+          <button class="btn btn-danger" style="padding: 10px 15px; white-space: nowrap; display: none;" id="deleteSelectedBtn" onclick="deleteSelectedClients()">
+            🗑️ حذف المحدد (<span id="selectedCount">0</span>)
           </button>
         </div>
         <div style="overflow-x: auto;">
           <table class="clients-table">
             <thead>
               <tr>
+                <th style="width: 40px;"><input type="checkbox" id="selectAllClients" onchange="toggleSelectAll(this)"></th>
                 <th>ID</th>
                 <th>الاسم</th>
                 <th>الهاتف</th>
@@ -738,7 +742,7 @@
             </thead>
             <tbody id="regClientsBody">
               <tr>
-                <td colspan="7" style="text-align: center; color: #666;">لا يوجد عملاء مسجلون</td>
+                <td colspan="8" style="text-align: center; color: #666;">لا يوجد عملاء مسجلون</td>
               </tr>
             </tbody>
           </table>
