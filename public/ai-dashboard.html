@@ -2514,13 +2514,18 @@
       const countEl = document.getElementById('regClientCount');
       countEl.textContent = `النتائج: ${clientsArray.length}`;
 
+      // Reset select all checkbox
+      document.getElementById('selectAllClients').checked = false;
+      updateDeleteButton();
+
       if (!clientsArray.length) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #666;">لا يوجد نتائج</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #666;">لا يوجد نتائج</td></tr>';
         return;
       }
 
       tbody.innerHTML = clientsArray.map(c => `
-          <tr>
+          <tr data-key="${c.key}">
+            <td><input type="checkbox" class="client-checkbox" data-key="${c.key}" onchange="updateDeleteButton()"></td>
             <td style="font-family: monospace; font-size: 0.85rem;">
               ${(c.ids || []).join('<br>')}
               <button class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.7rem; margin-top: 4px;" onclick="promptAddId('${c.key}')">+ ID</button>
@@ -2542,6 +2547,57 @@
           </tr>
         `).join('');
     }
+
+    // Toggle select all checkboxes
+    window.toggleSelectAll = (checkbox) => {
+      const checkboxes = document.querySelectorAll('.client-checkbox');
+      checkboxes.forEach(cb => cb.checked = checkbox.checked);
+      updateDeleteButton();
+    };
+
+    // Update delete button visibility and count
+    window.updateDeleteButton = () => {
+      const checkboxes = document.querySelectorAll('.client-checkbox:checked');
+      const count = checkboxes.length;
+      const btn = document.getElementById('deleteSelectedBtn');
+      const countEl = document.getElementById('selectedCount');
+      
+      if (count > 0) {
+        btn.style.display = 'inline-block';
+        countEl.textContent = count;
+      } else {
+        btn.style.display = 'none';
+      }
+    };
+
+    // Delete selected clients
+    window.deleteSelectedClients = async () => {
+      const checkboxes = document.querySelectorAll('.client-checkbox:checked');
+      const keys = Array.from(checkboxes).map(cb => cb.dataset.key);
+      
+      if (keys.length === 0) {
+        showAlert('لم يتم تحديد أي عميل', 'error');
+        return;
+      }
+      
+      if (!confirm(`هل أنت متأكد من حذف ${keys.length} عميل؟\n\n⚠️ لا يمكن التراجع عن هذا الإجراء!`)) return;
+      
+      let deleted = 0;
+      let failed = 0;
+      
+      for (const key of keys) {
+        try {
+          await api('DELETE', `/api/ai/registered-clients/${key}`);
+          deleted++;
+        } catch (err) {
+          failed++;
+          console.error(`Failed to delete ${key}:`, err);
+        }
+      }
+      
+      showAlert(`✅ تم حذف ${deleted} عميل${failed > 0 ? `\n❌ فشل حذف ${failed}` : ''}`);
+      loadRegisteredClients();
+    };
 
   </script>
 </body>
