@@ -246,5 +246,13 @@
     "reason": "bot stopped",
     "snippet": "https://vt.tiktok.com/ZS5KVMNYu/",
     "id": "false_status@broadcast_AC040AD3CE5CE38562E9D272D185E5A1_905073971066@c.us"
+  },
+  {
+    "ts": 1768559089106,
+    "groupId": "963998071548@c.us",
+    "groupName": "whbot",
+    "reason": "bot stopped",
+    "snippet": "M",
+    "id": "false_963998071548@c.us_A5EE0CD8F4330238A9879AE245F9A75B"
   }
 ]
