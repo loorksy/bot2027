@@ -982,6 +982,122 @@ app.post('/api/ai/registered-clients/bulk-delete', requireAdmin, async (req, res
   }
 });
 
+// Import clients from Google Sheet
+app.post('/api/ai/registered-clients/import-google-sheet', requireAdmin, async (req, res) => {
+  try {
+    const { url, sheetName } = req.body;
+    
+    if (!url) {
+      return res.status(400).json({ error: 'الرجاء إدخال رابط Google Sheet' });
+    }
+    
+    // Extract Sheet ID from URL
+    const sheetIdMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    if (!sheetIdMatch) {
+      return res.status(400).json({ error: 'رابط Google Sheet غير صالح' });
+    }
+    
+    const sheetId = sheetIdMatch[1];
+    
+    // Build export URL for CSV
+    let exportUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
+    if (sheetName) {
+      exportUrl += `&sheet=${encodeURIComponent(sheetName)}`;
+    }
+    
+    console.log('[Google Sheet Import] Fetching from:', exportUrl);
+    
+    // Fetch the CSV data
+    const fetch = (await import('node-fetch')).default;
+    const response = await fetch(exportUrl);
+    
+    if (!response.ok) {
+      throw new Error('فشل جلب البيانات - تأكد أن الملف مشارك للعرض');
+    }
+    
+    const csvContent = await response.text();
+    
+    // Check if it's actually CSV (not HTML error page)
+    if (csvContent.trim().startsWith('<!DOCTYPE') || csvContent.trim().startsWith('<html')) {
+      throw new Error('الملف غير متاح - تأكد أن الملف مشارك كـ "أي شخص لديه الرابط"');
+    }
+    
+    // Parse CSV
+    const data = csvParse(csvContent, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+      relax_column_count: true
+    });
+    
+    if (!data || data.length === 0) {
+      return res.status(400).json({ error: 'الملف فارغ أو لا يحتوي على بيانات صالحة' });
+    }
+    
+    console.log(`[Google Sheet Import] Parsed ${data.length} rows`);
+    
+    let imported = 0;
+    let skipped = 0;
+    let failed = 0;
+    
+    for (const row of data) {
+      try {
+        // Map columns (support both English and Arabic column names)
+        const clientData = {
+          ids: [],
+          fullName: row.fullName || row['الاسم'] || row['الاسم الكامل'] || row.name || '',
+          phone: row.phone || row['الهاتف'] || row['رقم الهاتف'] || '',
+          country: row.country || row['الدولة'] || '',
+          city: row.city || row['المدينة'] || '',
+          address: row.address || row['العنوان'] || '',
+          agencyName: row.agencyName || row['الوكالة'] || row.agency || ''
+        };
+        
+        // Handle IDs (can be comma-separated or in 'id' column)
+        const idValue = row.id || row.ids || row['رقم الهوية'] || row['ID'] || row['الرقم'] || '';
+        if (idValue) {
+          clientData.ids = idValue.toString().split(',').map(id => id.trim()).filter(id => id);
+        }
+        
+        // Skip if no ID
+        if (clientData.ids.length === 0) {
+          failed++;
+          continue;
+        }
+        
+        // Check if client already exists
+        const existingClient = await registeredClients.getClientById(clientData.ids[0]);
+        if (existingClient) {
+          skipped++;
+          continue;
+        }
+        
+        // Create client
+        await registeredClients.createClient(clientData);
+        imported++;
+        
+      } catch (err) {
+        console.error('[Google Sheet Import] Row error:', err.message);
+        failed++;
+      }
+    }
+    
+    console.log(`[Google Sheet Import] Done: imported=${imported}, skipped=${skipped}, failed=${failed}`);
+    
+    res.json({ 
+      success: true, 
+      imported, 
+      skipped, 
+      failed,
+      total: data.length 
+    });
+    
+  } catch (err) {
+    console.error('[Google Sheet Import] Error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Import clients from CSV
 app.post('/api/ai/registered-clients/import', requireAdmin, upload.single('file'), async (req, res) => {
   try {
