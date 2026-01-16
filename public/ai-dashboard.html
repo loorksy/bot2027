@@ -2582,21 +2582,13 @@
       
       if (!confirm(`هل أنت متأكد من حذف ${keys.length} عميل؟\n\n⚠️ لا يمكن التراجع عن هذا الإجراء!`)) return;
       
-      let deleted = 0;
-      let failed = 0;
-      
-      for (const key of keys) {
-        try {
-          await api('DELETE', `/api/ai/registered-clients/${key}`);
-          deleted++;
-        } catch (err) {
-          failed++;
-          console.error(`Failed to delete ${key}:`, err);
-        }
+      try {
+        const result = await api('POST', '/api/ai/registered-clients/bulk-delete', { keys });
+        showAlert(`✅ تم حذف ${result.deleted} عميل${result.failed > 0 ? `\n❌ فشل حذف ${result.failed}` : ''}`);
+        loadRegisteredClients();
+      } catch (err) {
+        showAlert('❌ فشل الحذف: ' + err.message, 'error');
       }
-      
-      showAlert(`✅ تم حذف ${deleted} عميل${failed > 0 ? `\n❌ فشل حذف ${failed}` : ''}`);
-      loadRegisteredClients();
     };
 
   </script>
