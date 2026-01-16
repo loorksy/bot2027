@@ -1,12 +1,12 @@
 {
-  "totalChatCalls": 46,
+  "totalChatCalls": 47,
   "totalSttCalls": 0,
   "totalTtsCalls": 0,
-  "totalInputTokens": 24381,
-  "totalOutputTokens": 3753,
+  "totalInputTokens": 25337,
+  "totalOutputTokens": 3858,
   "totalSttMinutes": 0,
   "totalTtsCharacters": 0,
-  "estimatedCost": 0.005908949999999998,
+  "estimatedCost": 0.006115349999999998,
   "log": [
     {
       "type": "CHAT",
@@ -375,6 +375,14 @@
       "outputTokens": 113,
       "cost": 0.000211,
       "time": "2026-01-16T10:58:06.455Z"
+    },
+    {
+      "type": "CHAT",
+      "model": "gpt-4o-mini",
+      "inputTokens": 956,
+      "outputTokens": 105,
+      "cost": 0.000206,
+      "time": "2026-01-16T11:19:04.174Z"
     }
   ]
 }
