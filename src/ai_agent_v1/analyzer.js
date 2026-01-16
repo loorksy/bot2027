@@ -19,7 +19,16 @@ const DEFAULT_SETTINGS = {
     modelTts: 'tts-1',
     voiceTts: 'alloy',
     trustedSessionMinutes: 15,
-    agencyPercent: 0
+    agencyPercent: 0,
+    // New settings
+    botName: 'مساعد أبو سلطان',
+    ownerName: 'أبو سلطان',
+    dialect: 'سورية',
+    clientGender: 'مؤنث',
+    friendliness: 'عالي',
+    salaryCurrency: 'ر.س',
+    enableVoiceReplies: false,
+    adminContact: 'تواصلي مع الإدارة'
 };
 
 let openaiClient = null;
@@ -37,7 +46,9 @@ async function loadSettings() {
         settingsCache = { ...DEFAULT_SETTINGS };
     } else {
         try {
-            settingsCache = await fs.readJSON(SETTINGS_FILE);
+            const saved = await fs.readJSON(SETTINGS_FILE);
+            // Merge with defaults to ensure new fields exist
+            settingsCache = { ...DEFAULT_SETTINGS, ...saved };
         } catch {
             settingsCache = { ...DEFAULT_SETTINGS };
         }
@@ -93,14 +104,14 @@ async function isEnabled() {
 }
 
 /**
- * System prompt for the analyzer
+ * System prompt for the analyzer - Enhanced for better understanding
  */
-const ANALYZER_SYSTEM_PROMPT = `أنت محلل رسائل دقيق. مهمتك استخراج المعلومات من رسائل العملاء.
+const ANALYZER_SYSTEM_PROMPT = `أنت محلل رسائل ذكي ومتفهم. مهمتك فهم رسائل العميلات حتى لو كانت غير واضحة أو فيها أخطاء إملائية.
 
 يجب أن ترجع JSON فقط بالصيغة التالية (بدون أي نص إضافي):
 
 {
-  "intent": "REGISTER|ASK_SALARY|ASK_PROFILE|UPDATE_PROFILE|GENERAL_QA|FORGOT_PIN|UNKNOWN",
+  "intent": "GREETING|ASK_SALARY|ASK_PROFILE|UPDATE_PROFILE|FORGOT_PIN|COMPLAINT|GRATITUDE|CHITCHAT|OFF_TOPIC|UNKNOWN",
   "extracted": {
     "fullName": null,
     "country": null,
@@ -111,36 +122,80 @@ const ANALYZER_SYSTEM_PROMPT = `أنت محلل رسائل دقيق. مهمتك 
     "ids": []
   },
   "confidence": 0.0,
-  "suggested_next_field": "fullName|country|city|address|phone|agencyName|ids|none",
+  "subType": null,
   "isPinAttempt": false,
   "pinValue": null,
+  "mood": "neutral",
   "notes": ""
 }
 
-قواعد تحديد Intent:
-- ASK_SALARY: إذا طلب العميل راتبه أو استفسر عنه (كم راتبي، راتب، مستحقات)
-- ASK_PROFILE: إذا طلب العميل معلوماته أو بياناته (معلوماتي، بياناتي، حسابي، ملفي)
-- FORGOT_PIN: إذا قال "نسيت الرمز" أو ما شابه
-- REGISTER: إذا أراد التسجيل أو إرسال بيانات جديدة
-- UPDATE_PROFILE: إذا أراد تحديث بياناته أو إضافة ID جديد (عندي id ثاني، اضف ايدي، id جديد)
-- GENERAL_QA: أسئلة عامة أخرى
+## قواعد تحديد Intent:
 
-مهم جداً - استخراج IDs:
-- إذا ذكر العميل رقماً من 5-10 أرقام، استخرجه كـ ID في ids[]
-- حتى لو قال "عندي ايدي ثاني" أو "أضف" ثم ذكر رقماً، استخرج الرقم في ids[]
-- أرقام الهوية/الموظف عادة من 5-10 أرقام
+### GREETING (تحية):
+- "مرحبا"، "هلو"، "هاي"، "السلام عليكم"، "صباح الخير"، "مساء الخير"
+- أي تحية حتى لو فيها أخطاء: "مرحبااا"، "هلووو"
 
-قواعد الاستخراج الأخرى:
-1. fullName: اسم كامل (كلمتين على الأقل). رفض "ممكن سوال"، "مرحبا"، "تمام"، "شكرا" وما شابه.
-2. country: اسم دولة فقط
-3. city: اسم مدينة فقط
-4. address: عنوان تفصيلي (ليس كلمة واحدة). يجب أن يحتوي على مؤشرات مكان (حي/شارع/رقم)
-5. phone: أرقام فقط بطول 8-15 رقم
+### ASK_SALARY (سؤال عن الراتب):
+- "كم راتبي"، "شو راتبي"، "راتب"، "مستحقات"، "فلوس"، "مصاري"
+- "بدي اعرف راتبي"، "شو صار بالراتب"
+- "ليش راتبي قليل"، "في خطأ بالراتب" ← subType: "complaint"
+- "متى الراتب"، "متى ينزل" ← subType: "timing"
+
+### ASK_PROFILE (طلب البيانات):
+- "بياناتي"، "معلوماتي"، "حسابي"، "ملفي"
+- "شو مسجل عندكم"
+
+### UPDATE_PROFILE (تعديل البيانات):
+- "بدي عدل"، "غير"، "بدي غير"
+- "عندي ID ثاني"، "أضيف ID"، "ايدي جديد"
+- "رقمي تغير"، "عنواني الجديد"
+
+### FORGOT_PIN (نسيان الرمز):
+- "نسيت الرمز"، "شو الرمز"، "ضاع الرمز"
+- "ما بتذكر الرقم السري"
+
+### COMPLAINT (شكوى):
+- "مشكلة"، "خطأ"، "غلط"
+- "ليش"، "كيف يعني"
+- أي تذمر أو استياء
+
+### GRATITUDE (شكر):
+- "شكراً"، "مشكورة"، "يعطيكي العافية"
+- "تمام"، "أوكي ممتاز"
+
+### CHITCHAT (دردشة):
+- "كيفك"، "شو أخبارك"
+- "شو اسمك"، "انتي مين"
+- مزاح، ضحك، إيموجي
+
+### OFF_TOPIC (خارج الموضوع):
+- أسئلة لا علاقة لها بالعمل
+- "كيف الطقس"، "شو الأخبار"
+
+### UNKNOWN:
+- رسائل غير مفهومة تماماً
+- حروف عشوائية
+
+## قواعد mood:
+- "happy": إيموجي سعيدة، شكر، رضا
+- "sad": حزن، تذمر
+- "angry": غضب، شكوى حادة
+- "confused": استفهام، ما فهمت
+- "neutral": عادي
+
+## قواعد استخراج البيانات:
+1. fullName: اسم كامل (كلمتين على الأقل). رفض التحيات والكلمات العامة.
+2. country: اسم دولة فقط (سوريا، تركيا، لبنان...)
+3. city: اسم مدينة (دمشق، حلب، اسطنبول...)
+4. address: عنوان تفصيلي (حي/شارع/بناء)
+5. phone: أرقام 8-15 رقم
 6. agencyName: اسم وكالة أو شركة
+7. ids: أرقام 5-10 أرقام (أرقام الهوية/الموظف)
 
-إذا أرسل رقم من 6 أرقام بالضبط وبدون سياق: isPinAttempt = true و pinValue = الرقم
-
-لا تستخرج بيانات من عبارات غير واضحة. عند الشك: اترك القيمة null.`;
+## مهم:
+- إذا أرسلت رقم من 6 أرقام بالضبط: isPinAttempt = true
+- كوني متسامحة مع الأخطاء الإملائية
+- افهمي السياق حتى لو الرسالة مختصرة`;
 
 /**
  * Analyze a message and extract intent + fields
@@ -157,12 +212,12 @@ async function analyzeMessage(messageText, clientProfile = {}, missingFields = [
     }
 
     const contextPrompt = `
-الحقول المفقودة للعميل: ${missingFields.length > 0 ? missingFields.join(', ') : 'لا يوجد'}
-البيانات الحالية للعميل: ${JSON.stringify(clientProfile)}
+الحقول المفقودة للعميلة: ${missingFields.length > 0 ? missingFields.join(', ') : 'لا يوجد'}
+البيانات الحالية للعميلة: ${JSON.stringify(clientProfile)}
 
-رسالة العميل: "${messageText}"
+رسالة العميلة: "${messageText}"
 
-حلل الرسالة وأرجع JSON فقط:`;
+حللي الرسالة وأرجعي JSON فقط:`;
 
     try {
         const response = await openaiClient.chat.completions.create({
@@ -171,7 +226,7 @@ async function analyzeMessage(messageText, clientProfile = {}, missingFields = [
                 { role: 'system', content: ANALYZER_SYSTEM_PROMPT },
                 { role: 'user', content: contextPrompt }
             ],
-            temperature: 0.1,
+            temperature: 0.2,
             max_tokens: 500
         });
 
@@ -218,9 +273,10 @@ function createEmptyAnalysis() {
             ids: []
         },
         confidence: 0,
-        suggested_next_field: 'fullName',
+        subType: null,
         isPinAttempt: false,
         pinValue: null,
+        mood: 'neutral',
         notes: ''
     };
 }
@@ -232,8 +288,15 @@ function validateAndCleanAnalysis(result) {
     const clean = createEmptyAnalysis();
 
     // Intent
-    const validIntents = ['REGISTER', 'ASK_SALARY', 'ASK_PROFILE', 'UPDATE_PROFILE', 'GENERAL_QA', 'FORGOT_PIN', 'UNKNOWN'];
+    const validIntents = ['GREETING', 'ASK_SALARY', 'ASK_PROFILE', 'UPDATE_PROFILE', 'FORGOT_PIN', 'COMPLAINT', 'GRATITUDE', 'CHITCHAT', 'OFF_TOPIC', 'UNKNOWN'];
     clean.intent = validIntents.includes(result.intent) ? result.intent : 'UNKNOWN';
+
+    // SubType
+    clean.subType = result.subType || null;
+
+    // Mood
+    const validMoods = ['happy', 'sad', 'angry', 'confused', 'neutral'];
+    clean.mood = validMoods.includes(result.mood) ? result.mood : 'neutral';
 
     // Extracted fields with validation
     if (result.extracted) {
@@ -293,7 +356,6 @@ function validateAndCleanAnalysis(result) {
 
     // Other fields
     clean.confidence = typeof result.confidence === 'number' ? result.confidence : 0;
-    clean.suggested_next_field = result.suggested_next_field || 'fullName';
     clean.isPinAttempt = !!result.isPinAttempt;
     clean.pinValue = result.pinValue ? result.pinValue.toString().replace(/\D/g, '') : null;
     clean.notes = result.notes || '';
