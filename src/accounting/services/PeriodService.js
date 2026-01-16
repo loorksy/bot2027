@@ -1,22 +1,42 @@
-const { PrismaClient } = require('@prisma/client');
-const { withDatabaseErrorHandling } = require('../utils/dbErrorHandler');
-const prisma = new PrismaClient();
+/**
+ * Period Service - JSON File Storage Version
+ */
+
+const fs = require('fs-extra');
+const path = require('path');
+const { v4: uuidv4 } = require('uuid');
+
+const DATA_FILE = path.join(__dirname, '../data/periods.json');
+
+// Ensure file exists
+async function ensureFile() {
+    await fs.ensureDir(path.dirname(DATA_FILE));
+    if (!await fs.pathExists(DATA_FILE)) {
+        await fs.writeJSON(DATA_FILE, [], { spaces: 2 });
+    }
+}
+
+// Read periods
+async function readPeriods() {
+    await ensureFile();
+    return await fs.readJSON(DATA_FILE);
+}
+
+// Write periods
+async function writePeriods(periods) {
+    await fs.writeJSON(DATA_FILE, periods, { spaces: 2 });
+}
 
 class PeriodService {
 
     async getAllPeriods() {
-        return await withDatabaseErrorHandling(async () => {
-            const periods = await prisma.period.findMany({
-                orderBy: { startDate: 'desc' }
-            });
-            return periods;
-        });
+        const periods = await readPeriods();
+        return periods.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
     }
 
     async getPeriodById(id) {
-        return await withDatabaseErrorHandling(async () => {
-            return await prisma.period.findUnique({ where: { id } });
-        });
+        const periods = await readPeriods();
+        return periods.find(p => p.id === id) || null;
     }
 
     async createPeriod(periodData) {
@@ -24,51 +44,60 @@ class PeriodService {
             throw new Error('Name, Start Date, and End Date are required');
         }
 
-        return await withDatabaseErrorHandling(async () => {
-            const period = await prisma.period.create({
-                data: {
-                    name: periodData.name,
-                    startDate: new Date(periodData.startDate),
-                    endDate: new Date(periodData.endDate),
-                    status: 'OPEN',
-                    summary: {
-                        exchangeRate: periodData.exchangeRate || 0,
-                        deductionRate: 7,
-                        totalIncoming: 0,
-                        totalSalaries: 0,
-                        netProfit: 0,
-                        totalLiabilities: 0,
-                        totalAssets: 0
-                    }
-                }
-            });
-            return period;
-        });
+        const periods = await readPeriods();
+        const now = new Date().toISOString();
+
+        const period = {
+            id: uuidv4(),
+            name: periodData.name,
+            startDate: new Date(periodData.startDate).toISOString(),
+            endDate: new Date(periodData.endDate).toISOString(),
+            status: 'OPEN',
+            summary: {
+                exchangeRate: periodData.exchangeRate || 0,
+                deductionRate: 7,
+                totalIncoming: 0,
+                totalSalaries: 0,
+                netProfit: 0,
+                totalLiabilities: 0,
+                totalAssets: 0
+            },
+            createdAt: now,
+            updatedAt: now
+        };
+
+        periods.push(period);
+        await writePeriods(periods);
+        return period;
     }
 
     async updatePeriod(id, updates) {
-        return await withDatabaseErrorHandling(async () => {
-            const existing = await prisma.period.findUnique({ where: { id } });
-            if (!existing) throw new Error('Period not found');
+        const periods = await readPeriods();
+        const idx = periods.findIndex(p => p.id === id);
+        
+        if (idx === -1) throw new Error('Period not found');
 
-            if (existing.status !== 'OPEN' && !updates.force) {
-                throw new Error('Period is closed/locked. Cannot edit.');
-            }
+        const existing = periods[idx];
 
-            // Remove force flag before saving
-            delete updates.force;
+        if (existing.status !== 'OPEN' && !updates.force) {
+            throw new Error('Period is closed/locked. Cannot edit.');
+        }
 
-            // Handle dates
-            if (updates.startDate) updates.startDate = new Date(updates.startDate);
-            if (updates.endDate) updates.endDate = new Date(updates.endDate);
+        // Remove force flag before saving
+        delete updates.force;
 
-            const period = await prisma.period.update({
-                where: { id },
-                data: updates
-            });
+        // Handle dates
+        if (updates.startDate) updates.startDate = new Date(updates.startDate).toISOString();
+        if (updates.endDate) updates.endDate = new Date(updates.endDate).toISOString();
 
-            return period;
-        });
+        periods[idx] = {
+            ...existing,
+            ...updates,
+            updatedAt: new Date().toISOString()
+        };
+
+        await writePeriods(periods);
+        return periods[idx];
     }
 
     async closePeriod(id) {
@@ -76,18 +105,28 @@ class PeriodService {
     }
 
     async updatePeriodSummary(id, summaryUpdates) {
-        return await withDatabaseErrorHandling(async () => {
-            const existing = await prisma.period.findUnique({ where: { id } });
-            if (!existing) throw new Error('Period not found');
+        const periods = await readPeriods();
+        const idx = periods.findIndex(p => p.id === id);
+        
+        if (idx === -1) throw new Error('Period not found');
 
-            const currentSummary = existing.summary || {};
-            const newSummary = { ...currentSummary, ...summaryUpdates };
+        const existing = periods[idx];
+        const currentSummary = existing.summary || {};
+        const newSummary = { ...currentSummary, ...summaryUpdates };
 
-            return await prisma.period.update({
-                where: { id },
-                data: { summary: newSummary }
-            });
-        });
+        periods[idx] = {
+            ...existing,
+            summary: newSummary,
+            updatedAt: new Date().toISOString()
+        };
+
+        await writePeriods(periods);
+        return periods[idx];
+    }
+
+    async settlePeriod(id) {
+        // Settlement logic - for now just close the period
+        return this.closePeriod(id);
     }
 }
 
