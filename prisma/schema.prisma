@@ -55,6 +55,10 @@ model User {
   // Debt and custody
   debtBalance  Float    @default(0)  // Outstanding debt
   
+  // Duplication prevention system
+  status           String   @default("active") // active, suspended
+  conflictAgencies String[] @default([])       // Agencies claiming this user
+  
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   

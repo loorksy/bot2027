@@ -1,1 +1,20 @@
-[]
+[
+  {
+    "ts": 1768530765871,
+    "groupId": "120363423011936169@g.us",
+    "groupName": "whbot",
+    "match": "test",
+    "action": "reaction",
+    "snippet": "Test",
+    "id": "false_120363423011936169@g.us_A56C539198B738BD1B60F23A6D0C9B39_35751962116252@lid"
+  },
+  {
+    "ts": 1768530771769,
+    "groupId": "120363423011936169@g.us",
+    "groupName": "whbot",
+    "match": "test",
+    "action": "reaction",
+    "snippet": "Test",
+    "id": "false_120363423011936169@g.us_A5E95041F8D686880E48A5CEDE53D936_35751962116252@lid"
+  }
+]

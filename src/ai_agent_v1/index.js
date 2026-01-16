@@ -401,13 +401,15 @@ async function handleGeneralQuery(message, linkedClient, messageText, isVoice) {
  */
 async function sendReply(message, text, asVoice = false) {
     try {
-        const chat = await message.getChat();
+        // const chat = await message.getChat(); // Avoid getting Chat object to prevent sendSeen crash
 
         if (asVoice) {
+            const chat = await message.getChat(); // Only get chat for voice if absolutely needed
             const voiceSent = await voice.sendVoiceReply(chat, text);
-            if (!voiceSent) await chat.sendMessage(text);
+            if (!voiceSent) await waClient.sendMessage(message.from, text);
         } else {
-            await chat.sendMessage(text);
+            // Use client.sendMessage directly to avoid "markedUnread" error in Chat.sendMessage
+            await waClient.sendMessage(message.from, text);
         }
 
         await clients.addConversationEntry(message.from, 'assistant', text);
