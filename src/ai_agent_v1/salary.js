@@ -261,6 +261,59 @@ async function setCurrentPeriod(periodId) {
     await fs.writeJSON(PERIODS_FILE, periods, { spaces: 2 });
 }
 
+/**
+ * Get all salaries for a client across all periods
+ * @param {string[]} clientIds - Array of client IDs
+ * @returns {Array} Array of salary records with period info
+ */
+async function getAllSalariesForClient(clientIds) {
+    if (!clientIds || clientIds.length === 0) {
+        return [];
+    }
+
+    const periods = await getPeriods();
+    const allSalaries = [];
+
+    // Get settings for currency
+    const settingsPath = path.join(DATA_DIR, 'ai_settings.json');
+    let currency = 'ر.س';
+    try {
+        const settings = await fs.readJSON(settingsPath);
+        currency = settings.salaryCurrency || 'ر.س';
+    } catch {}
+
+    for (const period of periods) {
+        const salaryData = await getSalaryData(period.id);
+
+        for (const id of clientIds) {
+            const cleanId = id.toString().trim();
+            if (salaryData[cleanId] !== undefined) {
+                const amount = salaryData[cleanId];
+                const deductionPercent = period.agencyPercent || 0;
+                const deduction = amount * (deductionPercent / 100);
+                const net = amount - deduction;
+
+                allSalaries.push({
+                    clientId: cleanId,
+                    periodId: period.id,
+                    periodName: period.name,
+                    amount,
+                    deductionPercent,
+                    deduction,
+                    net,
+                    currency,
+                    uploadedAt: period.uploadedAt
+                });
+            }
+        }
+    }
+
+    // Sort by upload date (newest first)
+    allSalaries.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+
+    return allSalaries;
+}
+
 module.exports = {
     getPeriods,
     getCurrentPeriod,
@@ -268,5 +321,6 @@ module.exports = {
     getSalaryData,
     lookupSalary,
     deletePeriod,
-    setCurrentPeriod
+    setCurrentPeriod,
+    getAllSalariesForClient
 };
