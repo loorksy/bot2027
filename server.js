@@ -917,6 +917,33 @@ app.delete('/api/ai/registered-clients/:key', requireAdmin, async (req, res) => 
   }
 });
 
+// Bulk delete registered clients
+app.post('/api/ai/registered-clients/bulk-delete', requireAdmin, async (req, res) => {
+  try {
+    const { keys } = req.body;
+    if (!keys || !Array.isArray(keys) || keys.length === 0) {
+      return res.status(400).json({ error: 'لم يتم تحديد عملاء للحذف' });
+    }
+    
+    let deleted = 0;
+    let failed = 0;
+    
+    for (const key of keys) {
+      try {
+        await registeredClients.deleteClient(key);
+        deleted++;
+      } catch (err) {
+        failed++;
+        console.error(`Failed to delete client ${key}:`, err.message);
+      }
+    }
+    
+    res.json({ success: true, deleted, failed });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Import clients from CSV
 app.post('/api/ai/registered-clients/import', requireAdmin, upload.single('file'), async (req, res) => {
   try {
