@@ -1589,6 +1589,50 @@ app.post('/api/admin/portal/generate/:clientKey', requireAdmin, async (req, res)
   }
 });
 
+// Admin: Send portal links to all Main agency clients
+app.post('/api/admin/portal/send-all', requireAdmin, async (req, res) => {
+  try {
+    const allClients = await registeredClients.getAllClients();
+    const results = { sent: 0, failed: 0, skipped: 0, details: [] };
+    
+    for (const [key, client] of Object.entries(allClients)) {
+      // Only Main agency clients
+      if (!portal.isMainAgency(client.agencyName)) {
+        results.skipped++;
+        continue;
+      }
+      
+      // Must have phone
+      if (!client.phone) {
+        results.skipped++;
+        continue;
+      }
+      
+      try {
+        const token = await portal.getOrCreateToken(key, client.agencyName);
+        if (!token) {
+          results.skipped++;
+          continue;
+        }
+        
+        const portalUrl = `${req.protocol}://${req.get('host')}/portal/${token}`;
+        const message = `🔗 *رابط البوابة الخاصة بك*\n\nمرحباً ${client.fullName}،\n\nيمكنك الدخول لبوابتك الشخصية من الرابط التالي:\n\n${portalUrl}\n\nمن خلال البوابة يمكنك:\n• عرض معلوماتك الشخصية\n• متابعة سجل الرواتب\n• تعديل بياناتك`;
+        
+        await aiAgent.notifyClient(client.phone, message);
+        results.sent++;
+        results.details.push({ name: client.fullName, status: 'sent' });
+      } catch (err) {
+        results.failed++;
+        results.details.push({ name: client.fullName, status: 'failed', error: err.message });
+      }
+    }
+    
+    res.json({ success: true, results });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Admin: Upload receipt for a client
 app.post('/api/admin/receipt/upload', requireAdmin, receiptUpload.single('receipt'), async (req, res) => {
   try {
