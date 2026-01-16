@@ -1383,6 +1383,18 @@
       }
     };
 
+    // Reset Client PIN
+    window.resetClientPin = async (clientKey, clientName) => {
+      if (!confirm(`هل تريد تجديد رمز PIN للعميل "${clientName}"؟\n\nسيتم إرسال الرمز الجديد عبر واتساب.`)) return;
+      
+      try {
+        const result = await api('POST', `/api/admin/clients/${clientKey}/reset-pin`);
+        showAlert(`✅ تم تجديد PIN للعميل ${result.clientName} وإرسال رسالة واتساب بنجاح`);
+      } catch (err) {
+        showAlert('❌ فشل تجديد PIN: ' + err.message, 'error');
+      }
+    };
+
     // =====================================================
     // Linked Clients (WhatsApp linked users)
     // =====================================================
