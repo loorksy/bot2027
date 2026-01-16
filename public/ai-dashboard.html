@@ -1010,6 +1010,65 @@
         </div>
       </div>
 
+      <!-- Google Sheet Auto Sync -->
+      <div class="ai-card">
+        <h2>🔄 المزامنة التلقائية من Google Sheet</h2>
+        
+        <div class="form-group">
+          <div class="toggle-container">
+            <label class="toggle">
+              <input type="checkbox" id="googleSheetAutoSync" onchange="toggleAutoSyncSettings()">
+              <span class="toggle-slider"></span>
+            </label>
+            <span style="color: #fff;">تفعيل المزامنة التلقائية</span>
+          </div>
+        </div>
+
+        <div id="autoSyncSettings" style="display: none;">
+          <div class="form-group">
+            <label>رابط Google Sheet</label>
+            <input type="text" id="googleSheetUrlAuto" placeholder="https://docs.google.com/spreadsheets/d/...">
+            <small style="color: #64748b; display: block; margin-top: 4px;">
+              ⚠️ تأكد أن الملف مشارك كـ "أي شخص لديه الرابط يمكنه العرض"
+            </small>
+          </div>
+
+          <div class="row">
+            <div class="form-group">
+              <label>اسم الورقة (اختياري)</label>
+              <input type="text" id="googleSheetNameAuto" placeholder="Sheet1">
+            </div>
+            <div class="form-group">
+              <label>فترة المزامنة</label>
+              <select id="googleSheetSyncInterval">
+                <option value="1">كل دقيقة</option>
+                <option value="5" selected>كل 5 دقائق</option>
+                <option value="10">كل 10 دقائق</option>
+                <option value="15">كل 15 دقيقة</option>
+                <option value="30">كل 30 دقيقة</option>
+                <option value="60">كل ساعة</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="syncStatus" style="background: rgba(15, 23, 42, 0.5); padding: 16px; border-radius: 10px; margin-top: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+              <div>
+                <p style="margin: 0 0 4px 0; color: #94a3b8; font-size: 0.85rem;">حالة المزامنة:</p>
+                <p id="syncStatusText" style="margin: 0; color: #fff; font-weight: 600;">غير مفعّلة</p>
+              </div>
+              <div>
+                <p style="margin: 0 0 4px 0; color: #94a3b8; font-size: 0.85rem;">آخر مزامنة:</p>
+                <p id="lastSyncTime" style="margin: 0; color: #fff; font-weight: 600;">-</p>
+              </div>
+              <button class="btn btn-secondary" onclick="triggerManualSync()" style="padding: 8px 16px;">
+                🔄 مزامنة الآن
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
         <button class="btn btn-primary" id="saveSettingsBtn">💾 حفظ الإعدادات</button>
       </div>
     </div>
