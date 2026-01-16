@@ -1389,7 +1389,13 @@
       
       try {
         const result = await api('POST', `/api/admin/clients/${clientKey}/reset-pin`);
-        showAlert(`✅ تم تجديد PIN للعميل ${result.clientName} وإرسال رسالة واتساب بنجاح`);
+        
+        if (result.warning) {
+          // WhatsApp failed but PIN was generated
+          showAlert(`⚠️ ${result.warning}\n\nالرمز الجديد: ${result.newPin}`, 'error');
+        } else {
+          showAlert(`✅ تم تجديد PIN للعميل ${result.clientName} وإرسال رسالة واتساب بنجاح`);
+        }
       } catch (err) {
         showAlert('❌ فشل تجديد PIN: ' + err.message, 'error');
       }
