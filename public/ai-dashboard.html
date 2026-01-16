@@ -1419,6 +1419,20 @@
       }
     };
 
+    // Send Portal Links to All Main Agency Clients
+    window.sendPortalLinksToAll = async () => {
+      if (!confirm('هل تريد إرسال روابط البوابة لكل عملاء الوكالة الرئيسية (Main)?\n\nسيتم إرسال رسالة واتساب لكل عميل لديه رقم هاتف.')) return;
+      
+      try {
+        showAlert('⏳ جاري إرسال الروابط...');
+        const result = await api('POST', '/api/admin/portal/send-all');
+        
+        showAlert(`✅ تم الإرسال!\n\n📤 أُرسل: ${result.results.sent}\n❌ فشل: ${result.results.failed}\n⏭️ تخطي: ${result.results.skipped}`);
+      } catch (err) {
+        showAlert('❌ فشل الإرسال: ' + err.message, 'error');
+      }
+    };
+
     // =====================================================
     // Linked Clients (WhatsApp linked users)
     // =====================================================
