@@ -369,10 +369,17 @@ async function ensureAuthenticated() {
 
 async function startApp() {
   bindCommon();
+  // ⚠️ AUTH DISABLED - Skip login page
+  if (isLoginPage) {
+    window.location.href = '/';
+    return;
+  }
+  /* ORIGINAL - RESTORE LATER:
   if (isLoginPage) {
     await initLogin();
     return;
   }
+  */
   const authed = await ensureAuthenticated();
   if (!authed) return;
   if (appInitialized) return;
