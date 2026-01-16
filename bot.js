@@ -67,16 +67,21 @@ class WhatsAppBot extends EventEmitter {
 
     this.registerEvents();
     this.linkState = 'linking';
+    this.emitLog('Starting WhatsApp client initialization...');
 
     // Wrap initialize in try-catch to prevent crashes
     try {
-      this.client.initialize().catch(err => {
+      this.client.initialize().then(() => {
+        this.emitLog('WhatsApp client.initialize() completed');
+      }).catch(err => {
         this.emitLog(`WhatsApp initialize error: ${err.message}`);
+        console.error('[BOT] Initialize error:', err);
         this.linkState = 'error';
         this.emitStatus();
       });
     } catch (err) {
       this.emitLog(`WhatsApp init exception: ${err.message}`);
+      console.error('[BOT] Init exception:', err);
       this.linkState = 'error';
     }
 
