@@ -1343,6 +1343,26 @@ app.get('/api/ai/notify/status', requireAdmin, (req, res) => {
 // ------------------------------
 // Socket IO & Server Listen
 // ------------------------------
+// ⚠️ AUTH DISABLED TEMPORARILY
+io.use((socket, next) => {
+  // Skip authentication - allow all connections
+  socket.user = {
+    email: 'loorksy@gmail.com',
+    permissions: {
+      can_scan_backlog: true,
+      can_send_messages: true,
+      can_manage_lists: true,
+      can_manage_settings: true,
+      can_control_bot: true,
+      can_manage_forwarding: true,
+      can_view_logs: true,
+      is_admin: true
+    }
+  };
+  return next();
+});
+
+/* ORIGINAL SOCKET AUTH - RESTORE LATER:
 io.use((socket, next) => {
   // ...
   const cookieHeader = socket.handshake.headers.cookie || '';
@@ -1364,6 +1384,7 @@ io.use((socket, next) => {
     return next(new Error('UNAUTHORIZED'));
   }
 });
+*/
 
 io.on('connection', (socket) => {
   const logHandler = (msg) => socket.emit('log', msg);
