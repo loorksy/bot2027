@@ -922,6 +922,16 @@
         document.getElementById('voiceTts').value = settings.voiceTts || 'alloy';
         document.getElementById('trustedSessionMinutes').value = settings.trustedSessionMinutes || 15;
         document.getElementById('agencyPercent').value = settings.agencyPercent || 0;
+        
+        // New personality settings
+        document.getElementById('botName').value = settings.botName || 'مساعد أبو سلطان';
+        document.getElementById('ownerName').value = settings.ownerName || 'أبو سلطان';
+        document.getElementById('dialect').value = settings.dialect || 'سورية';
+        document.getElementById('clientGender').value = settings.clientGender || 'مؤنث';
+        document.getElementById('friendliness').value = settings.friendliness || 'عالي';
+        document.getElementById('salaryCurrency').value = settings.salaryCurrency || 'ر.س';
+        document.getElementById('adminContact').value = settings.adminContact || 'تواصلي مع الإدارة';
+        document.getElementById('enableVoiceReplies').checked = settings.enableVoiceReplies || false;
       } catch (err) {
         showAlert('فشل تحميل الإعدادات: ' + err.message, 'error');
       }
@@ -937,7 +947,17 @@
           modelTts: document.getElementById('modelTts').value,
           voiceTts: document.getElementById('voiceTts').value,
           trustedSessionMinutes: parseInt(document.getElementById('trustedSessionMinutes').value) || 15,
-          agencyPercent: parseFloat(document.getElementById('agencyPercent').value) || 0
+          agencyPercent: parseFloat(document.getElementById('agencyPercent').value) || 0,
+          
+          // New personality settings
+          botName: document.getElementById('botName').value || 'مساعد أبو سلطان',
+          ownerName: document.getElementById('ownerName').value || 'أبو سلطان',
+          dialect: document.getElementById('dialect').value || 'سورية',
+          clientGender: document.getElementById('clientGender').value || 'مؤنث',
+          friendliness: document.getElementById('friendliness').value || 'عالي',
+          salaryCurrency: document.getElementById('salaryCurrency').value || 'ر.س',
+          adminContact: document.getElementById('adminContact').value || 'تواصلي مع الإدارة',
+          enableVoiceReplies: document.getElementById('enableVoiceReplies').checked
         };
 
         const keyInput = document.getElementById('openaiKey').value;
@@ -946,7 +966,7 @@
         }
 
         await api('POST', '/api/ai/settings', data);
-        showAlert('تم حفظ الإعدادات بنجاح');
+        showAlert('تم حفظ الإعدادات بنجاح ✅');
       } catch (err) {
         showAlert('فشل حفظ الإعدادات: ' + err.message, 'error');
       }
