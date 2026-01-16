@@ -38,6 +38,9 @@ const io = socketIo(server, {
   cors: { origin: true, credentials: true },
 });
 
+// Trust proxy for HTTPS behind reverse proxy (Kubernetes/Nginx)
+app.set('trust proxy', 1);
+
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
