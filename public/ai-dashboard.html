@@ -852,11 +852,17 @@
   <div id="linked" class="tab-content">
     <div class="ai-card">
       <h2>العملاء المربوطين بواتساب</h2>
-      <button class="btn btn-secondary" id="refreshLinkedClientsBtn" style="margin-bottom: 16px;">🔄 تحديث</button>
+      <div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <button class="btn btn-secondary" id="refreshLinkedClientsBtn">🔄 تحديث</button>
+        <button class="btn btn-danger" style="display: none;" id="deleteSelectedLinkedBtn" onclick="deleteSelectedLinkedClients()">
+          🗑️ حذف المحدد (<span id="selectedLinkedCount">0</span>)
+        </button>
+      </div>
       <div style="overflow-x: auto;">
         <table class="clients-table" id="linkedClientsTable">
           <thead>
             <tr>
+              <th style="width: 40px;"><input type="checkbox" id="selectAllLinked" onchange="toggleSelectAllLinked(this)"></th>
               <th>WhatsApp ID</th>
               <th>الاسم</th>
               <th>المدينة</th>
@@ -868,7 +874,7 @@
           </thead>
           <tbody id="linkedClientsBody">
             <tr>
-              <td colspan="7" style="text-align: center; color: #666;">لا يوجد عملاء مربوطين</td>
+              <td colspan="8" style="text-align: center; color: #666;">لا يوجد عملاء مربوطين</td>
             </tr>
           </tbody>
         </table>
