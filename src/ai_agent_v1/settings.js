@@ -1,5 +1,7 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const fs = require('fs-extra');
+const path = require('path');
+
+const SETTINGS_FILE = path.join(__dirname, '../../data/ai_settings.json');
 
 const DEFAULT_SETTINGS = {
     salaryCurrency: 'ل.س',
@@ -18,17 +20,21 @@ const DEFAULT_SETTINGS = {
 };
 
 /**
+ * Ensure settings file exists
+ */
+async function ensureFile() {
+    if (!await fs.pathExists(SETTINGS_FILE)) {
+        await fs.writeJSON(SETTINGS_FILE, DEFAULT_SETTINGS, { spaces: 2 });
+    }
+}
+
+/**
  * Get all settings (merged with defaults)
  */
 async function getSettings() {
     try {
-        const rows = await prisma.setting.findMany();
-        const settings = {};
-        rows.forEach(r => {
-            settings[r.key] = r.value;
-        });
-
-        // Merge with defaults
+        await ensureFile();
+        const settings = await fs.readJSON(SETTINGS_FILE);
         return { ...DEFAULT_SETTINGS, ...settings };
     } catch (err) {
         console.error('Error fetching settings:', err);
@@ -41,18 +47,11 @@ async function getSettings() {
  */
 async function updateSettings(newSettings) {
     try {
-        // Upsert each key
-        const updates = Object.entries(newSettings).map(([key, value]) => {
-            return prisma.setting.upsert({
-                where: { key },
-                update: { value },
-                create: { key, value }
-            });
-        });
-
-        await prisma.$transaction(updates);
-
-        return await getSettings();
+        await ensureFile();
+        const current = await getSettings();
+        const updated = { ...current, ...newSettings };
+        await fs.writeJSON(SETTINGS_FILE, updated, { spaces: 2 });
+        return updated;
     } catch (err) {
         console.error('Error updating settings:', err);
         throw err;
