@@ -3205,6 +3205,58 @@
       }
     };
 
+    // Google Sheet Functions
+    window.showGoogleSheetModal = () => {
+      document.getElementById('googleSheetModal').style.display = 'flex';
+    };
+
+    window.hideGoogleSheetModal = () => {
+      document.getElementById('googleSheetModal').style.display = 'none';
+    };
+
+    window.importFromGoogleSheet = async () => {
+      const url = document.getElementById('googleSheetUrl').value.trim();
+      const sheetName = document.getElementById('googleSheetName').value.trim();
+      
+      if (!url) {
+        showAlert('الرجاء إدخال رابط Google Sheet', 'error');
+        return;
+      }
+      
+      const btn = document.getElementById('importGoogleSheetBtn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '⏳ جاري الاستيراد...';
+      btn.disabled = true;
+      
+      try {
+        const result = await api('POST', '/api/ai/registered-clients/import-google-sheet', { 
+          url, 
+          sheetName 
+        });
+        
+        hideGoogleSheetModal();
+        showAlert(`✅ تم استيراد ${result.imported} عميل بنجاح${result.skipped > 0 ? `\n⏭️ تم تخطي ${result.skipped} (موجودين مسبقاً)` : ''}${result.failed > 0 ? `\n❌ فشل ${result.failed}` : ''}`);
+        loadRegisteredClients();
+        
+        // Clear inputs
+        document.getElementById('googleSheetUrl').value = '';
+        document.getElementById('googleSheetName').value = '';
+        
+      } catch (err) {
+        showAlert('❌ فشل الاستيراد: ' + err.message, 'error');
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    };
+
+    // Close modal on outside click
+    document.getElementById('googleSheetModal')?.addEventListener('click', (e) => {
+      if (e.target.id === 'googleSheetModal') {
+        hideGoogleSheetModal();
+      }
+    });
+
     // Sidebar Navigation
     const pageTitles = {
       'settings': '⚙️ إعدادات AI',
