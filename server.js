@@ -1049,13 +1049,38 @@ app.post('/api/ai/registered-clients/import-google-sheet', requireAdmin, async (
           country: row.country || row['الدولة'] || '',
           city: row.city || row['المدينة'] || '',
           address: row.address || row['العنوان'] || '',
-          agencyName: row.agencyName || row['الوكالة'] || row.agency || ''
+          agencyName: row.agencyName || row['الوكالة'] || row.agency || '',
+          customFields: {}
         };
         
         // Handle IDs (can be comma-separated or in 'id' column)
         const idValue = row.id || row.ids || row['رقم الهوية'] || row['ID'] || row['الرقم'] || '';
         if (idValue) {
           clientData.ids = idValue.toString().split(',').map(id => id.trim()).filter(id => id);
+        }
+        
+        // Handle custom fields - Payment Method
+        const paymentMethod = row.paymentMethod || row['طريقة الاستلام'] || row['طريقة الدفع'] || row['payment_method'] || '';
+        if (paymentMethod) {
+          clientData.customFields['طريقة الاستلام'] = paymentMethod;
+        }
+        
+        // Handle custom fields - Payment Info
+        const paymentInfo = row.paymentInfo || row['معلومات الاستلام'] || row['رقم الحساب'] || row['payment_info'] || '';
+        if (paymentInfo) {
+          clientData.customFields['معلومات الاستلام'] = paymentInfo;
+        }
+        
+        // Handle custom fields - Currency
+        const currency = row.currency || row['العملة'] || row['نوع العملة'] || '';
+        if (currency) {
+          clientData.customFields['العملة'] = currency;
+        }
+        
+        // Handle custom fields - Notes
+        const notes = row.notes || row['ملاحظات'] || row['ملاحظة'] || row['note'] || '';
+        if (notes) {
+          clientData.customFields['ملاحظات'] = notes;
         }
         
         // Skip if no ID
