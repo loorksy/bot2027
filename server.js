@@ -1671,16 +1671,27 @@ app.post('/api/admin/clients/:clientKey/reset-pin', requireAdmin, async (req, re
     // Send WhatsApp notification with new PIN
     const message = `🔐 *تجديد رمز PIN*\n\nمرحباً ${client.fullName}،\n\nتم تجديد رمز الحماية الخاص بك.\n\n📌 الرمز الجديد: *${newPin}*\n\n⚠️ يرجى حفظ هذا الرمز بمكان آمن ولا تشاركيه مع أحد.`;
     
-    await aiAgent.notifyClient(client.phone, message);
-    
-    console.log(`[Admin] PIN reset for client ${client.fullName} (${clientKey})`);
-    
-    res.json({ 
-      success: true, 
-      message: 'تم تجديد PIN وإرسال رسالة للعميل',
-      clientName: client.fullName,
-      linkedWhatsappId: linkedWhatsappId ? 'مربوط' : 'غير مربوط بعد'
-    });
+    try {
+      await aiAgent.notifyClient(client.phone, message);
+      console.log(`[Admin] PIN reset for client ${client.fullName} (${clientKey})`);
+      
+      res.json({ 
+        success: true, 
+        message: 'تم تجديد PIN وإرسال رسالة للعميل',
+        clientName: client.fullName,
+        linkedWhatsappId: linkedWhatsappId ? 'مربوط' : 'غير مربوط بعد'
+      });
+    } catch (waError) {
+      // WhatsApp might not be connected - still return success but note the issue
+      console.error('[Admin] WhatsApp notification failed:', waError.message);
+      res.json({ 
+        success: true, 
+        warning: 'تم تجديد PIN لكن فشل إرسال الرسالة - تأكد من اتصال واتساب',
+        clientName: client.fullName,
+        newPin: newPin, // Return PIN so admin can manually share it
+        linkedWhatsappId: linkedWhatsappId ? 'مربوط' : 'غير مربوط بعد'
+      });
+    }
     
   } catch (err) {
     console.error('[Admin] Reset PIN error:', err);
