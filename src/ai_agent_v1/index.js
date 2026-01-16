@@ -1,6 +1,7 @@
 /**
  * AI Agent v1 - Main Entry Point
  * Admin-managed clients + Natural AI Agent
+ * Enhanced with dialect support and friendly responses
  */
 
 const dmQueue = require('./dmQueue');
@@ -22,6 +23,7 @@ let initialized = false;
 async function init(client) {
     waClient = client;
     await analyzer.loadSettings();
+    await reply.loadSettings();
     setInterval(() => voice.cleanupTempFiles(), 30 * 60 * 1000);
     initialized = true;
     console.log('[AI Agent] Initialized');
@@ -71,13 +73,15 @@ async function processMessage(message) {
                 console.log('[AI Agent] STT:', messageText);
             } catch (err) {
                 console.error('[AI Agent] Voice error:', err.message);
-                await sendReply(message, 'عذراً، لم أتمكن من فهم الرسالة الصوتية.', isVoice);
+                const voiceErrorReply = await reply.generateReply({ type: 'DONT_UNDERSTAND', context: {} });
+                await sendReply(message, voiceErrorReply, isVoice);
                 return;
             }
         }
 
         if (!messageText?.trim()) {
-            await sendReply(message, 'لم أفهم رسالتك. يرجى إرسال نص أو رسالة صوتية.', isVoice);
+            const emptyReply = await reply.generateReply({ type: 'DONT_UNDERSTAND', context: {} });
+            await sendReply(message, emptyReply, isVoice);
             return;
         }
 
@@ -99,7 +103,8 @@ async function processMessage(message) {
 
     } catch (err) {
         console.error('[AI Agent] Error:', err);
-        await sendReply(message, 'عذراً، حدث خطأ. يرجى المحاولة لاحقاً.', false);
+        const errorReply = await reply.generateReply({ type: 'ERROR', context: {} });
+        await sendReply(message, errorReply, false);
     }
 }
 
@@ -111,7 +116,8 @@ async function handleUnlinkedClient(message, linkedClient, messageText, isVoice)
 
     // Check if user sent a PIN (exactly 6 digits)
     if (pin.looksLikePin(messageText.trim())) {
-        await sendReply(message, 'يرجى أولاً تأكيد هويتك بإرسال رقم الـ ID الخاص بك.', isVoice);
+        const pinReply = await reply.generateReply({ type: 'PIN_REQUEST', context: {} });
+        await sendReply(message, 'أول شي لازم تأكدي هويتك. ابعتيلي رقم الـ ID تبعك.', isVoice);
         return;
     }
 
@@ -124,55 +130,95 @@ async function handleUnlinkedClient(message, linkedClient, messageText, isVoice)
         const regClient = await registeredClients.getClientById(potentialId);
 
         if (!regClient) {
-            await sendReply(message, `لم أجد رقم ID "${potentialId}" في السجلات. تأكد من صحة الرقم أو تواصل مع الإدارة.`, isVoice);
+            const notFoundReply = await reply.generateReply({ type: 'ID_NOT_FOUND', context: {} });
+            await sendReply(message, notFoundReply, isVoice);
             return;
         }
 
-        // Ask for confirmation
-        if (!linkedClient.pendingLinkId) {
-            // First time - ask for confirmation
-            await clients.upsertClient(whatsappId, { pendingLinkId: potentialId });
-            await sendReply(message, `وجدت حسابك! هل أنت "${regClient.fullName}"؟ أجب بـ "نعم" للتأكيد.`, isVoice);
+        // Ask for confirmation (always update pendingLinkId)
+        await clients.upsertClient(whatsappId, { pendingLinkId: potentialId });
+        const confirmReply = await reply.generateReply({ 
+            type: 'ID_FOUND_CONFIRM', 
+            context: { fullName: regClient.fullName } 
+        });
+        await sendReply(message, confirmReply, isVoice);
+        return;
+    }
+
+    // Check for confirmation ("نعم") or rejection ("لا")
+    if (linkedClient.pendingLinkId) {
+        const trimmedText = messageText.trim().toLowerCase();
+        
+        // Check for YES
+        if (/^(نعم|اي|ايه|صح|صحيح|أكيد|اكيد|yes|y|اه|هي|ايوا)$/i.test(trimmedText)) {
+            const regClient = await registeredClients.getClientById(linkedClient.pendingLinkId);
+
+            if (!regClient) {
+                await clients.upsertClient(whatsappId, { pendingLinkId: null });
+                const errorReply = await reply.generateReply({ type: 'ERROR', context: {} });
+                await sendReply(message, errorReply, isVoice);
+                return;
+            }
+
+            // Generate PIN and complete linking
+            const newPin = pin.generatePin();
+            const hashedPin = pin.hashPin(newPin);
+
+            await clients.upsertClient(whatsappId, {
+                linkedClientId: linkedClient.pendingLinkId,
+                pendingLinkId: null,
+                status: 'complete',
+                pinHash: hashedPin,
+                profile: {
+                    fullName: regClient.fullName,
+                    phone: regClient.phone,
+                    country: regClient.country,
+                    city: regClient.city,
+                    address: regClient.address,
+                    agencyName: regClient.agencyName,
+                    ids: [linkedClient.pendingLinkId]
+                }
+            });
+
+            // Set trusted session
+            const settings = await analyzer.getSettings();
+            await clients.setTrustedSession(whatsappId, settings.trustedSessionMinutes || 15);
+
+            const successReply = await reply.generateReply({ 
+                type: 'ID_LINKED_SUCCESS', 
+                context: { fullName: regClient.fullName, pin: newPin } 
+            });
+            await sendReply(message, successReply, isVoice);
+            console.log('[AI Agent] Linked:', whatsappId, '→', linkedClient.pendingLinkId);
+            return;
+        }
+        
+        // Check for NO
+        if (/^(لا|لأ|no|n|غلط|مو انا)$/i.test(trimmedText)) {
+            await clients.upsertClient(whatsappId, { pendingLinkId: null });
+            const noReply = await reply.generateReply({ type: 'CONFIRM_NO', context: {} });
+            await sendReply(message, noReply, isVoice);
             return;
         }
     }
 
-    // Check for confirmation ("نعم")
-    if (linkedClient.pendingLinkId && /^(نعم|اي|ايه|صح|صحيح|أكيد|اكيد|yes|y)$/i.test(messageText.trim())) {
-        const regClient = await registeredClients.getClientById(linkedClient.pendingLinkId);
+    // Analyze the message for intent
+    const analysis = await analyzer.analyzeMessage(messageText, {}, []);
+    
+    // Handle greetings
+    if (analysis.intent === 'GREETING') {
+        const welcomeReply = await reply.generateReply({ type: 'WELCOME_NEW', context: {} });
+        await sendReply(message, welcomeReply, isVoice);
+        return;
+    }
 
-        if (!regClient) {
-            await clients.upsertClient(whatsappId, { pendingLinkId: null });
-            await sendReply(message, 'حدث خطأ. يرجى إعادة إدخال رقم الـ ID.', isVoice);
-            return;
-        }
-
-        // Generate PIN and complete linking
-        const newPin = pin.generatePin();
-        const hashedPin = pin.hashPin(newPin);
-
-        await clients.upsertClient(whatsappId, {
-            linkedClientId: linkedClient.pendingLinkId,
-            pendingLinkId: null,
-            status: 'complete',
-            pinHash: hashedPin,
-            profile: {
-                fullName: regClient.fullName,
-                phone: regClient.phone,
-                country: regClient.country,
-                city: regClient.city,
-                address: regClient.address,
-                agencyName: regClient.agencyName,
-                ids: [linkedClient.pendingLinkId]
-            }
+    // Handle chitchat for new users
+    if (analysis.intent === 'CHITCHAT' || analysis.intent === 'OFF_TOPIC') {
+        const chitchatReply = await reply.generateReply({ 
+            type: 'CHITCHAT', 
+            context: { userMessage: messageText } 
         });
-
-        // Set trusted session
-        const settings = await analyzer.getSettings();
-        await clients.setTrustedSession(whatsappId, settings.trustedSessionMinutes || 15);
-
-        await sendReply(message, `مرحباً ${regClient.fullName}! ✅\n\nتم ربط حسابك بنجاح.\nرمز الحماية الخاص بك: ${newPin}\n\nاحتفظ بهذا الرمز ولا تشاركه مع أحد.`, isVoice);
-        console.log('[AI Agent] Linked:', whatsappId, '→', linkedClient.pendingLinkId);
+        await sendReply(message, chitchatReply + '\n\nبس أول شي ابعتيلي رقم الـ ID تبعك حتى أعرفك 😊', isVoice);
         return;
     }
 
@@ -180,9 +226,10 @@ async function handleUnlinkedClient(message, linkedClient, messageText, isVoice)
     const conversationCount = linkedClient.conversationHistory?.length || 0;
 
     if (conversationCount <= 2) {
-        await sendReply(message, 'مرحباً بك! 👋\n\nللبدء، يرجى إرسال رقم الـ ID الخاص بك للتحقق من هويتك.', isVoice);
+        const welcomeReply = await reply.generateReply({ type: 'WELCOME_NEW', context: {} });
+        await sendReply(message, welcomeReply, isVoice);
     } else {
-        await sendReply(message, 'لربط حسابك، أرسل رقم الـ ID الخاص بك. إذا لم يكن لديك ID، تواصل مع الإدارة.', isVoice);
+        await sendReply(message, 'لربط حسابك، ابعتيلي رقم الـ ID تبعك. إذا ما عندك ID، تواصلي مع الإدارة.', isVoice);
     }
 }
 
@@ -204,8 +251,25 @@ async function handleLinkedClient(message, linkedClient, messageText, isVoice) {
 
     // Handle intents
     switch (analysis.intent) {
+        case 'GREETING':
+            const welcomeBack = await reply.generateReply({ 
+                type: 'WELCOME_BACK', 
+                context: { clientName: linkedClient.profile?.fullName } 
+            });
+            await sendReply(message, welcomeBack, isVoice);
+            break;
+
         case 'ASK_SALARY':
-            await handleSalaryRequest(message, linkedClient, isVoice);
+            // Check subType for timing or complaint
+            if (analysis.subType === 'timing') {
+                const timingReply = await reply.generateReply({ type: 'SALARY_TIMING', context: {} });
+                await sendReply(message, timingReply, isVoice);
+            } else if (analysis.subType === 'complaint') {
+                const complaintReply = await reply.generateReply({ type: 'SALARY_COMPLAINT', context: {} });
+                await sendReply(message, complaintReply, isVoice);
+            } else {
+                await handleSalaryRequest(message, linkedClient, isVoice);
+            }
             break;
 
         case 'ASK_PROFILE':
@@ -217,7 +281,37 @@ async function handleLinkedClient(message, linkedClient, messageText, isVoice) {
             break;
 
         case 'FORGOT_PIN':
-            await sendReply(message, 'لاسترجاع رمز الحماية، يرجى التواصل مع الإدارة مباشرة.', isVoice);
+            const forgotReply = await reply.generateReply({ type: 'FORGOT_PIN', context: {} });
+            await sendReply(message, forgotReply, isVoice);
+            break;
+
+        case 'COMPLAINT':
+            const complaintGeneral = await reply.generateReply({ 
+                type: 'COMPLAINT', 
+                context: { userMessage: messageText } 
+            });
+            await sendReply(message, complaintGeneral, isVoice);
+            break;
+
+        case 'GRATITUDE':
+            const thanksReply = await reply.generateReply({ type: 'GRATITUDE_RESPONSE', context: {} });
+            await sendReply(message, thanksReply, isVoice);
+            break;
+
+        case 'CHITCHAT':
+            const chitchatReply = await reply.generateReply({ 
+                type: 'CHITCHAT', 
+                context: { userMessage: messageText } 
+            });
+            await sendReply(message, chitchatReply, isVoice);
+            break;
+
+        case 'OFF_TOPIC':
+            const offTopicReply = await reply.generateReply({ 
+                type: 'OFF_TOPIC', 
+                context: { userMessage: messageText } 
+            });
+            await sendReply(message, offTopicReply, isVoice);
             break;
 
         default:
@@ -240,9 +334,11 @@ async function handlePinAttempt(message, linkedClient, pinValue, isVoice) {
     if (pin.verifyPin(pinValue, linkedClient.pinHash)) {
         const settings = await analyzer.getSettings();
         await clients.setTrustedSession(whatsappId, settings.trustedSessionMinutes || 15);
-        await sendReply(message, '✅ تم التحقق! كيف يمكنني مساعدتك؟', isVoice);
+        const verifiedReply = await reply.generateReply({ type: 'PIN_VERIFIED', context: {} });
+        await sendReply(message, verifiedReply, isVoice);
     } else {
-        await sendReply(message, '❌ رمز الحماية غير صحيح.', isVoice);
+        const invalidReply = await reply.generateReply({ type: 'PIN_INVALID', context: {} });
+        await sendReply(message, invalidReply, isVoice);
     }
 }
 
@@ -252,7 +348,8 @@ async function handlePinAttempt(message, linkedClient, pinValue, isVoice) {
 async function handleSalaryRequest(message, linkedClient, isVoice) {
     // Check trusted session
     if (!clients.hasTrustedSession(linkedClient)) {
-        await sendReply(message, 'للاستعلام عن راتبك، يرجى إدخال رمز الحماية المكون من 6 أرقام.', isVoice);
+        const pinRequestReply = await reply.generateReply({ type: 'PIN_REQUEST', context: {} });
+        await sendReply(message, pinRequestReply, isVoice);
         return;
     }
 
@@ -265,7 +362,11 @@ async function handleSalaryRequest(message, linkedClient, isVoice) {
     const result = await salary.lookupSalary(clientIds);
 
     if (!result.found) {
-        await sendReply(message, `عذراً، لم أجد راتباً مسجلاً في القسم الحالي (${result.periodName || 'غير محدد'}).`, isVoice);
+        const noSalaryReply = await reply.generateReply({ 
+            type: 'NO_SALARY', 
+            context: { periodName: result.periodName || 'غير محدد' } 
+        });
+        await sendReply(message, noSalaryReply, isVoice);
         return;
     }
 
@@ -287,26 +388,19 @@ async function handleSalaryRequest(message, linkedClient, isVoice) {
  */
 async function handleProfileRequest(message, linkedClient, isVoice) {
     if (!clients.hasTrustedSession(linkedClient)) {
-        await sendReply(message, 'للاطلاع على بياناتك، يرجى إدخال رمز الحماية.', isVoice);
+        const pinRequestReply = await reply.generateReply({ type: 'PIN_REQUEST', context: {} });
+        await sendReply(message, pinRequestReply, isVoice);
         return;
     }
 
-    const p = linkedClient.profile || {};
-    const response = `📋 بياناتك:\n
-• الاسم: ${p.fullName || '-'}
-• الهاتف: ${p.phone || '-'}
-• الدولة: ${p.country || '-'}
-• المدينة: ${p.city || '-'}
-• العنوان: ${p.address || '-'}
-• الوكالة: ${p.agencyName || '-'}
-• ID: ${p.ids?.join(', ') || '-'}`;
+    const profileReply = await reply.generateReply({
+        type: 'PROFILE_RESPONSE',
+        context: { profile: linkedClient.profile }
+    });
 
-    await sendReply(message, response, isVoice);
+    await sendReply(message, profileReply, isVoice);
 }
 
-/**
- * Handle profile update (limited - not IDs)
- */
 /**
  * Handle profile update (limited - not IDs)
  */
@@ -314,7 +408,8 @@ async function handleProfileUpdate(message, linkedClient, analysis, isVoice) {
     const whatsappId = message.from;
 
     if (!clients.hasTrustedSession(linkedClient)) {
-        await sendReply(message, 'لتعديل بياناتك، يرجى إدخال رمز الحماية أولاً.', isVoice);
+        const pinRequestReply = await reply.generateReply({ type: 'PIN_REQUEST', context: {} });
+        await sendReply(message, pinRequestReply, isVoice);
         return;
     }
 
@@ -327,9 +422,6 @@ async function handleProfileUpdate(message, linkedClient, analysis, isVoice) {
             updates[field] = analysis.extracted[field];
         }
     }
-
-    // Also check for custom fields mapped in analysis (if analyzer supports it)
-    // For now we trust the allowedFields. 
 
     if (Object.keys(updates).length > 0) {
         // 2. Update Linked Client (Local)
@@ -348,14 +440,18 @@ async function handleProfileUpdate(message, linkedClient, analysis, isVoice) {
                 }
             } catch (err) {
                 console.error('[AI Agent] Sync error:', err);
-                // Non-blocking error, user updated locally at least
             }
         }
 
         const updatedList = Object.entries(updates).map(([k, v]) => `${mapFieldToLabel(k)}: ${v}`).join('\n');
-        await sendReply(message, `✅ تم تحديث بياناتك بنجاح${syncMsg}:\n${updatedList}`, isVoice);
+        const updateReply = await reply.generateReply({ 
+            type: 'PROFILE_UPDATED', 
+            context: { updatedList: updatedList + syncMsg } 
+        });
+        await sendReply(message, updateReply, isVoice);
     } else {
-        await sendReply(message, 'ما الذي تريد تعديله؟ يمكنك تغيير: الاسم، الهاتف، العنوان، المدينة، الدولة، الوكالة.\n\n⚠️ لا يمكن تغيير رقم الـ ID - تواصل مع الإدارة.', isVoice);
+        const whatToEditReply = await reply.generateReply({ type: 'PROFILE_WHAT_TO_EDIT', context: {} });
+        await sendReply(message, whatToEditReply, isVoice);
     }
 }
 
@@ -392,7 +488,8 @@ async function handleGeneralQuery(message, linkedClient, messageText, isVoice) {
 
     } catch (err) {
         console.error('[AI Agent] General query error:', err);
-        await sendReply(message, 'مرحباً! كيف يمكنني مساعدتك؟', isVoice);
+        const fallbackReply = await reply.generateReply({ type: 'DONT_UNDERSTAND', context: {} });
+        await sendReply(message, fallbackReply, isVoice);
     }
 }
 
@@ -401,14 +498,13 @@ async function handleGeneralQuery(message, linkedClient, messageText, isVoice) {
  */
 async function sendReply(message, text, asVoice = false) {
     try {
-        // const chat = await message.getChat(); // Avoid getting Chat object to prevent sendSeen crash
-
-        if (asVoice) {
-            const chat = await message.getChat(); // Only get chat for voice if absolutely needed
+        const settings = await analyzer.getSettings();
+        
+        if (asVoice && settings.enableVoiceReplies) {
+            const chat = await message.getChat();
             const voiceSent = await voice.sendVoiceReply(chat, text);
             if (!voiceSent) await waClient.sendMessage(message.from, text);
         } else {
-            // Use client.sendMessage directly to avoid "markedUnread" error in Chat.sendMessage
             await waClient.sendMessage(message.from, text);
         }
 
