@@ -1165,6 +1165,161 @@ app.post('/api/ai/registered-clients/import-google-sheet', requireAdmin, async (
   }
 });
 
+// Google Sheet Auto Sync - Helper function
+async function performGoogleSheetSync() {
+  if (!googleSheetSyncState.enabled || !googleSheetSyncState.url) {
+    return { success: false, error: 'Sync not configured' };
+  }
+
+  try {
+    // Extract Sheet ID from URL
+    const sheetIdMatch = googleSheetSyncState.url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    if (!sheetIdMatch) {
+      return { success: false, error: 'Invalid Google Sheet URL' };
+    }
+
+    const sheetId = sheetIdMatch[1];
+    let exportUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
+    if (googleSheetSyncState.sheetName) {
+      exportUrl += `&sheet=${encodeURIComponent(googleSheetSyncState.sheetName)}`;
+    }
+
+    console.log('[Google Sheet Sync] Fetching:', exportUrl);
+
+    const response = await fetch(exportUrl);
+    if (!response.ok) {
+      throw new Error('Failed to fetch sheet');
+    }
+
+    const csvContent = await response.text();
+    if (csvContent.trim().startsWith('<!DOCTYPE') || csvContent.trim().startsWith('<html')) {
+      throw new Error('Sheet not accessible');
+    }
+
+    const data = csvParse(csvContent, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+      relax_column_count: true
+    });
+
+    let imported = 0, updated = 0, skipped = 0, failed = 0;
+
+    for (const row of data) {
+      try {
+        const clientData = {
+          ids: [],
+          fullName: row.fullName || row['الاسم'] || row['الاسم الكامل'] || row.name || '',
+          phone: row.phone || row['الهاتف'] || row['رقم الهاتف'] || '',
+          country: row.country || row['الدولة'] || '',
+          city: row.city || row['المدينة'] || '',
+          address: row.address || row['العنوان'] || '',
+          agencyName: row.agencyName || row['الوكالة'] || row.agency || '',
+          customFields: {}
+        };
+
+        const idValue = row.id || row.ids || row['رقم الهوية'] || row['ID'] || row['الرقم'] || '';
+        if (idValue) {
+          clientData.ids = idValue.toString().split(',').map(id => id.trim()).filter(id => id);
+        }
+
+        // Custom fields
+        const paymentMethod = row.paymentMethod || row['طريقة الاستلام'] || row['طريقة الدفع'] || '';
+        if (paymentMethod) clientData.customFields['طريقة الاستلام'] = paymentMethod;
+
+        const paymentInfo = row.paymentInfo || row['معلومات الاستلام'] || row['رقم الحساب'] || '';
+        if (paymentInfo) clientData.customFields['معلومات الاستلام'] = paymentInfo;
+
+        const currency = row.currency || row['العملة'] || row['نوع العملة'] || '';
+        if (currency) clientData.customFields['العملة'] = currency;
+
+        const notes = row.notes || row['ملاحظات'] || row['ملاحظة'] || '';
+        if (notes) clientData.customFields['ملاحظات'] = notes;
+
+        if (clientData.ids.length === 0) {
+          failed++;
+          continue;
+        }
+
+        // Check if exists - update if found, add if not
+        const existingClient = await registeredClients.getClientById(clientData.ids[0]);
+        if (existingClient) {
+          // Update existing client with new data (merge)
+          const mergedData = {
+            ...existingClient,
+            ...clientData,
+            ids: [...new Set([...(existingClient.ids || []), ...clientData.ids])],
+            customFields: { ...(existingClient.customFields || {}), ...clientData.customFields }
+          };
+          await registeredClients.updateClient(existingClient.key, mergedData);
+          updated++;
+        } else {
+          await registeredClients.addClient(clientData);
+          imported++;
+        }
+      } catch (err) {
+        failed++;
+      }
+    }
+
+    googleSheetSyncState.lastSync = new Date().toISOString();
+    console.log(`[Google Sheet Sync] Done: imported=${imported}, updated=${updated}, skipped=${skipped}, failed=${failed}`);
+
+    return { success: true, imported, updated, skipped, failed, total: data.length };
+  } catch (err) {
+    console.error('[Google Sheet Sync] Error:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+// Start/Stop auto sync
+function startAutoSync(intervalMinutes) {
+  stopAutoSync();
+  
+  if (!googleSheetSyncState.enabled || !googleSheetSyncState.url) {
+    return;
+  }
+
+  console.log(`[Google Sheet Sync] Starting auto sync every ${intervalMinutes} minutes`);
+  googleSheetSyncState.running = true;
+
+  // Run immediately first time
+  performGoogleSheetSync();
+
+  // Then set interval
+  googleSheetSyncInterval = setInterval(() => {
+    performGoogleSheetSync();
+  }, intervalMinutes * 60 * 1000);
+}
+
+function stopAutoSync() {
+  if (googleSheetSyncInterval) {
+    clearInterval(googleSheetSyncInterval);
+    googleSheetSyncInterval = null;
+  }
+  googleSheetSyncState.running = false;
+  console.log('[Google Sheet Sync] Stopped');
+}
+
+// API: Get sync status
+app.get('/api/ai/google-sheet/status', requireAdmin, (req, res) => {
+  res.json(googleSheetSyncState);
+});
+
+// API: Sync now
+app.post('/api/ai/google-sheet/sync-now', requireAdmin, async (req, res) => {
+  try {
+    const result = await performGoogleSheetSync();
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json({ error: result.error });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Import clients from CSV
 app.post('/api/ai/registered-clients/import', requireAdmin, upload.single('file'), async (req, res) => {
   try {
