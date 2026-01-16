@@ -1453,20 +1453,28 @@
         const tbody = document.getElementById('linkedClientsBody');
 
         const clientsArray = Object.values(clients);
+        
+        // Reset select all checkbox
+        document.getElementById('selectAllLinked').checked = false;
+        updateLinkedDeleteButton();
+        
         if (!clientsArray.length) {
-          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #666;">لا يوجد عملاء مربوطين</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #666;">لا يوجد عملاء مربوطين</td></tr>';
           return;
         }
 
         tbody.innerHTML = clientsArray.map(c => `
-          <tr>
+          <tr data-whatsapp-id="${c.whatsappId}">
+            <td><input type="checkbox" class="linked-checkbox" data-whatsapp-id="${c.whatsappId}" onchange="updateLinkedDeleteButton()"></td>
             <td style="font-family: monospace; font-size: 0.85rem;">${c.whatsappId}</td>
             <td>${c.profile?.fullName || '-'}</td>
             <td>${c.profile?.city || '-'}</td>
             <td>${c.profile?.agencyName || '-'}</td>
             <td>${c.linkedClientId || c.profile?.ids?.join(', ') || '-'}</td>
             <td><span class="status-badge status-${c.status}">${c.status === 'complete' ? 'مربوط' : 'قيد الربط'}</span></td>
-            <td>${c.createdAt ? new Date(c.createdAt).toLocaleDateString('ar') : '-'}</td>
+            <td>
+              <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.8rem;" onclick="deleteLinkedClient('${c.whatsappId}')">🗑️</button>
+            </td>
           </tr>
         `).join('');
 
@@ -1474,6 +1482,62 @@
         showAlert('فشل تحميل العملاء المربوطين: ' + err.message, 'error');
       }
     }
+
+    // Toggle select all linked checkboxes
+    window.toggleSelectAllLinked = (checkbox) => {
+      const checkboxes = document.querySelectorAll('.linked-checkbox');
+      checkboxes.forEach(cb => cb.checked = checkbox.checked);
+      updateLinkedDeleteButton();
+    };
+
+    // Update linked delete button visibility and count
+    window.updateLinkedDeleteButton = () => {
+      const checkboxes = document.querySelectorAll('.linked-checkbox:checked');
+      const count = checkboxes.length;
+      const btn = document.getElementById('deleteSelectedLinkedBtn');
+      const countEl = document.getElementById('selectedLinkedCount');
+      
+      if (count > 0) {
+        btn.style.display = 'inline-block';
+        countEl.textContent = count;
+      } else {
+        btn.style.display = 'none';
+      }
+    };
+
+    // Delete single linked client
+    window.deleteLinkedClient = async (whatsappId) => {
+      if (!confirm('هل أنت متأكد من حذف هذا العميل المربوط؟')) return;
+      
+      try {
+        await api('DELETE', `/api/ai/clients/${encodeURIComponent(whatsappId)}`);
+        showAlert('تم حذف العميل المربوط بنجاح 🗑️');
+        loadLinkedClients();
+      } catch (err) {
+        showAlert('فشل الحذف: ' + err.message, 'error');
+      }
+    };
+
+    // Delete selected linked clients
+    window.deleteSelectedLinkedClients = async () => {
+      const checkboxes = document.querySelectorAll('.linked-checkbox:checked');
+      const ids = Array.from(checkboxes).map(cb => cb.dataset.whatsappId);
+      
+      if (ids.length === 0) {
+        showAlert('لم يتم تحديد أي عميل', 'error');
+        return;
+      }
+      
+      if (!confirm(`هل أنت متأكد من حذف ${ids.length} عميل مربوط؟\n\n⚠️ لا يمكن التراجع عن هذا الإجراء!`)) return;
+      
+      try {
+        const result = await api('POST', '/api/ai/clients/bulk-delete', { ids });
+        showAlert(`✅ تم حذف ${result.deleted} عميل${result.failed > 0 ? `\n❌ فشل حذف ${result.failed}` : ''}`);
+        loadLinkedClients();
+      } catch (err) {
+        showAlert('❌ فشل الحذف: ' + err.message, 'error');
+      }
+    };
 
     // =====================================================
     // Custom Fields Management
