@@ -716,9 +716,12 @@
             <span id="regClientCount" style="color: #a0a0b0; margin-right: 16px;"></span>
           </div>
         </div>
-        <div style="margin-bottom: 16px;">
+        <div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center;">
           <input type="text" id="searchRegClientInput" placeholder="🔍 بحث عن عميل (الاسم، الهاتف، ID)..."
-            style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; color: white;">
+            style="flex: 1; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; color: white;">
+          <button class="btn btn-primary" style="background: #8b5cf6; padding: 10px 15px; white-space: nowrap;" onclick="sendPortalLinksToAll()">
+            📤 إرسال روابط البوابة لكل عملاء Main
+          </button>
         </div>
         <div style="overflow-x: auto;">
           <table class="clients-table">
