@@ -871,10 +871,24 @@ app.post('/api/ai/registered-clients/import', requireAdmin, upload.single('file'
           country: row['Country'] || row['country'] || row['الدولة'],
           city: row['City'] || row['city'] || row['المدينة'],
           address: row['Address'] || row['address'] || row['العنوان'],
-          agencyName: row['Agency'] || row['agency'] || row['الوكالة'],
+          agencyName: row['Agency'] || row['agency'] || row['agencyName'] || row['الوكالة'],
           customFields: {}
         };
 
+        // Handle payment/custom fields from CSV
+        const paymentMethod = row['paymentMethod'] || row['طريقة الاستلام'] || row['طريقة الدفع'];
+        if (paymentMethod) clientData.customFields['طريقة الاستلام'] = paymentMethod;
+        
+        const paymentInfo = row['paymentInfo'] || row['معلومات الاستلام'] || row['رقم الحساب'];
+        if (paymentInfo) clientData.customFields['معلومات الاستلام'] = paymentInfo;
+        
+        const currency = row['currency'] || row['العملة'] || row['نوع العملة'];
+        if (currency) clientData.customFields['العملة'] = currency;
+        
+        const notes = row['notes'] || row['ملاحظات'] || row['ملاحظة'];
+        if (notes) clientData.customFields['ملاحظات'] = notes;
+
+        // Handle other custom fields from database
         allFields.forEach(field => {
           const val = row[field.name];
           if (val) clientData.customFields[field.id] = val;
