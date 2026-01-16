@@ -13,6 +13,7 @@ const reply = require('./reply');
 const voice = require('./voice');
 const salary = require('./salary');
 const usage = require('./usage');
+const portal = require('./portal');
 
 let waClient = null;
 let initialized = false;
