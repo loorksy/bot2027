@@ -3274,14 +3274,14 @@
               <button class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.7rem; margin-top: 4px;" onclick="promptAddId('${c.key}')">+ ID</button>
             </td>
             <td>${c.fullName || '-'}</td>
-            <td>${c.phone || '-'}</td>
+            <td style="font-family: monospace; font-size: 0.85rem; direction: ltr;">${c.whatsappPhone || '-'}</td>
+            <td style="font-family: monospace; font-size: 0.85rem; direction: ltr;">${c.phone || '-'}</td>
             <td>${c.city || '-'}</td>
             <td>${c.agencyName || '-'}</td>
-            <td>${c.createdAt ? new Date(c.createdAt).toLocaleDateString('ar') : '-'}</td>
             <td>
               <div style="display: flex; gap: 4px; flex-wrap: wrap;">
                 <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem; background: #3b82f6;" onclick="promptEditRegClient('${c.key}')">✏️</button>
-                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem; background: #10b981;" onclick="promptNotify('${c.key}', '${c.fullName}', '${c.phone}')">🔔</button>
+                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem; background: #10b981;" onclick="promptNotify('${c.key}', '${c.fullName}', '${c.whatsappPhone || c.phone}')">🔔</button>
                 <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem; background: #f59e0b;" onclick="resetClientPin('${c.key}', '${c.fullName}')" title="تجديد PIN">🔐</button>
                 <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem; background: #8b5cf6;" onclick="generatePortalLink('${c.key}', '${c.fullName}')" title="رابط البوابة">🔗</button>
                 <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.8rem;" onclick="promptDeleteRegClient('${c.key}')">🗑️</button>
