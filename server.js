@@ -200,7 +200,19 @@ app.post('/api/login', async (req, res) => {
   const hashed = hashPassword(password);
   if (hashed !== user.password) return res.status(401).json({ error: 'INVALID_CREDENTIALS' });
   const token = signToken(user);
-  res.cookie(TOKEN_NAME, token, { httpOnly: true, sameSite: 'lax' });
+  // Cookie settings for both HTTP and HTTPS
+  const cookieOptions = { 
+    httpOnly: true, 
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    path: '/'
+  };
+  // Add secure flag if behind HTTPS proxy
+  if (req.secure || req.headers['x-forwarded-proto'] === 'https') {
+    cookieOptions.secure = true;
+    cookieOptions.sameSite = 'none';
+  }
+  res.cookie(TOKEN_NAME, token, cookieOptions);
   res.json({ success: true, user: sanitizeUser(user) });
 });
 
