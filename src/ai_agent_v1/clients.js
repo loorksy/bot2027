@@ -212,6 +212,20 @@ function isProfileComplete(profile) {
     return getMissingFields(profile).length === 0;
 }
 
+/**
+ * Delete a client by WhatsApp ID
+ * @param {string} whatsappId
+ */
+async function deleteClient(whatsappId) {
+    const clients = await loadClients();
+    if (!clients[whatsappId]) {
+        throw new Error('العميل غير موجود');
+    }
+    delete clients[whatsappId];
+    clientsCache = clients;
+    await saveClients();
+}
+
 module.exports = {
     getClient,
     upsertClient,
@@ -222,5 +236,6 @@ module.exports = {
     getAllClients,
     addConversationEntry,
     getMissingFields,
-    isProfileComplete
+    isProfileComplete,
+    deleteClient
 };
