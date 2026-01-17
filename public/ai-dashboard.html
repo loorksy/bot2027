@@ -2923,22 +2923,59 @@
           return;
         }
 
-        container.innerHTML = tickets.map(t => `
-          <div class="ticket-item">
-            <div class="ticket-header">
-              <span class="ticket-subject">${t.subject}</span>
-              <span class="badge badge-${t.status === 'open' ? 'warning' : t.status === 'resolved' ? 'success' : 'info'}">${t.status === 'open' ? 'مفتوحة' : t.status === 'resolved' ? 'محلولة' : 'مغلقة'}</span>
-            </div>
-            <div class="ticket-message">${t.message}</div>
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-              <span style="font-size: 10px; color: var(--text-dim);">${new Date(t.createdAt).toLocaleString('ar')}</span>
-              <div style="display: flex; gap: 4px;">
-                ${t.status === 'open' ? `<button class="btn btn-sm btn-primary" onclick="updateTicketStatus('${t.id}', 'resolved')">حل</button>` : ''}
-                <button class="btn btn-sm btn-danger" onclick="deleteTicket('${t.id}')">حذف</button>
+        container.innerHTML = tickets.map(t => {
+          const clientInfoHtml = t.clientInfo ? `
+            <div style="background: var(--bg); padding: 8px; border-radius: 6px; margin: 8px 0; font-size: 11px;">
+              <div style="color: var(--text-muted); margin-bottom: 4px;">📋 معلومات العميل:</div>
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+                ${t.clientInfo.fullName ? `<div><span style="color: var(--text-dim);">الاسم:</span> ${t.clientInfo.fullName}</div>` : ''}
+                ${t.clientInfo.phone ? `<div><span style="color: var(--text-dim);">الهاتف:</span> ${t.clientInfo.phone}</div>` : ''}
+                ${t.clientInfo.ids?.length ? `<div><span style="color: var(--text-dim);">IDs:</span> ${t.clientInfo.ids.join(', ')}</div>` : ''}
+                ${t.clientInfo.agencyName ? `<div><span style="color: var(--text-dim);">الوكالة:</span> ${t.clientInfo.agencyName}</div>` : ''}
               </div>
             </div>
-          </div>
-        `).join('');
+          ` : '';
+          
+          const messagesHtml = t.recentMessages?.length ? `
+            <details style="margin-top: 8px;">
+              <summary style="cursor: pointer; color: var(--primary); font-size: 11px; margin-bottom: 4px;">
+                💬 آخر ${t.recentMessages.length} رسالة
+              </summary>
+              <div style="background: var(--bg); padding: 8px; border-radius: 6px; max-height: 200px; overflow-y: auto; font-size: 10px;">
+                ${t.recentMessages.map(m => `
+                  <div style="margin-bottom: 6px; padding: 6px; background: var(--surface-2); border-radius: 4px;">
+                    <div style="color: ${m.sender === 'client' ? 'var(--primary)' : 'var(--warning)'}; font-weight: 600;">
+                      ${m.sender === 'client' ? 'عميل' : 'إدارة'}
+                    </div>
+                    <div style="color: var(--text);">${m.message}</div>
+                    <div style="color: var(--text-dim); font-size: 9px; margin-top: 2px;">
+                      ${new Date(m.timestamp).toLocaleString('ar', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </details>
+          ` : '';
+          
+          return `
+            <div class="ticket-item">
+              <div class="ticket-header">
+                <span class="ticket-subject">${t.subject}</span>
+                <span class="badge badge-${t.status === 'open' ? 'warning' : t.status === 'resolved' ? 'success' : 'info'}">${t.status === 'open' ? 'مفتوحة' : t.status === 'resolved' ? 'محلولة' : 'مغلقة'}</span>
+              </div>
+              <div class="ticket-message">${t.message}</div>
+              ${clientInfoHtml}
+              ${messagesHtml}
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <span style="font-size: 10px; color: var(--text-dim);">${new Date(t.createdAt).toLocaleString('ar')}</span>
+                <div style="display: flex; gap: 4px;">
+                  ${t.status === 'open' ? `<button class="btn btn-sm btn-primary" onclick="updateTicketStatus('${t.id}', 'resolved')">حل</button>` : ''}
+                  <button class="btn btn-sm btn-danger" onclick="deleteTicket('${t.id}')">حذف</button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
       } catch (err) {
         showAlert('فشل تحميل التذاكر', 'error');
       }
