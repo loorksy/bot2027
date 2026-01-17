@@ -790,6 +790,7 @@
 
     let clientData = null;
     let salariesData = [];
+    let notificationsData = [];
 
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
@@ -824,6 +825,15 @@
           salariesData = await api('GET', `/api/portal/${token}/salaries`);
         } catch (e) {
           salariesData = [];
+        }
+
+        // Load notifications
+        try {
+          const notifResult = await api('GET', `/api/portal/${token}/notifications`);
+          notificationsData = notifResult.notifications || [];
+          renderNotifications(notifResult.unreadCount || 0);
+        } catch (e) {
+          notificationsData = [];
         }
 
         renderData();
