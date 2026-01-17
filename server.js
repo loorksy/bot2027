@@ -2086,8 +2086,115 @@ app.delete('/api/admin/receipt/:clientId/:periodId', requireAdmin, async (req, r
   }
 });
 
-// Serve receipt images
+// Serve receipt images (old path - keep for compatibility)
 app.use('/uploads/receipts', express.static(path.join(__dirname, 'uploads/receipts')));
+
+// Serve receipt files (new path)
+app.use('/data/receipts', express.static(path.join(__dirname, 'data/receipts')));
+
+// =====================================================
+// NEW: Multiple Receipts per Client System
+// =====================================================
+
+// Upload receipt for a client
+app.post('/api/ai/clients/:clientKey/receipts', requireAdmin, receiptUpload.single('file'), async (req, res) => {
+  try {
+    const { clientKey } = req.params;
+    const { description } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'الرجاء اختيار ملف' });
+    }
+
+    // Verify client exists
+    const client = await registeredClients.getClientByKey(clientKey);
+    if (!client) {
+      return res.status(404).json({ error: 'العميل غير موجود' });
+    }
+
+    // Upload receipt
+    const receipt = await receipts.uploadReceipt(
+      clientKey,
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype,
+      description || ''
+    );
+
+    // Send WhatsApp notification
+    try {
+      const whatsappNumber = client.whatsappPhone || client.phone;
+      if (whatsappNumber && bot && bot.client && bot.isReady) {
+        const message = `🧾 *إيصال جديد*\n\nمرحباً ${client.fullName}،\n\nتم رفع إيصال جديد لحسابك.\nيمكنك الاطلاع عليه من خلال بوابتك الشخصية.\n\n📁 ${req.file.originalname}`;
+        const formattedNumber = whatsappNumber.replace(/[^0-9]/g, '') + '@c.us';
+        await bot.client.sendMessage(formattedNumber, message);
+        console.log(`[Receipts] WhatsApp notification sent to ${whatsappNumber}`);
+      }
+    } catch (notifyErr) {
+      console.error('[Receipts] WhatsApp notification failed:', notifyErr.message);
+    }
+
+    res.json({ success: true, receipt });
+  } catch (err) {
+    console.error('[Receipts] Upload error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get all receipts for a client (Admin)
+app.get('/api/ai/clients/:clientKey/receipts', requireAdmin, async (req, res) => {
+  try {
+    const { clientKey } = req.params;
+    const clientReceipts = await receipts.getClientReceipts(clientKey);
+    res.json(clientReceipts);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete a receipt (Admin)
+app.delete('/api/ai/receipts/:receiptId', requireAdmin, async (req, res) => {
+  try {
+    const { receiptId } = req.params;
+    await receipts.deleteReceipt(receiptId);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Download/View receipt file
+app.get('/api/receipts/file/:filename', async (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filepath = receipts.getReceiptPath(filename);
+    
+    if (!await receipts.fileExists(filename)) {
+      return res.status(404).json({ error: 'الملف غير موجود' });
+    }
+
+    res.sendFile(filepath);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Portal: Get receipts for client (by portal token)
+app.get('/api/portal/:token/receipts', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const clientKey = await portal.getClientKeyByToken(token);
+    
+    if (!clientKey) {
+      return res.status(404).json({ error: 'رابط غير صالح' });
+    }
+
+    const clientReceipts = await receipts.getClientReceipts(clientKey);
+    res.json(clientReceipts);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // =====================================================
 // Admin: Reset Client PIN
