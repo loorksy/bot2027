@@ -1155,7 +1155,7 @@ app.post('/api/ai/registered-clients/import-google-sheet', requireAdmin, async (
           country: row.country || row['الدولة'] || '',
           city: row.city || row['المدينة'] || '',
           address: row.address || row['العنوان'] || '',
-          agencyName: row.agencyName || row['الوكالة'] || row.agency || '',
+          agencyName: 'الوكالة الرئيسية', // Always set to main agency
           customFields: {}
         };
         
@@ -1287,7 +1287,7 @@ async function performGoogleSheetSync() {
           country: row.country || row['الدولة'] || '',
           city: row.city || row['المدينة'] || '',
           address: row.address || row['العنوان'] || '',
-          agencyName: row.agencyName || row['الوكالة'] || row.agency || '',
+          agencyName: 'الوكالة الرئيسية', // Always set to main agency
           customFields: {}
         };
 
