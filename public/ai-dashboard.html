@@ -2859,7 +2859,8 @@
     // =====================================================
     async function loadKnowledge() {
       try {
-        const items = await api('GET', '/api/ai/knowledge');
+        const result = await api('GET', '/api/ai/knowledge');
+        const items = result.knowledge || result || [];
         const container = document.getElementById('knowledgeList');
         
         if (!items.length) {
@@ -2872,7 +2873,7 @@
             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
               <div class="knowledge-question">${item.question}</div>
               <div style="display: flex; gap: 4px;">
-                <button class="btn btn-sm btn-secondary" onclick="toggleKnowledge('${item.id}', ${!item.active})">${item.active ? 'تعطيل' : 'تفعيل'}</button>
+                <button class="btn btn-sm btn-secondary" onclick="toggleKnowledge('${item.id}', ${!item.active})">${item.active !== false ? 'تعطيل' : 'تفعيل'}</button>
                 <button class="btn btn-sm btn-danger" onclick="deleteKnowledge('${item.id}')">حذف</button>
               </div>
             </div>
@@ -2880,7 +2881,7 @@
           </div>
         `).join('');
       } catch (err) {
-        showAlert('فشل تحميل قاعدة المعرفة', 'error');
+        console.error('Failed to load knowledge:', err);
       }
     }
 
