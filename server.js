@@ -2107,12 +2107,123 @@ io.use((socket, next) => {
 const portal = require('./src/ai_agent_v1/portal');
 const receipts = require('./src/ai_agent_v1/receipts');
 const notifications = require('./src/ai_agent_v1/notifications');
+const liveChat = require('./src/ai_agent_v1/liveChat');
 
 // Configure multer for receipt uploads (accepts all file types)
 const receiptStorage = multer.memoryStorage();
 const receiptUpload = multer({ 
   storage: receiptStorage,
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB max - accepts any file type
+});
+
+// ==========================================================
+// LIVE CHAT APIs (Admin)
+// ==========================================================
+
+// Get all chats
+app.get('/api/ai/chats', requireAdmin, async (req, res) => {
+  try {
+    const chats = await liveChat.getAllChats();
+    const totalUnread = await liveChat.getTotalUnreadForAdmin();
+    res.json({ chats, totalUnread });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get messages for a specific chat
+app.get('/api/ai/chats/:clientKey/messages', requireAdmin, async (req, res) => {
+  try {
+    const messages = await liveChat.getChatMessages(req.params.clientKey);
+    await liveChat.markReadByAdmin(req.params.clientKey);
+    res.json({ messages });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Send message from admin
+app.post('/api/ai/chats/:clientKey/messages', requireAdmin, async (req, res) => {
+  try {
+    const { message } = req.body;
+    if (!message || !message.trim()) {
+      return res.status(400).json({ error: 'الرسالة مطلوبة' });
+    }
+    const msg = await liveChat.sendAdminMessage(req.params.clientKey, message);
+    res.json({ success: true, message: msg });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete chat
+app.delete('/api/ai/chats/:clientKey', requireAdmin, async (req, res) => {
+  try {
+    await liveChat.deleteChat(req.params.clientKey);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get unread count
+app.get('/api/ai/chats/unread/count', requireAdmin, async (req, res) => {
+  try {
+    const count = await liveChat.getTotalUnreadForAdmin();
+    res.json({ count });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================================
+// LIVE CHAT APIs (Portal/Client)
+// ==========================================================
+
+// Get chat messages for client
+app.get('/api/portal/:token/chat/messages', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const clientKey = await portal.getClientKeyByToken(token);
+    
+    if (!clientKey) {
+      return res.status(404).json({ error: 'رابط غير صالح' });
+    }
+    
+    const messages = await liveChat.getChatMessages(clientKey);
+    const unread = await liveChat.getUnreadForClient(clientKey);
+    await liveChat.markReadByClient(clientKey);
+    
+    res.json({ messages, unread });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Send message from client
+app.post('/api/portal/:token/chat/messages', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { message } = req.body;
+    
+    if (!message || !message.trim()) {
+      return res.status(400).json({ error: 'الرسالة مطلوبة' });
+    }
+    
+    const clientKey = await portal.getClientKeyByToken(token);
+    
+    if (!clientKey) {
+      return res.status(404).json({ error: 'رابط غير صالح' });
+    }
+    
+    const registeredClients = require('./src/ai_agent_v1/registeredClients');
+    const client = await registeredClients.getClientByKey(clientKey);
+    
+    const msg = await liveChat.sendClientMessage(clientKey, client?.fullName, message);
+    res.json({ success: true, message: msg });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ==========================================================
