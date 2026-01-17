@@ -456,6 +456,7 @@ function validateAndCleanAnalysis(result) {
 module.exports = {
     loadSettings,
     getSettings,
+    getSettingsInternal,
     updateSettings,
     isEnabled,
     analyzeMessage,
