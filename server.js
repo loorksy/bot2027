@@ -534,6 +534,13 @@ app.post('/api/ai/settings', requireAdmin, async (req, res) => {
       googleSheetSyncState.sheetName = body.googleSheetNameAuto || '';
       googleSheetSyncState.interval = body.googleSheetSyncInterval || 5;
 
+      console.log('[Google Sheet Sync] Settings updated:', {
+        enabled: googleSheetSyncState.enabled,
+        url: googleSheetSyncState.url,
+        sheetName: googleSheetSyncState.sheetName,
+        interval: googleSheetSyncState.interval
+      });
+
       if (googleSheetSyncState.enabled && googleSheetSyncState.url) {
         startAutoSync(googleSheetSyncState.interval);
       } else {
@@ -544,6 +551,17 @@ app.post('/api/ai/settings', requireAdmin, async (req, res) => {
     res.json({ success: true, message: 'Settings updated' });
   } catch (err) {
     console.error('[API] Settings save error:', err); // DEBUG LOG
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Manual trigger Google Sheet Sync
+app.post('/api/ai/google-sheet/sync-now', requireAdmin, async (req, res) => {
+  try {
+    console.log('[Google Sheet Sync] Manual sync triggered');
+    const result = await performGoogleSheetSync();
+    res.json(result);
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
