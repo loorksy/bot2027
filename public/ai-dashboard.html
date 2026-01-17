@@ -3541,18 +3541,41 @@
     };
 
     window.uploadReceipt = async function() {
-      if (!selectedReceiptFile || !currentReceiptsClientKey) {
-        showAlert('يرجى اختيار ملف', 'error');
+      if (!currentReceiptsClientKey) {
+        showAlert('خطأ: لم يتم تحديد العميل', 'error');
         return;
+      }
+      
+      // Check receipt type
+      const fileSection = document.getElementById('receiptDropZone');
+      const isTextOnly = fileSection.style.display === 'none';
+      const description = document.getElementById('receiptDescription').value.trim();
+      
+      // Validation
+      if (isTextOnly) {
+        if (!description) {
+          showAlert('يرجى إدخال معلومات الإيصال', 'error');
+          return;
+        }
+      } else {
+        if (!selectedReceiptFile) {
+          showAlert('يرجى اختيار ملف', 'error');
+          return;
+        }
       }
 
       try {
         const formData = new FormData();
-        formData.append('file', selectedReceiptFile);
-        formData.append('description', document.getElementById('receiptDescription').value || '');
+        
+        if (!isTextOnly) {
+          formData.append('file', selectedReceiptFile);
+        }
+        
+        formData.append('description', description);
+        formData.append('isTextOnly', isTextOnly);
 
         await api('POST', `/api/ai/clients/${currentReceiptsClientKey}/receipts`, formData);
-        showAlert('تم رفع الإيصال بنجاح');
+        showAlert(isTextOnly ? 'تم حفظ الإيصال النصي بنجاح ✅' : 'تم رفع الإيصال بنجاح ✅');
         clearSelectedFile();
         document.getElementById('receiptDescription').value = '';
         await loadClientReceipts();
@@ -3575,14 +3598,18 @@
 
         container.innerHTML = receipts.map(r => {
           const date = new Date(r.uploadedAt).toLocaleDateString('ar');
+          const isText = r.isTextOnly || !r.filename;
           return `
             <div class="receipt-item" style="background: var(--bg); padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
-              <div>
-                <div style="font-weight: 500; font-size: 12px;">${r.originalName}</div>
-                <div style="font-size: 10px; color: var(--text-muted);">${date} ${r.description ? '• ' + r.description : ''}</div>
+              <div style="flex: 1;">
+                <div style="font-weight: 500; font-size: 12px;">
+                  ${isText ? '📝 إيصال نصي' : '📁 ' + r.originalName}
+                </div>
+                <div style="font-size: 10px; color: var(--text-muted);">${date}</div>
+                ${r.description ? `<div style="font-size: 11px; color: var(--text); margin-top: 4px; padding: 8px; background: var(--surface); border-radius: 4px; white-space: pre-wrap;">${r.description}</div>` : ''}
               </div>
               <div style="display: flex; gap: 4px;">
-                <a href="/api/receipts/file/${r.filename}" target="_blank" class="btn btn-sm btn-secondary">عرض</a>
+                ${!isText ? `<a href="/api/receipts/file/${r.filename}" target="_blank" class="btn btn-sm btn-secondary">عرض</a>` : ''}
                 <button class="btn btn-sm btn-danger" onclick="deleteReceipt('${r.id}')">حذف</button>
               </div>
             </div>
