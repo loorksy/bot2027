@@ -11,18 +11,10 @@ logs/
 
 # Env files
 .env
+*.env.*
 
-# Ignored Folders
-temp/
-uploads/
-data/sessions/
-data/ai_settings.json
-
-# Data files (contain user data)
-data/ai_clients.json
-data/ai_usage_log.json
-data/lookups.json
-data/skippedLogs.json
+# Data folder - ALL client data stays on server only
+data/
 
 # Accounting sensitive data
 src/accounting/data/*.json
@@ -33,71 +25,7 @@ prisma/migrations/
 # IDE
 .vscode/
 .idea/
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
+
+# Uploads
+uploads/
+temp/
