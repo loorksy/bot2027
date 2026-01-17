@@ -2689,6 +2689,121 @@
       }
     };
 
+    // OpenRouter Models Management
+    let allOpenRouterModels = [];
+    
+    window.loadOpenRouterModels = async function() {
+      const btn = event.target;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '⏳ جاري التحميل...';
+      btn.disabled = true;
+      
+      try {
+        const result = await api('GET', '/api/ai/openrouter/models');
+        if (result.success && result.models) {
+          allOpenRouterModels = result.models;
+          renderOpenRouterModels(result.models);
+          document.getElementById('modelsCount').textContent = `(${result.models.length} موديل)`;
+          showAlert(`✅ تم تحميل ${result.models.length} موديل`);
+        }
+      } catch (err) {
+        showAlert('❌ فشل تحميل الموديلات: ' + err.message, 'error');
+      } finally {
+        btn.innerHTML = '🔄 تحميل الموديلات';
+        btn.disabled = false;
+      }
+    };
+    
+    function renderOpenRouterModels(models) {
+      const select = document.getElementById('openrouterModel');
+      const currentValue = select.value;
+      
+      // Group models by provider
+      const groups = {};
+      models.forEach(model => {
+        const provider = model.id.split('/')[0] || 'other';
+        if (!groups[provider]) groups[provider] = [];
+        groups[provider].push(model);
+      });
+      
+      // Provider icons
+      const icons = {
+        'openai': '🟢',
+        'anthropic': '🟣',
+        'google': '🔵',
+        'meta-llama': '🟡',
+        'mistralai': '🔴',
+        'deepseek': '⚫',
+        'qwen': '🟠',
+        'cohere': '🟤',
+        'perplexity': '🔷',
+        'default': '⚪'
+      };
+      
+      select.innerHTML = '';
+      
+      // Sort providers
+      const sortedProviders = Object.keys(groups).sort();
+      
+      sortedProviders.forEach(provider => {
+        const optgroup = document.createElement('optgroup');
+        const icon = icons[provider] || icons['default'];
+        optgroup.label = `${icon} ${provider}`;
+        
+        groups[provider].forEach(model => {
+          const option = document.createElement('option');
+          option.value = model.id;
+          const isFree = model.id.includes(':free') || (model.pricing?.prompt === '0' && model.pricing?.completion === '0');
+          option.textContent = `${model.name}${isFree ? ' (مجاني)' : ''}`;
+          optgroup.appendChild(option);
+        });
+        
+        select.appendChild(optgroup);
+      });
+      
+      // Restore selection
+      if (currentValue) {
+        select.value = currentValue;
+      }
+      
+      // Update selected model info
+      updateSelectedModelInfo();
+    }
+    
+    window.filterOpenRouterModels = function() {
+      const searchTerm = document.getElementById('openrouterModelSearch').value.toLowerCase();
+      
+      if (!searchTerm) {
+        renderOpenRouterModels(allOpenRouterModels);
+        return;
+      }
+      
+      const filtered = allOpenRouterModels.filter(model => 
+        model.id.toLowerCase().includes(searchTerm) || 
+        model.name.toLowerCase().includes(searchTerm)
+      );
+      
+      renderOpenRouterModels(filtered);
+      document.getElementById('modelsCount').textContent = `(${filtered.length} من ${allOpenRouterModels.length})`;
+    };
+    
+    function updateSelectedModelInfo() {
+      const select = document.getElementById('openrouterModel');
+      const selectedOption = select.options[select.selectedIndex];
+      const infoDiv = document.getElementById('selectedModelInfo');
+      const nameSpan = document.getElementById('selectedModelName');
+      
+      if (selectedOption && selectedOption.value) {
+        nameSpan.textContent = selectedOption.textContent;
+        infoDiv.style.display = 'block';
+      } else {
+        infoDiv.style.display = 'none';
+      }
+    }
+    
+    // Add change listener for model select
+    document.getElementById('openrouterModel')?.addEventListener('change', updateSelectedModelInfo);
+
     // Toggle Auto Sync Settings
     window.toggleAutoSyncSettings = function() {
       const enabled = document.getElementById('googleSheetAutoSync').checked;
