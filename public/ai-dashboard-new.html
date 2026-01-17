@@ -1205,3 +1205,740 @@
         </a>
       </div>
     </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Settings Tab -->
+      <div id="settings" class="tab-content active" data-testid="settings-tab">
+        <div class="page-header">
+          <div>
+            <div class="page-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+              إعدادات AI
+            </div>
+            <div class="page-subtitle">تحكم في إعدادات الذكاء الاصطناعي والبوت</div>
+          </div>
+          <button class="btn btn-primary" id="saveSettingsBtn" data-testid="save-settings-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            حفظ الإعدادات
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/></svg>
+              الذكاء الاصطناعي
+            </div>
+            <div class="form-switch">
+              <label class="switch">
+                <input type="checkbox" id="aiEnabled">
+                <span class="switch-slider"></span>
+              </label>
+              <span style="font-size: 11px; color: var(--text-muted);">تفعيل AI Agent</span>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">مزود الذكاء الاصطناعي</label>
+              <select class="form-select" id="aiProvider">
+                <option value="openai">OpenAI</option>
+                <option value="openrouter">OpenRouter</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="openaiSettings">
+            <div class="form-group">
+              <label class="form-label">OpenAI API Key</label>
+              <input type="password" class="form-input" id="openaiKey" placeholder="sk-..." data-testid="openai-key">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">موديل المحادثة (Chat)</label>
+                <select class="form-select" id="modelChat">
+                  <option value="gpt-4o-mini">GPT-4o Mini (أرخص)</option>
+                  <option value="gpt-4o">GPT-4o</option>
+                  <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">موديل تحويل الصوت لنص (STT)</label>
+                <select class="form-select" id="modelStt">
+                  <option value="whisper-1">Whisper-1</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">موديل تحويل النص لصوت (TTS)</label>
+                <select class="form-select" id="modelTts">
+                  <option value="tts-1">TTS-1 (سريع)</option>
+                  <option value="tts-1-hd">TTS-1-HD (جودة عالية)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">صوت TTS</label>
+                <select class="form-select" id="voiceTts">
+                  <option value="alloy">Alloy</option>
+                  <option value="echo">Echo</option>
+                  <option value="fable">Fable</option>
+                  <option value="onyx">Onyx</option>
+                  <option value="nova">Nova</option>
+                  <option value="shimmer">Shimmer</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div id="openrouterSettings" class="hidden">
+            <div class="form-group">
+              <label class="form-label">OpenRouter API Key</label>
+              <input type="password" class="form-input" id="openrouterKey" placeholder="sk-or-..." data-testid="openrouter-key">
+            </div>
+            <div class="form-group">
+              <label class="form-label">موديل OpenRouter</label>
+              <select class="form-select" id="openrouterModel">
+                <option value="openai/gpt-4o-mini">OpenAI GPT-4o Mini</option>
+              </select>
+              <button class="btn btn-sm btn-secondary" style="margin-top: 8px;" onclick="loadOpenRouterModels()">
+                تحميل الموديلات المتاحة
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></svg>
+              شخصية البوت
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">اسم البوت</label>
+              <input type="text" class="form-input" id="botName" value="مساعد أبو سلطان" data-testid="bot-name">
+            </div>
+            <div class="form-group">
+              <label class="form-label">اسم المالك</label>
+              <input type="text" class="form-input" id="ownerName" value="أبو سلطان" data-testid="owner-name">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">اللهجة</label>
+              <select class="form-select" id="dialect">
+                <option value="سورية">سورية</option>
+                <option value="لبنانية">لبنانية</option>
+                <option value="مصرية">مصرية</option>
+                <option value="خليجية">خليجية</option>
+                <option value="فصحى">فصحى</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">جنس العميل الافتراضي</label>
+              <select class="form-select" id="clientGender">
+                <option value="مؤنث">مؤنث</option>
+                <option value="مذكر">مذكر</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">مستوى الودية</label>
+              <select class="form-select" id="friendliness">
+                <option value="عالي">عالي (صديقة)</option>
+                <option value="متوسط">متوسط (مهنية)</option>
+                <option value="منخفض">منخفض (رسمية)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">عملة الراتب</label>
+              <input type="text" class="form-input" id="salaryCurrency" value="ر.س" data-testid="salary-currency">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">رسالة التواصل مع الإدارة</label>
+            <input type="text" class="form-input" id="adminContact" value="تواصلي مع الإدارة">
+          </div>
+
+          <div class="form-switch" style="margin-top: 12px;">
+            <label class="switch">
+              <input type="checkbox" id="enableVoiceReplies">
+              <span class="switch-slider"></span>
+            </label>
+            <span style="font-size: 11px; color: var(--text-muted);">تفعيل الردود الصوتية</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              إعدادات الجلسة
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">مدة الجلسة الموثوقة (دقائق)</label>
+              <input type="number" class="form-input" id="trustedSessionMinutes" value="15">
+            </div>
+            <div class="form-group">
+              <label class="form-label">نسبة الوكالة الافتراضية (%)</label>
+              <input type="number" class="form-input" id="agencyPercent" value="0" step="0.1">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom Fields Tab -->
+      <div id="fields" class="tab-content" data-testid="fields-tab">
+        <div class="page-header">
+          <div>
+            <div class="page-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+              الحقول المخصصة
+            </div>
+            <div class="page-subtitle">أضف حقول إضافية لبيانات العملاء</div>
+          </div>
+          <button class="btn btn-secondary" id="refreshFieldsBtn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+            تحديث
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">إضافة حقل جديد</div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">اسم الحقل</label>
+              <input type="text" class="form-input" id="fieldName" placeholder="مثال: رقم الحساب">
+            </div>
+            <div class="form-group">
+              <label class="form-label">نوع الحقل</label>
+              <select class="form-select" id="fieldType">
+                <option value="text">نص</option>
+                <option value="number">رقم</option>
+                <option value="dropdown">قائمة منسدلة</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="dropdownOptionsContainer" class="hidden">
+            <label class="form-label">خيارات القائمة</label>
+            <div id="dropdownOptions"></div>
+            <button type="button" class="btn btn-sm btn-secondary" style="margin-top: 8px;" onclick="addDropdownOptionInputWithSubField()">+ إضافة خيار</button>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-top: 16px;">
+            <button class="btn btn-primary" id="addFieldBtn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+              إضافة الحقل
+            </button>
+            <button class="btn btn-secondary hidden" id="cancelEditFieldBtn" onclick="cancelEdit()">إلغاء التعديل</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">الحقول الحالية</div>
+          </div>
+          <div id="fieldsList"></div>
+        </div>
+      </div>
+
+      <!-- Registered Clients Tab -->
+      <div id="registered" class="tab-content" data-testid="registered-tab">
+        <div class="page-header">
+          <div>
+            <div class="page-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              العملاء المسجلين
+            </div>
+            <div class="page-subtitle">إدارة بيانات العملاء</div>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-secondary" id="refreshRegClientsBtn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+              تحديث
+            </button>
+            <button class="btn btn-primary" id="addRegClientBtn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+              إضافة عميل
+            </button>
+          </div>
+        </div>
+
+        <div class="search-box">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="searchRegClientInput" placeholder="بحث بالاسم أو ID أو الهاتف..." data-testid="search-clients">
+        </div>
+
+        <div class="stats-grid" id="clientsStats"></div>
+
+        <div class="table-container">
+          <table class="data-table" id="registeredClientsTable">
+            <thead>
+              <tr>
+                <th>الاسم</th>
+                <th>IDs</th>
+                <th>الهاتف</th>
+                <th>الوكالة</th>
+                <th>إجراءات</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="mobile-cards" id="registeredClientsMobile"></div>
+      </div>
+
+      <!-- Linked Clients Tab -->
+      <div id="linked" class="tab-content" data-testid="linked-tab">
+        <div class="page-header">
+          <div>
+            <div class="page-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              العملاء المربوطين
+            </div>
+            <div class="page-subtitle">العملاء المتصلين عبر واتساب</div>
+          </div>
+          <button class="btn btn-secondary" id="refreshLinkedClientsBtn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+            تحديث
+          </button>
+        </div>
+
+        <div class="table-container">
+          <table class="data-table" id="linkedClientsTable">
+            <thead>
+              <tr>
+                <th>رقم واتساب</th>
+                <th>الاسم</th>
+                <th>الحالة</th>
+                <th>آخر تواصل</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="mobile-cards" id="linkedClientsMobile"></div>
+      </div>
+
+      <!-- Salary Tab -->
+      <div id="salary" class="tab-content" data-testid="salary-tab">
+        <div class="page-header">
+          <div>
+            <div class="page-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+              إدارة الرواتب
+            </div>
+            <div class="page-subtitle">رفع وإدارة ملفات الرواتب</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">رفع ملف رواتب جديد</div>
+          </div>
+
+          <div class="file-upload-area" id="fileUploadArea">
+            <input type="file" id="salaryFile" accept=".csv,.xlsx,.xls" style="display: none;">
+            <svg class="file-upload-icon" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>
+            </svg>
+            <div class="file-upload-text">اضغط أو اسحب الملف هنا</div>
+            <div class="file-upload-hint">CSV, Excel (حد أقصى 10MB)</div>
+          </div>
+
+          <div id="uploadPreview" class="hidden" style="margin-top: 16px;">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">اسم الفترة</label>
+                <input type="text" class="form-input" id="periodName" placeholder="مثال: يناير 2026">
+              </div>
+              <div class="form-group">
+                <label class="form-label">نسبة الخصم (%)</label>
+                <input type="number" class="form-input" id="uploadAgencyPercent" value="0" step="0.1">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">عمود ID</label>
+                <select class="form-select" id="idColumn"></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">عمود الراتب</label>
+                <select class="form-select" id="salaryColumn"></select>
+              </div>
+            </div>
+            <div id="previewTable" style="margin: 16px 0; max-height: 200px; overflow: auto;"></div>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn btn-primary" id="uploadBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" x2="12" y1="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+                رفع الملف
+              </button>
+              <button class="btn btn-secondary" id="cancelUploadBtn">إلغاء</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">فترات الرواتب</div>
+          </div>
+          <div id="periodsList"></div>
+        </div>
+      </div>
+
+      <!-- Notifications Tab -->
+      <div id="notifications" class="tab-content" data-testid="notifications-tab">
+        <div class="page-header">
+          <div>
+            <div class="page-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+              الإشعارات
+            </div>
+            <div class="page-subtitle">إرسال إشعارات للعملاء</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">إرسال إشعار جديد</div>
+          </div>
+          <form id="notificationForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">العنوان</label>
+                <input type="text" class="form-input" id="notifTitle" placeholder="عنوان الإشعار" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">النوع</label>
+                <select class="form-select" id="notifType">
+                  <option value="info">معلومات</option>
+                  <option value="success">نجاح</option>
+                  <option value="warning">تحذير</option>
+                  <option value="celebration">احتفال</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">الرسالة</label>
+              <textarea class="form-textarea" id="notifMessage" placeholder="نص الإشعار..." required></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">الفئة المستهدفة</label>
+              <select class="form-select" id="notifTarget">
+                <option value="all">جميع العملاء</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4Z"/></svg>
+              إرسال الإشعار
+            </button>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">الإشعارات المرسلة</div>
+          </div>
+          <div id="notificationsList"></div>
+        </div>
+      </div>
+
+      <!-- Chats Tab -->
+      <div id="chats" class="tab-content" data-testid="chats-tab">
+        <div class="page-header">
+          <div>
+            <div class="page-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+              الدردشات الحية
+            </div>
+            <div class="page-subtitle">تواصل مباشر مع العملاء</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 16px;">
+          <div class="card" style="margin-bottom: 0;">
+            <div class="card-header">
+              <div class="card-title">المحادثات</div>
+            </div>
+            <div class="chat-list" id="chatsList"></div>
+          </div>
+
+          <div class="card" style="margin-bottom: 0;">
+            <div class="card-header">
+              <div class="card-title" id="currentChatTitle">اختر محادثة</div>
+            </div>
+            <div class="chat-messages-container" id="chatMessagesContainer"></div>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" class="form-input" id="adminChatInput" placeholder="اكتب رسالتك..." style="flex: 1;">
+              <button class="btn btn-primary" onclick="sendAdminChatMessage()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4Z"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tickets Tab -->
+      <div id="tickets" class="tab-content" data-testid="tickets-tab">
+        <div class="page-header">
+          <div>
+            <div class="page-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/></svg>
+              تذاكر الدعم
+            </div>
+            <div class="page-subtitle">طلبات ومشاكل العملاء</div>
+          </div>
+        </div>
+
+        <div class="stats-grid" id="ticketsStats"></div>
+        <div id="ticketsList"></div>
+      </div>
+
+      <!-- Knowledge Tab -->
+      <div id="knowledge" class="tab-content" data-testid="knowledge-tab">
+        <div class="page-header">
+          <div>
+            <div class="page-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+              قاعدة المعرفة
+            </div>
+            <div class="page-subtitle">أسئلة شائعة وإجابات جاهزة</div>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="resetKnowledge()">
+            إعادة تعيين
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">إضافة سؤال جديد</div>
+          </div>
+          <form id="knowledgeForm">
+            <div class="form-group">
+              <label class="form-label">السؤال</label>
+              <input type="text" class="form-input" id="kbQuestion" placeholder="مثال: كيف أعرف راتبي؟" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">الإجابة</label>
+              <textarea class="form-textarea" id="kbAnswer" placeholder="الإجابة..." required></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">كلمات مفتاحية (مفصولة بفاصلة)</label>
+              <input type="text" class="form-input" id="kbKeywords" placeholder="راتب, معاش, فلوس">
+            </div>
+            <button type="submit" class="btn btn-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+              إضافة
+            </button>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">الأسئلة الحالية</div>
+          </div>
+          <div id="knowledgeList"></div>
+        </div>
+      </div>
+
+      <!-- Usage Tab -->
+      <div id="usage" class="tab-content" data-testid="usage-tab">
+        <div class="page-header">
+          <div>
+            <div class="page-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>
+              الاستهلاك
+            </div>
+            <div class="page-subtitle">إحصائيات استخدام AI</div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary" id="refreshUsageBtn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+              تحديث
+            </button>
+            <button class="btn btn-danger btn-sm" id="resetUsageBtn">إعادة تعيين</button>
+          </div>
+        </div>
+
+        <div class="stats-grid" id="usageStats"></div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">سجل الاستخدام</div>
+          </div>
+          <div class="table-container">
+            <table class="data-table" id="usageTable">
+              <thead>
+                <tr>
+                  <th>التاريخ</th>
+                  <th>النوع</th>
+                  <th>التوكنات</th>
+                  <th>التكلفة</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Bottom Navigation (Mobile) -->
+  <nav class="bottom-nav">
+    <button class="bottom-nav-item active" data-tab="settings">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      <span>إعدادات</span>
+    </button>
+    <button class="bottom-nav-item" data-tab="registered">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>العملاء</span>
+    </button>
+    <button class="bottom-nav-item" data-tab="chats">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+      <span>الدردشات</span>
+      <span id="mobileChatsBadge" class="mobile-badge hidden">0</span>
+    </button>
+    <button class="bottom-nav-item" onclick="openMenuDrawer()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+      <span>المزيد</span>
+    </button>
+  </nav>
+
+  <!-- Menu Drawer (Mobile) -->
+  <div class="menu-drawer" id="menuDrawer" onclick="closeMenuDrawer()">
+    <div class="menu-drawer-content" onclick="event.stopPropagation()">
+      <div class="menu-drawer-item" data-tab="salary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+        الرواتب
+      </div>
+      <div class="menu-drawer-item" data-tab="notifications">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+        الإشعارات
+      </div>
+      <div class="menu-drawer-item" data-tab="tickets">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/></svg>
+        التذاكر
+      </div>
+      <div class="menu-drawer-item" data-tab="knowledge">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+        قاعدة المعرفة
+      </div>
+      <div class="menu-drawer-item" data-tab="fields">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/></svg>
+        الحقول المخصصة
+      </div>
+      <div class="menu-drawer-item" data-tab="linked">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        العملاء المربوطين
+      </div>
+      <div class="menu-drawer-item" data-tab="usage">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>
+        الاستهلاك
+      </div>
+    </div>
+  </div>
+
+  <!-- Client Modal -->
+  <div class="modal" id="clientModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title" id="clientModalTitle">إضافة عميل</div>
+        <button class="modal-close" onclick="closeClientModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="clientForm">
+          <input type="hidden" id="editingClientKey">
+          <div class="form-group">
+            <label class="form-label">الاسم الكامل *</label>
+            <input type="text" class="form-input" id="regFullName" required data-testid="client-name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">أرقام ID (مفصولة بفاصلة) *</label>
+            <input type="text" class="form-input" id="regIds" placeholder="123456, 789012" required data-testid="client-ids">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">الهاتف</label>
+              <input type="tel" class="form-input" id="regPhone" data-testid="client-phone">
+            </div>
+            <div class="form-group">
+              <label class="form-label">واتساب</label>
+              <input type="tel" class="form-input" id="regWhatsapp" data-testid="client-whatsapp">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">الدولة</label>
+              <select class="form-select" id="regCountry"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">المدينة</label>
+              <select class="form-select" id="regCity"></select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">العنوان</label>
+            <input type="text" class="form-input" id="regAddress">
+          </div>
+          <div class="form-group">
+            <label class="form-label">الوكالة</label>
+            <select class="form-select" id="regAgency"></select>
+          </div>
+          <div id="customFieldsContainer"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeClientModal()">إلغاء</button>
+        <button class="btn btn-secondary" id="clearRegFormBtn">مسح</button>
+        <button class="btn btn-primary" id="saveClientBtn">حفظ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notify Modal -->
+  <div class="modal" id="notifyModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">إرسال إشعار</div>
+        <button class="modal-close" onclick="closeNotifyModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p id="notifyClientInfo" style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;"></p>
+        <div class="inner-tabs">
+          <button class="inner-tab active" onclick="toggleNotifyType('salary')">إشعار الراتب</button>
+          <button class="inner-tab" onclick="toggleNotifyType('custom')">رسالة مخصصة</button>
+        </div>
+        <div id="notifyCustomContainer" class="hidden">
+          <div class="form-group">
+            <label class="form-label">الرسالة</label>
+            <textarea class="form-textarea" id="notifyCustomMessage" placeholder="اكتب رسالتك هنا..."></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeNotifyModal()">إلغاء</button>
+        <button class="btn btn-primary" onclick="sendNotification()">إرسال</button>
+      </div>
+    </div>
+  </div>
+
