@@ -2146,6 +2146,202 @@
       }
     }
 
+    // =====================================================
+    // TICKETS MANAGEMENT
+    // =====================================================
+
+    async function loadTickets() {
+      try {
+        const status = document.getElementById('ticketStatusFilter').value;
+        const url = status ? `/api/ai/tickets?status=${status}` : '/api/ai/tickets';
+        const result = await api('GET', url);
+        
+        // Update stats
+        if (result.stats) {
+          document.getElementById('ticketsOpen').textContent = result.stats.open || 0;
+          document.getElementById('ticketsInProgress').textContent = result.stats.inProgress || 0;
+          document.getElementById('ticketsResolved').textContent = result.stats.resolved || 0;
+          
+          // Update badge
+          const badge = document.getElementById('ticketsBadge');
+          if (result.stats.open > 0) {
+            badge.textContent = result.stats.open;
+            badge.style.display = 'inline';
+          } else {
+            badge.style.display = 'none';
+          }
+        }
+        
+        const container = document.getElementById('ticketsList');
+        const tickets = result.tickets || [];
+        
+        if (tickets.length === 0) {
+          container.innerHTML = '<p style="color: #666; text-align: center;">لا توجد طلبات</p>';
+          return;
+        }
+        
+        const statusLabels = {
+          'open': 'مفتوحة',
+          'in_progress': 'قيد المعالجة',
+          'resolved': 'تم الحل',
+          'closed': 'مغلقة'
+        };
+        
+        container.innerHTML = tickets.map(t => {
+          const date = new Date(t.createdAt).toLocaleDateString('ar', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          
+          return `
+            <div class="ticket-item ${t.status}">
+              <div class="ticket-header">
+                <span class="ticket-number">${t.ticketNumber}</span>
+                <span class="ticket-status ${t.status}">${statusLabels[t.status] || t.status}</span>
+              </div>
+              <div class="ticket-client">👤 ${t.clientName}</div>
+              <div class="ticket-message">${t.message}</div>
+              <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 10px;">
+                📅 ${date} | 📱 ${t.whatsappId || '-'}
+              </div>
+              <div class="ticket-actions">
+                ${t.status === 'open' ? `<button class="btn btn-warning btn-sm" onclick="updateTicketStatus('${t.id}', 'in_progress')">🔄 قيد المعالجة</button>` : ''}
+                ${t.status !== 'resolved' && t.status !== 'closed' ? `<button class="btn btn-success btn-sm" onclick="updateTicketStatus('${t.id}', 'resolved')">✅ تم الحل</button>` : ''}
+                ${t.status !== 'closed' ? `<button class="btn btn-secondary btn-sm" onclick="updateTicketStatus('${t.id}', 'closed')">🔒 إغلاق</button>` : ''}
+                <button class="btn btn-danger btn-sm" onclick="deleteTicket('${t.id}')">🗑️ حذف</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+      } catch (err) {
+        showAlert('فشل تحميل الطلبات: ' + err.message, 'error');
+      }
+    }
+
+    async function updateTicketStatus(id, status) {
+      try {
+        await api('PUT', `/api/ai/tickets/${id}/status`, { status });
+        showAlert('تم تحديث حالة الطلب');
+        loadTickets();
+      } catch (err) {
+        showAlert('فشل التحديث: ' + err.message, 'error');
+      }
+    }
+
+    async function deleteTicket(id) {
+      if (!confirm('هل تريد حذف هذا الطلب؟')) return;
+      
+      try {
+        await api('DELETE', `/api/ai/tickets/${id}`);
+        showAlert('تم حذف الطلب');
+        loadTickets();
+      } catch (err) {
+        showAlert('فشل الحذف: ' + err.message, 'error');
+      }
+    }
+
+    // =====================================================
+    // KNOWLEDGE BASE MANAGEMENT
+    // =====================================================
+
+    async function loadKnowledge() {
+      try {
+        const result = await api('GET', '/api/ai/knowledge');
+        const container = document.getElementById('knowledgeList');
+        const knowledge = result.knowledge || [];
+        
+        if (knowledge.length === 0) {
+          container.innerHTML = '<p style="color: #666; text-align: center;">لا توجد معرفة مسجلة</p>';
+          return;
+        }
+        
+        container.innerHTML = knowledge.map(k => `
+          <div class="kb-item">
+            <span class="kb-category">${k.category}</span>
+            <div class="kb-question">❓ ${k.question}</div>
+            <div class="kb-keywords">
+              ${(k.keywords || []).map(kw => `<span class="kb-keyword">${kw}</span>`).join('')}
+            </div>
+            <div class="kb-answer">💬 ${k.answer}</div>
+            <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center;">
+              ${k.sendPortalLink ? '<span style="color: #00d4ff; font-size: 0.8rem;">🔗 يرسل رابط البوابة</span>' : ''}
+              <span style="color: ${k.active ? '#22c55e' : '#ef4444'}; font-size: 0.8rem;">${k.active ? '✅ مفعل' : '❌ معطل'}</span>
+              <button class="btn btn-sm ${k.active ? 'btn-warning' : 'btn-success'}" onclick="toggleKnowledge('${k.id}', ${!k.active})">${k.active ? 'تعطيل' : 'تفعيل'}</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteKnowledge('${k.id}')">🗑️</button>
+            </div>
+          </div>
+        `).join('');
+        
+      } catch (err) {
+        showAlert('فشل تحميل قاعدة المعرفة: ' + err.message, 'error');
+      }
+    }
+
+    async function toggleKnowledge(id, active) {
+      try {
+        await api('PUT', `/api/ai/knowledge/${id}`, { active });
+        showAlert(active ? 'تم تفعيل المعرفة' : 'تم تعطيل المعرفة');
+        loadKnowledge();
+      } catch (err) {
+        showAlert('فشل التحديث: ' + err.message, 'error');
+      }
+    }
+
+    async function deleteKnowledge(id) {
+      if (!confirm('هل تريد حذف هذه المعرفة؟')) return;
+      
+      try {
+        await api('DELETE', `/api/ai/knowledge/${id}`);
+        showAlert('تم الحذف');
+        loadKnowledge();
+      } catch (err) {
+        showAlert('فشل الحذف: ' + err.message, 'error');
+      }
+    }
+
+    async function resetKnowledge() {
+      if (!confirm('هل تريد استعادة قاعدة المعرفة الافتراضية؟ سيتم حذف جميع الإضافات.')) return;
+      
+      try {
+        await api('POST', '/api/ai/knowledge/reset');
+        showAlert('تم استعادة الإعدادات الافتراضية');
+        loadKnowledge();
+      } catch (err) {
+        showAlert('فشل: ' + err.message, 'error');
+      }
+    }
+
+    // Knowledge form submit
+    document.getElementById('knowledgeForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const category = document.getElementById('kbCategory').value.trim();
+      const question = document.getElementById('kbQuestion').value.trim();
+      const keywords = document.getElementById('kbKeywords').value.split(',').map(k => k.trim()).filter(k => k);
+      const answer = document.getElementById('kbAnswer').value.trim();
+      const sendPortalLink = document.getElementById('kbSendPortal').checked;
+      
+      try {
+        await api('POST', '/api/ai/knowledge', {
+          category,
+          question,
+          keywords,
+          answer,
+          sendPortalLink
+        });
+        
+        showAlert('تمت إضافة المعرفة بنجاح!');
+        document.getElementById('knowledgeForm').reset();
+        loadKnowledge();
+      } catch (err) {
+        showAlert('فشل الإضافة: ' + err.message, 'error');
+      }
+    });
+
     // Load clients
     async function loadClients() {
       try {
