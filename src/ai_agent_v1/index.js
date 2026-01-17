@@ -308,9 +308,25 @@ async function handleSmartConversation(message, linkedClient, messageText, isVoi
         // Get full client context
         const clientContext = await smartAgent.getClientContext(linkedClient);
         
+        // Get recent chat history for context (last 10 messages)
+        let chatHistory = [];
+        try {
+            const liveChat = require('./liveChat');
+            const messages = await liveChat.getChatMessages(linkedClient.whatsappId, 10);
+            chatHistory = messages.map(m => ({
+                role: m.sender === 'client' ? 'user' : 'assistant',
+                content: m.message
+            }));
+        } catch (e) {
+            console.log('[AI Agent] Could not load chat history:', e.message);
+        }
+        
+        // Add chat history to context
+        clientContext.chatHistory = chatHistory;
+        
         console.log('[AI Agent] Smart conversation for:', clientContext.fullName);
         
-        // Generate AI response
+        // Generate AI response with chat history
         const result = await smartAgent.generateSmartResponse(messageText, clientContext);
         
         console.log('[AI Agent] Smart response:', result.reply.substring(0, 100) + '...');

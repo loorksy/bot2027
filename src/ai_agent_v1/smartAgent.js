@@ -12,7 +12,7 @@ const tickets = require('./tickets');
 const genderDetector = require('./genderDetector');
 
 /**
- * Generate smart AI response based on context
+ * Generate smart AI response based on context with chat history
  */
 async function generateSmartResponse(messageText, clientContext) {
     const settings = await analyzer.getSettingsInternal();  // Use internal version to get real API key
@@ -24,13 +24,26 @@ async function generateSmartResponse(messageText, clientContext) {
     // Build comprehensive system prompt
     const systemPrompt = buildSystemPrompt(clientContext, settings);
     
+    // Build messages array with chat history
+    const messages = [
+        { role: 'system', content: systemPrompt }
+    ];
+    
+    // Add chat history if available (last 10 messages for context)
+    if (clientContext.chatHistory && clientContext.chatHistory.length > 0) {
+        messages.push(...clientContext.chatHistory);
+    }
+    
+    // Add current user message
+    messages.push({ role: 'user', content: messageText });
+    
     // Call AI
     let aiResponse;
     
     if (settings.aiProvider === 'openrouter' && settings.openrouterKey) {
-        aiResponse = await callOpenRouter(systemPrompt, messageText, settings);
+        aiResponse = await callOpenRouter(systemPrompt, messageText, settings, messages);
     } else if (settings.openaiKey) {
-        aiResponse = await callOpenAI(systemPrompt, messageText, settings);
+        aiResponse = await callOpenAI(systemPrompt, messageText, settings, messages);
     } else {
         return { reply: 'عذراً، لم يتم إعداد الخدمة بعد', action: null };
     }
