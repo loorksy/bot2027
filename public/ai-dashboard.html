@@ -3478,6 +3478,34 @@
       currentReceiptsClientKey = null;
       selectedReceiptFile = null;
     }
+    
+    // Toggle between file and text receipt types
+    window.toggleReceiptType = function(type) {
+      const fileSection = document.getElementById('receiptDropZone');
+      const textSection = document.getElementById('receiptTextSection');
+      const fileTab = document.getElementById('receiptTabFile');
+      const textTab = document.getElementById('receiptTabText');
+      const descLabel = document.getElementById('receiptDescLabel');
+      const descInput = document.getElementById('receiptDescription');
+      
+      if (type === 'file') {
+        fileSection.style.display = 'block';
+        textSection?.classList.add('hidden');
+        fileTab.classList.add('active');
+        textTab.classList.remove('active');
+        descLabel.textContent = 'وصف الإيصال (اختياري)';
+        descInput.placeholder = 'مثال: حوالة بنكية - مبلغ 1000 ر.س';
+        descInput.required = false;
+      } else {
+        fileSection.style.display = 'none';
+        textSection?.classList.remove('hidden');
+        fileTab.classList.remove('active');
+        textTab.classList.add('active');
+        descLabel.textContent = 'معلومات الإيصال (مطلوب) *';
+        descInput.placeholder = 'مثال: حوالة بنكية - بنك الراجحي\nالمبلغ: 1000 ر.س\nالتاريخ: 2026/01/17\nرقم العملية: 12345';
+        descInput.required = true;
+      }
+    };
 
     // Receipt file handling
     const receiptDropZone = document.getElementById('receiptDropZone');
