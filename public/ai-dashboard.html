@@ -574,6 +574,55 @@
       font-weight: 600;
     }
 
+    /* Admin Notification List */
+    .admin-notif-item {
+      background: #0f172a;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      border-right: 4px solid;
+    }
+
+    .admin-notif-item.info { border-right-color: #3b82f6; }
+    .admin-notif-item.success { border-right-color: #22c55e; }
+    .admin-notif-item.warning { border-right-color: #f59e0b; }
+    .admin-notif-item.celebration { border-right-color: #ec4899; }
+
+    .admin-notif-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .admin-notif-title {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .admin-notif-meta {
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    .admin-notif-message {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+      white-space: pre-wrap;
+    }
+
+    .admin-notif-stats {
+      display: flex;
+      gap: 16px;
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    .admin-notif-actions {
+      margin-top: 10px;
+    }
+
     /* Alerts */
     .alert {
       padding: 16px 20px;
