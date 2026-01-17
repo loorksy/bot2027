@@ -665,7 +665,7 @@ app.post('/api/ai/settings', requireAdmin, async (req, res) => {
     console.log('[API] Received settings update:', body); // DEBUG LOG
 
     const aiFields = ['enabled', 'openaiKey', 'modelChat', 'modelStt', 'modelTts', 'voiceTts', 'trustedSessionMinutes', 'agencyPercent', 'aiProvider', 'openrouterKey', 'openrouterModel'];
-    const botFields = ['salaryTemplate', 'salaryCurrency', 'salaryFooter'];
+    const botFields = ['salaryTemplate', 'salaryCurrency', 'salaryFooter', 'botName', 'ownerName', 'dialect', 'clientGender', 'friendliness', 'enableVoiceReplies', 'adminContact'];
     const syncFields = ['googleSheetAutoSync', 'googleSheetUrlAuto', 'googleSheetNameAuto', 'googleSheetSyncInterval'];
 
     const aiUpdates = {};
@@ -712,7 +712,33 @@ app.post('/api/ai/settings', requireAdmin, async (req, res) => {
       }
     }
 
-    res.json({ success: true, message: 'Settings updated' });
+    // =====================================================
+    // PERSIST CRITICAL SETTINGS TO .ENV FILE
+    // =====================================================
+    const envUpdates = {};
+    
+    // API Keys
+    if (body.openaiKey) envUpdates.OPENAI_KEY = body.openaiKey;
+    if (body.openrouterKey) envUpdates.OPENROUTER_KEY = body.openrouterKey;
+    if (body.aiProvider) envUpdates.AI_PROVIDER = body.aiProvider;
+    if (body.openrouterModel) envUpdates.OPENROUTER_MODEL = body.openrouterModel;
+    
+    // Bot Personality
+    if (body.botName) envUpdates.BOT_NAME = body.botName;
+    if (body.ownerName) envUpdates.OWNER_NAME = body.ownerName;
+    if (body.salaryCurrency) envUpdates.SALARY_CURRENCY = body.salaryCurrency;
+    
+    // Google Sheet Settings
+    if (body.googleSheetUrlAuto) envUpdates.GOOGLE_SHEET_URL = body.googleSheetUrlAuto;
+    if (body.googleSheetSyncInterval) envUpdates.GOOGLE_SHEET_INTERVAL = body.googleSheetSyncInterval;
+    
+    // Update .env if there are any changes
+    if (Object.keys(envUpdates).length > 0) {
+      await updateEnvFile(envUpdates);
+      console.log('[API] Settings persisted to .env');
+    }
+
+    res.json({ success: true, message: 'Settings updated and persisted' });
   } catch (err) {
     console.error('[API] Settings save error:', err); // DEBUG LOG
     res.status(500).json({ error: err.message });
