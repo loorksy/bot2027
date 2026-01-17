@@ -13,6 +13,7 @@ WhatsApp bot system with admin dashboard for client management, AI agent integra
 - OpenAI and OpenRouter.ai integration
 - Syrian dialect personality
 - Multi-model support (300+ models via OpenRouter)
+- **Smart Agent**: Uses LLM to understand all dialects and respond intelligently
 
 ### 2. Client Management
 - Multiple IDs per client support
@@ -21,27 +22,50 @@ WhatsApp bot system with admin dashboard for client management, AI agent integra
 - Google Sheet import and auto-sync
 - Bulk operations (delete, message)
 
-### 3. Portal System
+### 3. Portal System ✅ FIXED (Jan 17, 2026)
 - Client self-service portal
 - Profile viewing and editing
 - Salary history display
 - Receipts viewing/downloading
+- **PIN Management**: View PIN, request new PIN
+- **Live Chat**: Real-time chat with admin
+- **Notifications**: View and mark as read
 
 ### 4. Receipts System
 - Admin can upload multiple receipts per client
 - Any file type supported (50MB max)
 - WhatsApp notification on upload
 - Client can view/download from portal
+- Drag-and-drop upload in admin dashboard
 
 ### 5. PIN Management
 - Admin PIN reset functionality
 - WhatsApp notification on reset
+- **Client can view/regenerate PIN from portal**
 
 ### 6. Settings Persistence (FIXED - Jan 17, 2026)
-- **NEW**: Settings now persist to `.env` file
+- Settings persist to `.env` file
 - Critical settings (API keys, bot personality, currency) are saved to `.env`
 - On startup, settings are restored from `.env` even if JSON files are deleted
 - Protected from data loss during `git pull` operations
+
+### 7. Notification System
+- Admin can send broadcast or targeted notifications
+- Clients see notifications in portal with unread count
+- Mark as read functionality
+
+### 8. Support Ticket System
+- Bot can auto-create tickets for complex issues
+- Admin manages tickets in dashboard
+
+### 9. Knowledge Base
+- Instant answers to common questions without LLM
+- Admin can add/edit/delete Q&A pairs
+
+### 10. Live Chat System ✅ NEW
+- Real-time chat between clients and admin
+- Client sends from portal, admin responds from dashboard
+- Unread message indicators
 
 ## Database Architecture
 - **AI Agent + Bot**: JSON files (`/app/data/`)
