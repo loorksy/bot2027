@@ -2347,6 +2347,99 @@ app.get('/portal/:token', async (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'portal.html'));
 });
 
+// ==========================================================
+// PORTAL: PIN Management
+// ==========================================================
+
+// Get client PIN (masked)
+app.get('/api/portal/:token/pin', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const clientKey = await portal.getClientKeyByToken(token);
+    
+    if (!clientKey) {
+      return res.status(404).json({ error: 'رابط غير صالح' });
+    }
+    
+    const registeredClients = require('./src/ai_agent_v1/registeredClients');
+    const client = await registeredClients.getClientByKey(clientKey);
+    
+    if (!client) {
+      return res.status(404).json({ error: 'العميل غير موجود' });
+    }
+    
+    // Return PIN (it's stored as plain text for simplicity)
+    res.json({ pin: client.pin || null });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Generate new PIN
+app.post('/api/portal/:token/pin/regenerate', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const clientKey = await portal.getClientKeyByToken(token);
+    
+    if (!clientKey) {
+      return res.status(404).json({ error: 'رابط غير صالح' });
+    }
+    
+    const registeredClients = require('./src/ai_agent_v1/registeredClients');
+    const pin = require('./src/ai_agent_v1/pin');
+    
+    // Generate new PIN
+    const newPin = pin.generatePin();
+    
+    // Update client
+    await registeredClients.updateClient(clientKey, { pin: newPin });
+    
+    res.json({ success: true, pin: newPin });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================================
+// PORTAL: Direct Chat with Admin
+// ==========================================================
+
+// Send message to admin
+app.post('/api/portal/:token/chat', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { message } = req.body;
+    
+    if (!message || !message.trim()) {
+      return res.status(400).json({ error: 'الرسالة مطلوبة' });
+    }
+    
+    const clientKey = await portal.getClientKeyByToken(token);
+    
+    if (!clientKey) {
+      return res.status(404).json({ error: 'رابط غير صالح' });
+    }
+    
+    const registeredClients = require('./src/ai_agent_v1/registeredClients');
+    const client = await registeredClients.getClientByKey(clientKey);
+    
+    // Create a support ticket for the message
+    const ticket = await tickets.createTicket({
+      clientKey: clientKey,
+      clientName: client?.fullName || 'عميل',
+      whatsappId: client?.whatsappPhone || client?.phone || '',
+      type: 'general',
+      subject: 'رسالة من البوابة',
+      message: message.trim(),
+      priority: 'normal'
+    });
+    
+    res.json({ success: true, ticketNumber: ticket.ticketNumber });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Get client profile by portal token
 app.get('/api/portal/:token/profile', async (req, res) => {
   try {
