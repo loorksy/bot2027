@@ -881,6 +881,73 @@
       document.getElementById('loadingState').classList.add('hidden');
       document.getElementById('errorState').classList.add('hidden');
       document.getElementById('mainContent').classList.remove('hidden');
+      
+      // Load PIN
+      loadPin();
+    }
+
+    // =====================================================
+    // PIN Management
+    // =====================================================
+    let clientPin = null;
+    let pinVisible = false;
+
+    async function loadPin() {
+      try {
+        const result = await api('GET', `/api/portal/${token}/pin`);
+        clientPin = result.pin;
+      } catch (e) {
+        console.error('Failed to load PIN:', e);
+      }
+    }
+
+    function togglePinVisibility() {
+      pinVisible = !pinVisible;
+      const display = document.getElementById('pinDisplay');
+      
+      if (pinVisible && clientPin) {
+        display.textContent = clientPin;
+      } else {
+        display.textContent = '******';
+      }
+    }
+
+    async function regeneratePin() {
+      if (!confirm('هل تريدين طلب رمز سري جديد؟')) return;
+      
+      try {
+        const result = await api('POST', `/api/portal/${token}/pin/regenerate`);
+        clientPin = result.pin;
+        
+        // Show new PIN
+        pinVisible = true;
+        document.getElementById('pinDisplay').textContent = result.pin;
+        
+        showAlert('تم توليد رمز جديد: ' + result.pin + '\nاحفظيه جيداً! 💕');
+      } catch (e) {
+        showAlert('فشل توليد الرمز: ' + e.message, 'error');
+      }
+    }
+
+    // =====================================================
+    // Chat with Admin
+    // =====================================================
+    async function sendChatMessage() {
+      const textarea = document.getElementById('chatMessage');
+      const message = textarea.value.trim();
+      
+      if (!message) {
+        showAlert('اكتبي رسالتك أولاً', 'error');
+        return;
+      }
+      
+      try {
+        const result = await api('POST', `/api/portal/${token}/chat`, { message });
+        textarea.value = '';
+        showAlert('تم إرسال رسالتك بنجاح! ✅\nرقم الطلب: ' + result.ticketNumber + '\nسيتواصل معك أحد المسؤولين قريباً 💕');
+      } catch (e) {
+        showAlert('فشل إرسال الرسالة: ' + e.message, 'error');
+      }
     }
 
     // Render data
