@@ -158,17 +158,20 @@ async function callOpenRouter(systemPrompt, userMessage, settings) {
 }
 
 /**
- * Call OpenAI API
+ * Call OpenAI API with chat history
  */
-async function callOpenAI(systemPrompt, userMessage, settings) {
+async function callOpenAI(systemPrompt, userMessage, settings, messages = null) {
     const openai = new OpenAI({ apiKey: settings.openaiKey });
+    
+    // Use provided messages array or create simple one
+    const apiMessages = messages || [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage }
+    ];
     
     const response = await openai.chat.completions.create({
         model: settings.modelChat || 'gpt-4o-mini',
-        messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userMessage }
-        ],
+        messages: apiMessages,
         max_tokens: 500,
         temperature: 0.7
     });
