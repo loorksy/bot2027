@@ -11,6 +11,7 @@ const usage = require('./usage');
 const SETTINGS_FILE = path.join(__dirname, '../../data/ai_settings.json');
 
 let openaiClient = null;
+let openrouterClient = null;
 let settingsCache = null;
 
 async function loadSettings() {
@@ -22,10 +23,34 @@ async function loadSettings() {
         if (settingsCache.openaiKey) {
             openaiClient = new OpenAI({ apiKey: settingsCache.openaiKey });
         }
+        if (settingsCache.openrouterKey) {
+            openrouterClient = new OpenAI({ 
+                apiKey: settingsCache.openrouterKey,
+                baseURL: 'https://openrouter.ai/api/v1'
+            });
+        }
         return settingsCache;
     } catch {
         return null;
     }
+}
+
+/**
+ * Get the active AI client based on settings
+ */
+function getActiveClient() {
+    if (settingsCache?.aiProvider === 'openrouter' && openrouterClient) {
+        return { 
+            client: openrouterClient, 
+            model: settingsCache.openrouterModel || 'openai/gpt-4o-mini',
+            provider: 'openrouter'
+        };
+    }
+    return { 
+        client: openaiClient, 
+        model: settingsCache?.modelChat || 'gpt-4o-mini',
+        provider: 'openai'
+    };
 }
 
 /**
