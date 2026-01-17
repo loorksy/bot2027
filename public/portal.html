@@ -549,6 +549,15 @@
       <!-- Alert -->
       <div id="alertBox" class="alert hidden"></div>
 
+      <!-- Notifications Card -->
+      <div class="card" id="notificationsCard" style="display: none;">
+        <div class="card-header">
+          <h2>🔔 الإشعارات <span id="unreadBadge" class="unread-badge" style="display: none;">0</span></h2>
+          <button class="btn btn-secondary btn-sm" onclick="markAllNotificationsRead()">✓ قراءة الكل</button>
+        </div>
+        <div id="notificationsList"></div>
+      </div>
+
       <!-- Profile Card -->
       <div class="card">
         <div class="card-header">
