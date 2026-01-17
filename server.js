@@ -21,6 +21,46 @@ const TOKEN_NAME = 'token';
 const MASTER_EMAIL = 'loorksy@gmail.com';
 const MASTER_PASSWORD = 'Ahmetlork@29cb';
 
+// =====================================================
+// AUTO-CREATE DATA DIRECTORY AND FILES ON STARTUP
+// =====================================================
+const DATA_DIR = path.join(__dirname, 'data');
+const REQUIRED_FILES = {
+  'registered_clients.json': '{}',
+  'ids_index.json': '{}',
+  'portal_tokens.json': '{}',
+  'ai_clients.json': '{}',
+  'ai_settings.json': '{}',
+  'ai_usage_log.json': '[]',
+  'receipts.json': '[]',
+  'custom_fields.json': '[]'
+};
+
+async function ensureDataDirectory() {
+  try {
+    // Create main data directory
+    await fs.ensureDir(DATA_DIR);
+    await fs.ensureDir(path.join(DATA_DIR, 'receipts'));
+    await fs.ensureDir(path.join(DATA_DIR, 'sessions'));
+    
+    // Create required files if they don't exist
+    for (const [filename, defaultContent] of Object.entries(REQUIRED_FILES)) {
+      const filePath = path.join(DATA_DIR, filename);
+      if (!await fs.pathExists(filePath)) {
+        await fs.writeFile(filePath, defaultContent);
+        console.log(`[Startup] Created: ${filename}`);
+      }
+    }
+    
+    console.log('[Startup] Data directory verified');
+  } catch (err) {
+    console.error('[Startup] Failed to create data directory:', err.message);
+  }
+}
+
+// Run on startup
+ensureDataDirectory();
+
 // Google Sheet Auto Sync State
 let googleSheetSyncInterval = null;
 let googleSheetSyncState = {
