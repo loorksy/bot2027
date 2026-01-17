@@ -4244,14 +4244,14 @@
         }
         
         showAlert('✅ تم رفع الإيصال بنجاح وإرسال إشعار للعميل');
-        fileInput.value = '';
+        clearSelectedFile();
         document.getElementById('receiptDescription').value = '';
         await loadClientReceipts();
       } catch (err) {
         showAlert('❌ ' + err.message, 'error');
       } finally {
         document.getElementById('uploadReceiptBtn').disabled = false;
-        document.getElementById('uploadReceiptBtn').textContent = '📤 رفع';
+        document.getElementById('uploadReceiptBtn').textContent = '📤 رفع الملف';
       }
     };
 
@@ -4266,6 +4266,85 @@
         showAlert('❌ ' + err.message, 'error');
       }
     };
+
+    // =====================================================
+    // DRAG & DROP FILE UPLOAD
+    // =====================================================
+    
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      document.getElementById('dropZone').style.borderColor = '#ec4899';
+      document.getElementById('dropZone').style.background = 'rgba(236, 72, 153, 0.2)';
+    }
+
+    function handleDragLeave(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      document.getElementById('dropZone').style.borderColor = 'rgba(236, 72, 153, 0.4)';
+      document.getElementById('dropZone').style.background = 'rgba(236, 72, 153, 0.1)';
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      handleDragLeave(e);
+      
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        const fileInput = document.getElementById('receiptFile');
+        fileInput.files = files;
+        showSelectedFile(files[0]);
+      }
+    }
+
+    function handleFileSelect(e) {
+      if (e.target.files.length > 0) {
+        showSelectedFile(e.target.files[0]);
+      }
+    }
+
+    function showSelectedFile(file) {
+      document.getElementById('selectedFileName').textContent = '📄 ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+      document.getElementById('selectedFileInfo').style.display = 'block';
+    }
+
+    function clearSelectedFile() {
+      document.getElementById('receiptFile').value = '';
+      document.getElementById('selectedFileInfo').style.display = 'none';
+    }
+
+    // =====================================================
+    // SEARCH REGISTERED CLIENTS - WITH AUTO OPEN RECEIPT MODAL
+    // =====================================================
+    
+    let allRegisteredClients = {};
+    
+    function searchRegisteredClients() {
+      const searchTerm = document.getElementById('searchRegClientInput').value.toLowerCase().trim();
+      const tableBody = document.getElementById('regClientsBody');
+      
+      if (!searchTerm) {
+        renderRegisteredClientsTable(Object.values(allRegisteredClients));
+        return;
+      }
+      
+      const filtered = Object.values(allRegisteredClients).filter(c => {
+        const name = (c.fullName || '').toLowerCase();
+        const phone = (c.phone || '').toLowerCase();
+        const whatsapp = (c.whatsappPhone || '').toLowerCase();
+        const ids = (c.ids || []).join(' ').toLowerCase();
+        
+        return name.includes(searchTerm) || phone.includes(searchTerm) || whatsapp.includes(searchTerm) || ids.includes(searchTerm);
+      });
+      
+      renderRegisteredClientsTable(filtered);
+      
+      // If only one result, auto-open receipt modal
+      if (filtered.length === 1) {
+        openReceiptsModal(filtered[0].key, filtered[0].fullName || 'عميل');
+      }
+    }
 
   </script>
         </div>
