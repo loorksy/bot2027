@@ -581,7 +581,7 @@ async function handleReceiptStatusQuery(message, linkedClient, isVoice) {
 }
 
 /**
- * Handle support request - create ticket
+ * Handle support request - create ticket with full context
  */
 async function handleSupportRequest(message, linkedClient, messageText, isVoice) {
     try {
@@ -590,11 +590,36 @@ async function handleSupportRequest(message, linkedClient, messageText, isVoice)
             ? await registeredClients.getClientById(linkedClient.linkedClientId)
             : null;
         
-        // Create support ticket
+        // Get recent chat history (last 15 messages)
+        const chatHistory = await chats.getMessages(linkedClient.whatsappId) || [];
+        const recentMessages = chatHistory.slice(-15).map(msg => ({
+            sender: msg.sender,
+            message: msg.message,
+            timestamp: msg.timestamp
+        }));
+        
+        // Prepare client info
+        const clientInfo = regClient ? {
+            fullName: regClient.fullName,
+            phone: regClient.phone,
+            ids: regClient.ids,
+            country: regClient.country,
+            city: regClient.city,
+            agencyName: regClient.agencyName,
+            customFields: regClient.customFields
+        } : {
+            fullName: linkedClient.profile?.fullName || 'غير معروف',
+            phone: linkedClient.profile?.phone || ''
+        };
+        
+        // Create support ticket with full context
         const ticket = await tickets.createTicket({
             clientKey: regClient?.key || null,
-            clientName: regClient?.fullName || linkedClient.profile?.fullName || 'غير معروف',
+            clientName: clientInfo.fullName,
             whatsappId: message.from,
+            phone: clientInfo.phone,
+            clientInfo: clientInfo,
+            recentMessages: recentMessages,
             type: tickets.TYPES.GENERAL,
             subject: 'طلب دعم من العميل',
             message: messageText,
