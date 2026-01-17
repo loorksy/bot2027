@@ -592,12 +592,7 @@ async function handleSupportRequest(message, linkedClient, messageText, isVoice)
             : null;
         
         // Get recent chat history (last 15 messages)
-        const chatHistory = await liveChat.getMessages(linkedClient.whatsappId);
-        const recentMessages = chatHistory.slice(-15).map(msg => ({
-            sender: msg.sender,
-            message: msg.message,
-            timestamp: msg.timestamp
-        }));
+        const recentMessages = await liveChat.getChatMessages(linkedClient.whatsappId, 15);
         
         // Prepare client info
         const clientInfo = regClient ? {
