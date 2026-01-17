@@ -2172,6 +2172,140 @@
     // NOTIFICATIONS MANAGEMENT
     // =====================================================
 
+    // =====================================================
+    // LIVE CHATS MANAGEMENT
+    // =====================================================
+    
+    let currentChatClientKey = null;
+    let chatRefreshInterval = null;
+
+    async function loadChats() {
+      try {
+        const result = await api('GET', '/api/ai/chats');
+        const chats = result.chats || [];
+        const totalUnread = result.totalUnread || 0;
+        
+        // Update badge
+        const badge = document.getElementById('chatsBadge');
+        if (totalUnread > 0) {
+          badge.textContent = totalUnread;
+          badge.style.display = 'inline';
+        } else {
+          badge.style.display = 'none';
+        }
+        
+        const container = document.getElementById('chatsList');
+        
+        if (chats.length === 0) {
+          container.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">لا توجد محادثات</p>';
+          return;
+        }
+        
+        container.innerHTML = chats.map(chat => {
+          const lastMsg = chat.messages.length > 0 ? chat.messages[chat.messages.length - 1] : null;
+          const preview = lastMsg ? lastMsg.message.substring(0, 40) + (lastMsg.message.length > 40 ? '...' : '') : 'لا توجد رسائل';
+          const time = lastMsg ? new Date(lastMsg.timestamp).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' }) : '';
+          const hasUnread = chat.unreadByAdmin > 0;
+          const isActive = chat.clientKey === currentChatClientKey;
+          
+          return `
+            <div class="chat-list-item ${hasUnread ? 'has-unread' : ''} ${isActive ? 'active' : ''}" onclick="openChat('${chat.clientKey}', '${chat.clientName}')">
+              <div class="chat-list-name">
+                <span>${chat.clientName}</span>
+                ${hasUnread ? '<div class="chat-unread-dot"></div>' : ''}
+              </div>
+              <div class="chat-list-preview">${preview}</div>
+              <div class="chat-list-time">${time}</div>
+            </div>
+          `;
+        }).join('');
+        
+      } catch (err) {
+        console.error('Failed to load chats:', err);
+      }
+    }
+
+    async function openChat(clientKey, clientName) {
+      currentChatClientKey = clientKey;
+      
+      // Update header
+      document.getElementById('chatClientName').textContent = '💬 ' + clientName;
+      
+      // Show input
+      document.getElementById('adminChatInput').style.display = 'block';
+      
+      // Load messages
+      await loadChatMessages(clientKey);
+      
+      // Refresh chat list to update active state
+      loadChats();
+      
+      // Start auto-refresh
+      if (chatRefreshInterval) clearInterval(chatRefreshInterval);
+      chatRefreshInterval = setInterval(() => loadChatMessages(clientKey), 3000);
+    }
+
+    async function loadChatMessages(clientKey) {
+      try {
+        const result = await api('GET', `/api/ai/chats/${clientKey}/messages`);
+        const messages = result.messages || [];
+        
+        const container = document.getElementById('adminChatMessages');
+        
+        if (messages.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; color: #888; padding: 100px 0;">
+              <p>لا توجد رسائل بعد</p>
+            </div>
+          `;
+          return;
+        }
+        
+        container.innerHTML = messages.map(msg => {
+          const time = new Date(msg.timestamp).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
+          const date = new Date(msg.timestamp).toLocaleDateString('ar', { month: 'short', day: 'numeric' });
+          const fromClass = msg.sender === 'client' ? 'from-client' : 'from-admin';
+          const senderLabel = msg.sender === 'client' ? '👤 العميل' : '👨‍💼 أنت';
+          
+          return `
+            <div class="admin-chat-message ${fromClass}">
+              <div class="msg-text">${msg.message}</div>
+              <div class="msg-time">${senderLabel} • ${date} ${time}</div>
+            </div>
+          `;
+        }).join('');
+        
+        container.scrollTop = container.scrollHeight;
+        
+        // Refresh chat list to update unread count
+        loadChats();
+        
+      } catch (err) {
+        console.error('Failed to load chat messages:', err);
+      }
+    }
+
+    async function sendAdminChatMessage() {
+      if (!currentChatClientKey) return;
+      
+      const input = document.getElementById('adminMessageInput');
+      const message = input.value.trim();
+      
+      if (!message) return;
+      
+      try {
+        input.disabled = true;
+        await api('POST', `/api/ai/chats/${currentChatClientKey}/messages`, { message });
+        input.value = '';
+        await loadChatMessages(currentChatClientKey);
+      } catch (err) {
+        showAlert('فشل إرسال الرسالة: ' + err.message, 'error');
+      } finally {
+        input.disabled = false;
+        input.focus();
+      }
+    }
+
     async function loadNotifications() {
       try {
         const notifications = await api('GET', '/api/ai/notifications');
