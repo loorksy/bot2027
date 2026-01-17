@@ -9,6 +9,30 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const multer = require('multer');
 const { parse: csvParse } = require('csv-parse/sync');
+
+// =====================================================
+// LOAD .ENV FILE ON STARTUP
+// =====================================================
+const ENV_PATH = path.join(__dirname, '.env');
+function loadEnvFile() {
+  try {
+    if (fs.existsSync(ENV_PATH)) {
+      const content = fs.readFileSync(ENV_PATH, 'utf8');
+      content.split('\n').forEach(line => {
+        const match = line.match(/^([^=]+)=(.*)$/);
+        if (match && match[1] && !process.env[match[1]]) {
+          // Only set if not already set by system
+          process.env[match[1]] = match[2];
+        }
+      });
+      console.log('[Startup] .env file loaded');
+    }
+  } catch (err) {
+    console.error('[Startup] Error loading .env:', err.message);
+  }
+}
+loadEnvFile();
+
 const WhatsAppBot = require('./bot');
 const store = require('./store');
 const aiAgent = require('./src/ai_agent_v1');
