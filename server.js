@@ -2231,6 +2231,7 @@ app.post('/api/portal/:token/chat/messages', async (req, res) => {
 // ==========================================================
 const tickets = require('./src/ai_agent_v1/tickets');
 const knowledgeBase = require('./src/ai_agent_v1/knowledgeBase');
+const notifications = require('./src/ai_agent_v1/notifications');
 
 // Get all notifications (admin)
 app.get('/api/ai/notifications', requireAdmin, async (req, res) => {
