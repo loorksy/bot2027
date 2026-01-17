@@ -3679,7 +3679,26 @@
     // =====================================================
     // INITIALIZATION
     // =====================================================
+    // Socket.IO setup for real-time chat
+    let socket;
+    
+    function initSocket() {
+      socket = io();
+      
+      // Listen for new chat messages
+      socket.on('newMessage', (data) => {
+        console.log('New message received:', data);
+        loadChats(); // Reload chats to show new message
+      });
+      
+      // Handle connection errors
+      socket.on('connect_error', (err) => {
+        console.error('Socket connection error:', err);
+      });
+    }
+    
     document.addEventListener('DOMContentLoaded', () => {
+      initSocket();
       loadSettings();
       loadPeriods();
       loadRegisteredClients();
