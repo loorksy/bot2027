@@ -3510,6 +3510,10 @@
     loadNotificationTargets(); // Load client list for targeting
     loadTickets(); // Load support tickets
     loadKnowledge(); // Load knowledge base
+    loadChats(); // Load live chats
+    
+    // Auto-refresh chats badge every 10 seconds
+    setInterval(loadChats, 10000);
 
     // Toggle Provider Settings
     window.toggleProviderSettings = function() {
