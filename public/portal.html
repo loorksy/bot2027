@@ -924,6 +924,108 @@
       container.innerHTML = html;
     }
 
+    // Render notifications
+    function renderNotifications(unreadCount) {
+      const card = document.getElementById('notificationsCard');
+      const list = document.getElementById('notificationsList');
+      const badge = document.getElementById('unreadBadge');
+      
+      if (!notificationsData || notificationsData.length === 0) {
+        card.style.display = 'none';
+        return;
+      }
+      
+      card.style.display = 'block';
+      
+      // Show unread badge
+      if (unreadCount > 0) {
+        badge.textContent = unreadCount;
+        badge.style.display = 'inline';
+      } else {
+        badge.style.display = 'none';
+      }
+      
+      const typeIcons = {
+        'info': '📢',
+        'success': '✅',
+        'warning': '⚠️',
+        'celebration': '🎉'
+      };
+      
+      list.innerHTML = notificationsData.map(n => {
+        const icon = typeIcons[n.type] || '📢';
+        const readClass = n.isRead ? 'read' : 'unread';
+        const date = new Date(n.createdAt).toLocaleDateString('ar', { 
+          year: 'numeric', 
+          month: 'short', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        return `
+          <div class="notification-item ${n.type} ${readClass}" data-id="${n.id}" onclick="markNotificationRead('${n.id}')">
+            ${!n.isRead ? '<div class="unread-dot"></div>' : ''}
+            <div class="notification-header">
+              <span class="notification-title">
+                <span class="notification-icon">${icon}</span>
+                ${n.title}
+              </span>
+              <span class="notification-time">${date}</span>
+            </div>
+            <div class="notification-message">${n.message}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Mark single notification as read
+    async function markNotificationRead(notificationId) {
+      try {
+        await api('POST', `/api/portal/${token}/notifications/${notificationId}/read`);
+        
+        // Update UI
+        const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
+        if (item) {
+          item.classList.remove('unread');
+          item.classList.add('read');
+          const dot = item.querySelector('.unread-dot');
+          if (dot) dot.remove();
+        }
+        
+        // Update badge
+        const badge = document.getElementById('unreadBadge');
+        let count = parseInt(badge.textContent) - 1;
+        if (count <= 0) {
+          badge.style.display = 'none';
+        } else {
+          badge.textContent = count;
+        }
+      } catch (e) {
+        console.error('Error marking notification read:', e);
+      }
+    }
+
+    // Mark all notifications as read
+    async function markAllNotificationsRead() {
+      try {
+        await api('POST', `/api/portal/${token}/notifications/read-all`);
+        
+        // Update UI
+        document.querySelectorAll('.notification-item.unread').forEach(item => {
+          item.classList.remove('unread');
+          item.classList.add('read');
+          const dot = item.querySelector('.unread-dot');
+          if (dot) dot.remove();
+        });
+        
+        document.getElementById('unreadBadge').style.display = 'none';
+        showAlert('تم تحديد جميع الإشعارات كمقروءة');
+      } catch (e) {
+        showAlert('حدث خطأ', 'error');
+      }
+    }
+
     // Render salaries
     function renderSalaries() {
       const container = document.getElementById('salariesList');
