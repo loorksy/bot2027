@@ -1287,9 +1287,19 @@ async function performGoogleSheetSync() {
         const notes = row.notes || row['ملاحظات'] || row['ملاحظة'] || '';
         if (notes) clientData.customFields['ملاحظات'] = notes;
 
+        // Handle whatsappPhone
+        const whatsappPhone = row.whatsappPhone || row['واتساب'] || row['رقم الواتساب'] || '';
+        if (whatsappPhone) clientData.whatsappPhone = whatsappPhone;
+
         if (clientData.ids.length === 0) {
+          console.log('[Google Sheet Sync] Skipping row - no ID');
           failed++;
           continue;
+        }
+
+        // If no fullName, use ID as name
+        if (!clientData.fullName) {
+          clientData.fullName = `عميل ${clientData.ids[0]}`;
         }
 
         // Check if exists - update if found, add if not
