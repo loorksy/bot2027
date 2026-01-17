@@ -2661,13 +2661,20 @@ app.get('/api/portal/:token/salaries', async (req, res) => {
     // Get all salaries for this client
     const salariesData = await salary.getAllSalariesForClient(clientIds);
     
-    // Add receipt info to each salary
-    for (const sal of salariesData) {
-      const receipt = await receipts.getReceipt(sal.clientId, sal.periodId);
-      sal.receipt = receipt;
-    }
+    // Transform data for portal display
+    const result = salariesData.map(sal => ({
+      periodId: sal.periodId,
+      periodName: sal.periodName,
+      total: sal.amount,
+      deduction: sal.deduction,
+      deductionPercent: sal.deductionPercent,
+      net: sal.net,
+      currency: sal.currency,
+      status: 'paid',
+      salaries: [{ id: sal.clientId, amount: sal.amount }]
+    }));
     
-    res.json(salariesData);
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
