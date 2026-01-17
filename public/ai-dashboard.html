@@ -3331,10 +3331,9 @@
       try {
         const formData = new FormData();
         formData.append('file', selectedReceiptFile);
-        formData.append('clientKey', currentReceiptsClientKey);
         formData.append('description', document.getElementById('receiptDescription').value || '');
 
-        await api('POST', '/api/receipts/upload', formData);
+        await api('POST', `/api/ai/clients/${currentReceiptsClientKey}/receipts`, formData);
         showAlert('تم رفع الإيصال بنجاح');
         clearSelectedFile();
         document.getElementById('receiptDescription').value = '';
