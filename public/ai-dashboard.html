@@ -3268,6 +3268,276 @@
     };
 
     // =====================================================
+    // RECEIPTS
+    // =====================================================
+    let currentReceiptsClientKey = null;
+    let selectedReceiptFile = null;
+
+    window.openReceiptsModal = async function(clientKey, clientName) {
+      currentReceiptsClientKey = clientKey;
+      document.getElementById('receiptsModalTitle').textContent = `إيصالات: ${clientName}`;
+      document.getElementById('receiptsModal').classList.add('active');
+      clearSelectedFile();
+      await loadClientReceipts();
+    };
+
+    function closeReceiptsModal() {
+      document.getElementById('receiptsModal').classList.remove('active');
+      currentReceiptsClientKey = null;
+      selectedReceiptFile = null;
+    }
+
+    // Receipt file handling
+    const receiptDropZone = document.getElementById('receiptDropZone');
+    const receiptFileInput = document.getElementById('receiptFile');
+
+    if (receiptDropZone) {
+      receiptDropZone.addEventListener('click', () => receiptFileInput.click());
+      receiptDropZone.addEventListener('dragover', e => { e.preventDefault(); receiptDropZone.classList.add('dragover'); });
+      receiptDropZone.addEventListener('dragleave', () => receiptDropZone.classList.remove('dragover'));
+      receiptDropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        receiptDropZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) handleReceiptFile(e.dataTransfer.files[0]);
+      });
+    }
+
+    if (receiptFileInput) {
+      receiptFileInput.addEventListener('change', e => {
+        if (e.target.files.length) handleReceiptFile(e.target.files[0]);
+      });
+    }
+
+    function handleReceiptFile(file) {
+      selectedReceiptFile = file;
+      document.getElementById('selectedFileName').textContent = file.name;
+      document.getElementById('selectedFileInfo').classList.remove('hidden');
+    }
+
+    window.clearSelectedFile = function() {
+      selectedReceiptFile = null;
+      document.getElementById('selectedFileInfo').classList.add('hidden');
+      if (receiptFileInput) receiptFileInput.value = '';
+    };
+
+    window.uploadReceipt = async function() {
+      if (!selectedReceiptFile || !currentReceiptsClientKey) {
+        showAlert('يرجى اختيار ملف', 'error');
+        return;
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append('file', selectedReceiptFile);
+        formData.append('clientKey', currentReceiptsClientKey);
+        formData.append('description', document.getElementById('receiptDescription').value || '');
+
+        await api('POST', '/api/receipts/upload', formData);
+        showAlert('تم رفع الإيصال بنجاح');
+        clearSelectedFile();
+        document.getElementById('receiptDescription').value = '';
+        await loadClientReceipts();
+      } catch (err) {
+        showAlert('فشل رفع الإيصال: ' + err.message, 'error');
+      }
+    };
+
+    async function loadClientReceipts() {
+      if (!currentReceiptsClientKey) return;
+      
+      try {
+        const receipts = await api('GET', `/api/receipts/client/${currentReceiptsClientKey}`);
+        const container = document.getElementById('receiptsList');
+        
+        if (!receipts.length) {
+          container.innerHTML = '<div class="empty-state"><p>لا توجد إيصالات</p></div>';
+          return;
+        }
+
+        container.innerHTML = receipts.map(r => {
+          const date = new Date(r.uploadedAt).toLocaleDateString('ar');
+          return `
+            <div class="receipt-item" style="background: var(--bg); padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+              <div>
+                <div style="font-weight: 500; font-size: 12px;">${r.originalName}</div>
+                <div style="font-size: 10px; color: var(--text-muted);">${date} ${r.description ? '• ' + r.description : ''}</div>
+              </div>
+              <div style="display: flex; gap: 4px;">
+                <a href="/api/receipts/file/${r.filename}" target="_blank" class="btn btn-sm btn-secondary">عرض</a>
+                <button class="btn btn-sm btn-danger" onclick="deleteReceipt('${r.id}')">حذف</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        showAlert('فشل تحميل الإيصالات', 'error');
+      }
+    }
+
+    window.deleteReceipt = async function(id) {
+      if (!confirm('حذف هذا الإيصال؟')) return;
+      try {
+        await api('DELETE', `/api/receipts/${id}`);
+        showAlert('تم حذف الإيصال');
+        await loadClientReceipts();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    };
+
+    // =====================================================
+    // BROADCAST
+    // =====================================================
+    window.promptBroadcast = function() {
+      document.getElementById('broadcastModal').classList.add('active');
+      loadBroadcastAgencies();
+    };
+
+    function closeBroadcastModal() {
+      document.getElementById('broadcastModal').classList.remove('active');
+    }
+
+    function loadBroadcastAgencies() {
+      const select = document.getElementById('broadcastAgency');
+      select.innerHTML = '';
+      (globalLookups.agencies || []).forEach(a => {
+        select.innerHTML += `<option value="${a}">${a}</option>`;
+      });
+    }
+
+    document.getElementById('broadcastTarget')?.addEventListener('change', function() {
+      document.getElementById('broadcastAgencyGroup').classList.toggle('hidden', this.value !== 'agency');
+    });
+
+    window.sendBroadcast = async function() {
+      const message = document.getElementById('broadcastMessage').value.trim();
+      if (!message) {
+        showAlert('يرجى كتابة الرسالة', 'error');
+        return;
+      }
+
+      const target = document.getElementById('broadcastTarget').value;
+      const agency = target === 'agency' ? document.getElementById('broadcastAgency').value : null;
+
+      try {
+        await api('POST', '/api/ai/broadcast', { message, target, agency });
+        showAlert('تم إرسال الرسالة الجماعية');
+        closeBroadcastModal();
+        document.getElementById('broadcastMessage').value = '';
+      } catch (err) {
+        showAlert('فشل الإرسال: ' + err.message, 'error');
+      }
+    };
+
+    // =====================================================
+    // LOOKUPS MANAGEMENT
+    // =====================================================
+    window.openLookupsModal = function() {
+      document.getElementById('lookupsModal').classList.add('active');
+      renderLookupLists();
+    };
+
+    function closeLookupsModal() {
+      document.getElementById('lookupsModal').classList.remove('active');
+    }
+
+    window.switchLookupTab = function(tab) {
+      document.querySelectorAll('#lookupsModal .inner-tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('agenciesLookup').classList.toggle('hidden', tab !== 'agencies');
+      document.getElementById('countriesLookup').classList.toggle('hidden', tab !== 'countries');
+    };
+
+    function renderLookupLists() {
+      // Agencies
+      const agenciesList = document.getElementById('agenciesList');
+      agenciesList.innerHTML = (globalLookups.agencies || []).map(a => `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: var(--bg); border-radius: 6px; margin-bottom: 6px;">
+          <span style="font-size: 12px;">${a}</span>
+          <button class="btn btn-sm btn-danger" onclick="deleteAgency('${a}')">حذف</button>
+        </div>
+      `).join('') || '<p style="color: var(--text-muted); text-align: center;">لا توجد وكالات</p>';
+
+      // Countries
+      const countriesList = document.getElementById('countriesList');
+      const countries = globalLookups.countries || [];
+      countriesList.innerHTML = countries.map(c => {
+        const name = typeof c === 'object' ? c.name : c;
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: var(--bg); border-radius: 6px; margin-bottom: 6px;">
+            <span style="font-size: 12px;">${name}</span>
+            <button class="btn btn-sm btn-danger" onclick="deleteCountry('${name}')">حذف</button>
+          </div>
+        `;
+      }).join('') || '<p style="color: var(--text-muted); text-align: center;">لا توجد دول</p>';
+    }
+
+    window.addAgency = async function() {
+      const name = document.getElementById('newAgencyName').value.trim();
+      if (!name) return;
+
+      try {
+        globalLookups.agencies = globalLookups.agencies || [];
+        if (!globalLookups.agencies.includes(name)) {
+          globalLookups.agencies.push(name);
+          await api('POST', '/api/ai/lookups', globalLookups);
+          showAlert('تم إضافة الوكالة');
+          document.getElementById('newAgencyName').value = '';
+          renderLookupLists();
+          renderLookupSelects();
+        }
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    };
+
+    window.deleteAgency = async function(name) {
+      if (!confirm(`حذف الوكالة "${name}"؟`)) return;
+      try {
+        globalLookups.agencies = (globalLookups.agencies || []).filter(a => a !== name);
+        await api('POST', '/api/ai/lookups', globalLookups);
+        showAlert('تم حذف الوكالة');
+        renderLookupLists();
+        renderLookupSelects();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    };
+
+    window.addCountry = async function() {
+      const name = document.getElementById('newCountryName').value.trim();
+      if (!name) return;
+
+      try {
+        globalLookups.countries = globalLookups.countries || [];
+        const exists = globalLookups.countries.some(c => (typeof c === 'object' ? c.name : c) === name);
+        if (!exists) {
+          globalLookups.countries.push({ name, cities: [] });
+          await api('POST', '/api/ai/lookups', globalLookups);
+          showAlert('تم إضافة الدولة');
+          document.getElementById('newCountryName').value = '';
+          renderLookupLists();
+          renderLookupSelects();
+        }
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    };
+
+    window.deleteCountry = async function(name) {
+      if (!confirm(`حذف الدولة "${name}"؟`)) return;
+      try {
+        globalLookups.countries = (globalLookups.countries || []).filter(c => (typeof c === 'object' ? c.name : c) !== name);
+        await api('POST', '/api/ai/lookups', globalLookups);
+        showAlert('تم حذف الدولة');
+        renderLookupLists();
+        renderLookupSelects();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    };
+
+    // =====================================================
     // INITIALIZATION
     // =====================================================
     document.addEventListener('DOMContentLoaded', () => {
