@@ -52,9 +52,76 @@ async function ensureDataDirectory() {
       }
     }
     
+    // Load settings from .env if ai_settings.json is empty
+    await loadSettingsFromEnv();
+    
     console.log('[Startup] Data directory verified');
   } catch (err) {
     console.error('[Startup] Failed to create data directory:', err.message);
+  }
+}
+
+// Load default settings from environment variables
+async function loadSettingsFromEnv() {
+  const settingsPath = path.join(DATA_DIR, 'ai_settings.json');
+  let settings = {};
+  
+  try {
+    const content = await fs.readFile(settingsPath, 'utf8');
+    settings = JSON.parse(content);
+  } catch {
+    settings = {};
+  }
+  
+  // Only set from env if not already configured
+  let updated = false;
+  
+  if (!settings.openrouterKey && process.env.OPENROUTER_KEY) {
+    settings.openrouterKey = process.env.OPENROUTER_KEY;
+    updated = true;
+  }
+  
+  if (!settings.openaiKey && process.env.OPENAI_KEY) {
+    settings.openaiKey = process.env.OPENAI_KEY;
+    updated = true;
+  }
+  
+  if (!settings.aiProvider && process.env.AI_PROVIDER) {
+    settings.aiProvider = process.env.AI_PROVIDER;
+    updated = true;
+  }
+  
+  if (!settings.openrouterModel && process.env.OPENROUTER_MODEL) {
+    settings.openrouterModel = process.env.OPENROUTER_MODEL;
+    updated = true;
+  }
+  
+  // Google Sheet settings
+  if (process.env.GOOGLE_SHEET_URL) {
+    googleSheetSyncState.url = process.env.GOOGLE_SHEET_URL;
+    googleSheetSyncState.enabled = true;
+    googleSheetSyncState.interval = parseInt(process.env.GOOGLE_SHEET_INTERVAL) || 5;
+  }
+  
+  // Bot personality settings
+  if (!settings.botName && process.env.BOT_NAME) {
+    settings.botName = process.env.BOT_NAME;
+    updated = true;
+  }
+  
+  if (!settings.ownerName && process.env.OWNER_NAME) {
+    settings.ownerName = process.env.OWNER_NAME;
+    updated = true;
+  }
+  
+  if (!settings.salaryCurrency && process.env.SALARY_CURRENCY) {
+    settings.salaryCurrency = process.env.SALARY_CURRENCY;
+    updated = true;
+  }
+  
+  if (updated) {
+    await fs.writeJSON(settingsPath, settings, { spaces: 2 });
+    console.log('[Startup] Settings loaded from environment');
   }
 }
 
