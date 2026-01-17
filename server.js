@@ -22,6 +22,63 @@ const MASTER_EMAIL = 'loorksy@gmail.com';
 const MASTER_PASSWORD = 'Ahmetlork@29cb';
 
 // =====================================================
+// HELPER: Update .env file with settings
+// =====================================================
+const ENV_PATH = path.join(__dirname, '.env');
+
+async function updateEnvFile(updates) {
+  try {
+    // Read current .env content
+    let envContent = '';
+    if (await fs.pathExists(ENV_PATH)) {
+      envContent = await fs.readFile(ENV_PATH, 'utf8');
+    }
+    
+    // Parse existing variables
+    const envVars = {};
+    envContent.split('\n').forEach(line => {
+      const match = line.match(/^([^=]+)=(.*)$/);
+      if (match) {
+        envVars[match[1]] = match[2];
+      }
+    });
+    
+    // Update with new values
+    Object.assign(envVars, updates);
+    
+    // Build new content (preserve protected vars at top)
+    const protectedVars = ['PORT', 'JWT_SECRET', 'DATABASE_URL', 'PUPPETEER_SKIP_CHROMIUM_DOWNLOAD', 'PUPPETEER_EXECUTABLE_PATH'];
+    const lines = [];
+    
+    // Add protected vars first
+    protectedVars.forEach(key => {
+      if (envVars[key] !== undefined) {
+        lines.push(`${key}=${envVars[key]}`);
+        delete envVars[key];
+      }
+    });
+    
+    // Add empty line separator
+    if (lines.length > 0) lines.push('');
+    
+    // Add remaining vars
+    Object.entries(envVars).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        lines.push(`${key}=${value}`);
+      }
+    });
+    
+    // Write back
+    await fs.writeFile(ENV_PATH, lines.join('\n') + '\n');
+    console.log('[Settings] .env file updated');
+    return true;
+  } catch (err) {
+    console.error('[Settings] Failed to update .env:', err.message);
+    return false;
+  }
+}
+
+// =====================================================
 // AUTO-CREATE DATA DIRECTORY AND FILES ON STARTUP
 // =====================================================
 const DATA_DIR = path.join(__dirname, 'data');
