@@ -14,7 +14,7 @@ const tickets = require('./tickets');
  * Generate smart AI response based on context
  */
 async function generateSmartResponse(messageText, clientContext) {
-    const settings = await analyzer.getSettings();
+    const settings = await analyzer.getSettingsInternal();  // Use internal version to get real API key
     
     if (!settings.enabled) {
         return { reply: 'عذراً، الخدمة غير متاحة حالياً', action: null };
