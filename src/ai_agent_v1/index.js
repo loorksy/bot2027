@@ -333,6 +333,34 @@ async function handleSmartConversation(message, linkedClient, messageText, isVoi
 }
 
 /**
+ * Check if PIN verification is needed (every 3 days)
+ */
+async function shouldAskForPin(linkedClient) {
+    // If not linked to registered client, no PIN needed
+    if (!linkedClient.linkedClientId) {
+        return false;
+    }
+    
+    // If no PIN hash set, no PIN needed
+    if (!linkedClient.pinHash) {
+        return false;
+    }
+    
+    // If trustedUntil is set and still valid, no PIN needed
+    if (linkedClient.trustedUntil) {
+        const now = Date.now();
+        const trustedUntil = new Date(linkedClient.trustedUntil).getTime();
+        
+        if (now < trustedUntil) {
+            return false; // Still in trusted period
+        }
+    }
+    
+    // PIN verification needed
+    return true;
+}
+
+/**
  * Handle PIN verification
  */
 async function handlePinAttempt(message, linkedClient, pinValue, isVoice) {
@@ -344,8 +372,9 @@ async function handlePinAttempt(message, linkedClient, pinValue, isVoice) {
     }
 
     if (pin.verifyPin(pinValue, linkedClient.pinHash)) {
-        const settings = await analyzer.getSettings();
-        await clients.setTrustedSession(whatsappId, settings.trustedSessionMinutes || 15);
+        // Set trusted session for 3 days (72 hours)
+        const threeDaysInMinutes = 72 * 60; // 3 days = 4320 minutes
+        await clients.setTrustedSession(whatsappId, threeDaysInMinutes);
         const verifiedReply = await reply.generateReply({ type: 'PIN_VERIFIED', context: {} });
         await sendReply(message, verifiedReply, isVoice);
     } else {
