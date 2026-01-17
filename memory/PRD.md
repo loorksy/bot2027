@@ -52,10 +52,12 @@ WhatsApp bot system with admin dashboard for client management, AI agent integra
 - On startup, settings are restored from `.env` even if JSON files are deleted
 - Protected from data loss during `git pull` operations
 
-### 7. Notification System
+### 7. Notification System ✅ ENHANCED (Jan 17, 2026)
 - Admin can send broadcast or targeted notifications
 - Clients see notifications in portal with unread count
 - Mark as read functionality
+- **AUTO SALARY NOTIFICATIONS**: When admin uploads new salary file, all affected clients receive automatic notification
+- **Smart notification click**: Clicking salary notification navigates to salaries section
 
 ### 8. Support Ticket System
 - Bot can auto-create tickets for complex issues
