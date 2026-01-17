@@ -1942,3 +1942,1238 @@
     </div>
   </div>
 
+
+  <script>
+    // =====================================================
+    // NAVIGATION
+    // =====================================================
+    function switchTab(tabId) {
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
+      document.querySelectorAll('.menu-drawer-item').forEach(n => n.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      
+      document.querySelectorAll(`[data-tab="${tabId}"]`).forEach(el => el.classList.add('active'));
+      document.getElementById(tabId)?.classList.add('active');
+      
+      closeMenuDrawer();
+    }
+
+    document.querySelectorAll('.nav-item, .bottom-nav-item, .menu-drawer-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const tab = item.dataset.tab;
+        if (tab) switchTab(tab);
+      });
+    });
+
+    function openMenuDrawer() {
+      document.getElementById('menuDrawer').classList.add('active');
+    }
+
+    function closeMenuDrawer() {
+      document.getElementById('menuDrawer').classList.remove('active');
+    }
+
+    // =====================================================
+    // UTILITIES
+    // =====================================================
+    function showAlert(message, type = 'success') {
+      const container = document.getElementById('alertContainer');
+      container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+      setTimeout(() => container.innerHTML = '', 4000);
+    }
+
+    function getCookie(name) {
+      const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return match ? match[2] : null;
+    }
+
+    async function api(method, url, data = null) {
+      const options = { method, credentials: 'include' };
+      if (data && !(data instanceof FormData)) {
+        options.headers = { 'Content-Type': 'application/json' };
+        options.body = JSON.stringify(data);
+      } else if (data) {
+        options.body = data;
+      }
+      const res = await fetch(url, options);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Unknown error');
+      return json;
+    }
+
+    // =====================================================
+    // SETTINGS
+    // =====================================================
+    async function loadSettings() {
+      try {
+        const settings = await api('GET', '/api/ai/settings');
+        document.getElementById('aiEnabled').checked = settings.enabled;
+        document.getElementById('openaiKey').value = settings.openaiKey || '';
+        document.getElementById('modelChat').value = settings.modelChat || 'gpt-4o-mini';
+        document.getElementById('modelStt').value = settings.modelStt || 'whisper-1';
+        document.getElementById('modelTts').value = settings.modelTts || 'tts-1';
+        document.getElementById('voiceTts').value = settings.voiceTts || 'alloy';
+        document.getElementById('trustedSessionMinutes').value = settings.trustedSessionMinutes || 15;
+        document.getElementById('agencyPercent').value = settings.agencyPercent || 0;
+        document.getElementById('botName').value = settings.botName || 'مساعد أبو سلطان';
+        document.getElementById('ownerName').value = settings.ownerName || 'أبو سلطان';
+        document.getElementById('dialect').value = settings.dialect || 'سورية';
+        document.getElementById('clientGender').value = settings.clientGender || 'مؤنث';
+        document.getElementById('friendliness').value = settings.friendliness || 'عالي';
+        document.getElementById('salaryCurrency').value = settings.salaryCurrency || 'ر.س';
+        document.getElementById('adminContact').value = settings.adminContact || 'تواصلي مع الإدارة';
+        document.getElementById('enableVoiceReplies').checked = settings.enableVoiceReplies || false;
+        
+        // AI Provider
+        const provider = settings.aiProvider || 'openai';
+        document.getElementById('aiProvider').value = provider;
+        toggleAIProvider(provider);
+        
+        if (settings.openrouterKey) {
+          document.getElementById('openrouterKey').value = settings.openrouterKey;
+        }
+        if (settings.openrouterModel) {
+          document.getElementById('openrouterModel').value = settings.openrouterModel;
+        }
+      } catch (err) {
+        showAlert('فشل تحميل الإعدادات: ' + err.message, 'error');
+      }
+    }
+
+    function toggleAIProvider(provider) {
+      document.getElementById('openaiSettings').classList.toggle('hidden', provider !== 'openai');
+      document.getElementById('openrouterSettings').classList.toggle('hidden', provider !== 'openrouter');
+    }
+
+    document.getElementById('aiProvider').addEventListener('change', (e) => {
+      toggleAIProvider(e.target.value);
+    });
+
+    document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
+      try {
+        const provider = document.getElementById('aiProvider').value;
+        const data = {
+          enabled: document.getElementById('aiEnabled').checked,
+          aiProvider: provider,
+          modelChat: document.getElementById('modelChat').value,
+          modelStt: document.getElementById('modelStt').value,
+          modelTts: document.getElementById('modelTts').value,
+          voiceTts: document.getElementById('voiceTts').value,
+          trustedSessionMinutes: parseInt(document.getElementById('trustedSessionMinutes').value) || 15,
+          agencyPercent: parseFloat(document.getElementById('agencyPercent').value) || 0,
+          botName: document.getElementById('botName').value,
+          ownerName: document.getElementById('ownerName').value,
+          dialect: document.getElementById('dialect').value,
+          clientGender: document.getElementById('clientGender').value,
+          friendliness: document.getElementById('friendliness').value,
+          salaryCurrency: document.getElementById('salaryCurrency').value,
+          adminContact: document.getElementById('adminContact').value,
+          enableVoiceReplies: document.getElementById('enableVoiceReplies').checked
+        };
+
+        const openaiKey = document.getElementById('openaiKey').value;
+        if (openaiKey && !openaiKey.includes('•')) {
+          data.openaiKey = openaiKey;
+        }
+
+        const openrouterKey = document.getElementById('openrouterKey').value;
+        if (openrouterKey && !openrouterKey.includes('•')) {
+          data.openrouterKey = openrouterKey;
+        }
+        
+        data.openrouterModel = document.getElementById('openrouterModel').value;
+
+        await api('POST', '/api/ai/settings', data);
+        showAlert('تم حفظ الإعدادات بنجاح ✅');
+      } catch (err) {
+        showAlert('فشل حفظ الإعدادات: ' + err.message, 'error');
+      }
+    });
+
+    // =====================================================
+    // SALARY UPLOAD
+    // =====================================================
+    const fileUploadArea = document.getElementById('fileUploadArea');
+    const salaryFileInput = document.getElementById('salaryFile');
+    let uploadedFileData = null;
+
+    fileUploadArea.addEventListener('click', () => salaryFileInput.click());
+    fileUploadArea.addEventListener('dragover', e => { e.preventDefault(); fileUploadArea.classList.add('dragover'); });
+    fileUploadArea.addEventListener('dragleave', () => fileUploadArea.classList.remove('dragover'));
+    fileUploadArea.addEventListener('drop', e => {
+      e.preventDefault();
+      fileUploadArea.classList.remove('dragover');
+      if (e.dataTransfer.files.length) {
+        salaryFileInput.files = e.dataTransfer.files;
+        handleFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+
+    salaryFileInput.addEventListener('change', e => {
+      if (e.target.files.length) handleFileSelect(e.target.files[0]);
+    });
+
+    async function handleFileSelect(file) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const preview = await api('POST', '/api/ai/salary/upload/preview', formData);
+        uploadedFileData = { file, preview };
+
+        const idCol = document.getElementById('idColumn');
+        const salaryCol = document.getElementById('salaryColumn');
+        idCol.innerHTML = '';
+        salaryCol.innerHTML = '';
+
+        preview.columns.forEach(col => {
+          idCol.innerHTML += `<option value="${col}">${col}</option>`;
+          salaryCol.innerHTML += `<option value="${col}">${col}</option>`;
+        });
+
+        // Show preview table
+        let tableHtml = '<table class="data-table"><thead><tr>';
+        preview.columns.forEach(col => tableHtml += `<th>${col}</th>`);
+        tableHtml += '</tr></thead><tbody>';
+        preview.preview.slice(0, 5).forEach(row => {
+          tableHtml += '<tr>';
+          preview.columns.forEach(col => tableHtml += `<td>${row[col] || ''}</td>`);
+          tableHtml += '</tr>';
+        });
+        tableHtml += '</tbody></table>';
+        document.getElementById('previewTable').innerHTML = tableHtml;
+
+        document.getElementById('uploadPreview').classList.remove('hidden');
+        fileUploadArea.classList.add('hidden');
+      } catch (err) {
+        showAlert('فشل معاينة الملف: ' + err.message, 'error');
+      }
+    }
+
+    document.getElementById('cancelUploadBtn').addEventListener('click', () => {
+      uploadedFileData = null;
+      document.getElementById('uploadPreview').classList.add('hidden');
+      fileUploadArea.classList.remove('hidden');
+      salaryFileInput.value = '';
+    });
+
+    document.getElementById('uploadBtn').addEventListener('click', async () => {
+      if (!uploadedFileData) return;
+
+      try {
+        const formData = new FormData();
+        formData.append('file', uploadedFileData.file);
+        formData.append('name', document.getElementById('periodName').value);
+        formData.append('idColumn', document.getElementById('idColumn').value);
+        formData.append('salaryColumn', document.getElementById('salaryColumn').value);
+        formData.append('agencyPercent', document.getElementById('uploadAgencyPercent').value);
+
+        const result = await api('POST', '/api/ai/salary/upload', formData);
+        showAlert(`تم رفع الملف بنجاح! (${result.period.recordCount} سجل)${result.notifiedClients ? ` - تم إشعار ${result.notifiedClients} عميل` : ''}`);
+        
+        uploadedFileData = null;
+        document.getElementById('uploadPreview').classList.add('hidden');
+        fileUploadArea.classList.remove('hidden');
+        salaryFileInput.value = '';
+        loadPeriods();
+      } catch (err) {
+        showAlert('فشل رفع الملف: ' + err.message, 'error');
+      }
+    });
+
+    async function loadPeriods() {
+      try {
+        const periods = await api('GET', '/api/ai/salary/periods');
+        const container = document.getElementById('periodsList');
+        
+        if (!periods.length) {
+          container.innerHTML = '<div class="empty-state"><p>لا توجد فترات رواتب</p></div>';
+          return;
+        }
+
+        container.innerHTML = periods.map(p => `
+          <div class="period-card ${p.isCurrent ? 'current' : ''}">
+            <div class="period-info">
+              <h4>${p.name} ${p.isCurrent ? '<span class="badge badge-success">الحالية</span>' : ''}</h4>
+              <div class="period-meta">${p.recordCount} سجل • خصم ${p.agencyPercent}%</div>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              ${!p.isCurrent ? `<button class="btn btn-sm btn-secondary" onclick="setCurrentPeriod('${p.id}')">تعيين كحالية</button>` : ''}
+              <button class="btn btn-sm btn-danger" onclick="deletePeriod('${p.id}')">حذف</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        showAlert('فشل تحميل الفترات: ' + err.message, 'error');
+      }
+    }
+
+    window.setCurrentPeriod = async function(id) {
+      try {
+        await api('POST', `/api/ai/salary/period/${id}/current`);
+        showAlert('تم تعيين الفترة الحالية');
+        loadPeriods();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    };
+
+    window.deletePeriod = async function(id) {
+      if (!confirm('هل أنت متأكد من حذف هذه الفترة؟')) return;
+      try {
+        await api('DELETE', `/api/ai/salary/period/${id}`);
+        showAlert('تم حذف الفترة');
+        loadPeriods();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    };
+
+    // =====================================================
+    // REGISTERED CLIENTS
+    // =====================================================
+    let allClientsData = [];
+
+    async function loadRegisteredClients() {
+      try {
+        const clients = await api('GET', '/api/ai/registered-clients');
+        allClientsData = Object.entries(clients).map(([key, c]) => ({ key, ...c }));
+        renderClientsTable(allClientsData);
+        
+        // Stats
+        document.getElementById('clientsStats').innerHTML = `
+          <div class="stat-card">
+            <div class="stat-value">${allClientsData.length}</div>
+            <div class="stat-label">إجمالي العملاء</div>
+          </div>
+        `;
+      } catch (err) {
+        showAlert('فشل تحميل العملاء: ' + err.message, 'error');
+      }
+    }
+
+    function renderClientsTable(clients) {
+      // Desktop table
+      const tbody = document.querySelector('#registeredClientsTable tbody');
+      tbody.innerHTML = clients.map(c => `
+        <tr>
+          <td>${c.fullName || '-'}</td>
+          <td>${(c.ids || []).join(', ')}</td>
+          <td>${c.phone || '-'}</td>
+          <td>${c.agencyName || '-'}</td>
+          <td>
+            <div style="display: flex; gap: 4px;">
+              <button class="btn btn-sm btn-secondary" onclick="editClient('${c.key}')">تعديل</button>
+              <button class="btn btn-sm btn-secondary" onclick="promptNotify('${c.key}', '${c.fullName}', '${c.phone}')">إشعار</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteClient('${c.key}')">حذف</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+
+      // Mobile cards
+      document.getElementById('registeredClientsMobile').innerHTML = clients.map(c => `
+        <div class="mobile-card">
+          <div class="mobile-card-header">
+            <div class="mobile-card-title">${c.fullName || '-'}</div>
+            <span class="badge badge-info">${c.agencyName || '-'}</span>
+          </div>
+          <div class="mobile-card-row">
+            <span class="mobile-card-label">IDs</span>
+            <span class="mobile-card-value">${(c.ids || []).join(', ')}</span>
+          </div>
+          <div class="mobile-card-row">
+            <span class="mobile-card-label">الهاتف</span>
+            <span class="mobile-card-value">${c.phone || '-'}</span>
+          </div>
+          <div class="mobile-card-actions">
+            <button class="btn btn-sm btn-secondary" onclick="editClient('${c.key}')" style="flex: 1;">تعديل</button>
+            <button class="btn btn-sm btn-secondary" onclick="promptNotify('${c.key}', '${c.fullName}', '${c.phone}')" style="flex: 1;">إشعار</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteClient('${c.key}')">حذف</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('searchRegClientInput').addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase();
+      const filtered = allClientsData.filter(c => 
+        (c.fullName || '').toLowerCase().includes(q) ||
+        (c.ids || []).some(id => id.toString().includes(q)) ||
+        (c.phone || '').includes(q)
+      );
+      renderClientsTable(filtered);
+    });
+
+    document.getElementById('refreshRegClientsBtn').addEventListener('click', loadRegisteredClients);
+
+    // Client Modal
+    let editingClientKey = null;
+
+    document.getElementById('addRegClientBtn').addEventListener('click', () => {
+      editingClientKey = null;
+      document.getElementById('clientModalTitle').textContent = 'إضافة عميل جديد';
+      clearClientForm();
+      document.getElementById('clientModal').classList.add('active');
+      renderCustomFieldsInForm();
+    });
+
+    function closeClientModal() {
+      document.getElementById('clientModal').classList.remove('active');
+    }
+
+    function clearClientForm() {
+      document.getElementById('editingClientKey').value = '';
+      document.getElementById('regFullName').value = '';
+      document.getElementById('regIds').value = '';
+      document.getElementById('regPhone').value = '';
+      document.getElementById('regWhatsapp').value = '';
+      document.getElementById('regAddress').value = '';
+    }
+
+    document.getElementById('clearRegFormBtn').addEventListener('click', clearClientForm);
+
+    window.editClient = async function(key) {
+      const client = allClientsData.find(c => c.key === key);
+      if (!client) return;
+      
+      editingClientKey = key;
+      document.getElementById('clientModalTitle').textContent = 'تعديل بيانات العميل';
+      document.getElementById('editingClientKey').value = key;
+      document.getElementById('regFullName').value = client.fullName || '';
+      document.getElementById('regIds').value = (client.ids || []).join(', ');
+      document.getElementById('regPhone').value = client.phone || '';
+      document.getElementById('regWhatsapp').value = client.whatsappPhone || '';
+      document.getElementById('regCountry').value = client.country || '';
+      document.getElementById('regCity').value = client.city || '';
+      document.getElementById('regAddress').value = client.address || '';
+      document.getElementById('regAgency').value = client.agencyName || '';
+      
+      await renderCustomFieldsInForm();
+      
+      // Fill custom fields
+      const customFields = client.customFields || {};
+      Object.entries(customFields).forEach(([key, value]) => {
+        const input = document.getElementById(`custom_${key}`);
+        if (input) input.value = value || '';
+      });
+      
+      document.getElementById('clientModal').classList.add('active');
+    };
+
+    document.getElementById('saveClientBtn').addEventListener('click', async () => {
+      try {
+        const ids = document.getElementById('regIds').value.split(',').map(id => id.trim()).filter(Boolean);
+        if (!ids.length) {
+          showAlert('يرجى إدخال رقم ID واحد على الأقل', 'error');
+          return;
+        }
+
+        const data = {
+          fullName: document.getElementById('regFullName').value,
+          ids,
+          phone: document.getElementById('regPhone').value,
+          whatsappPhone: document.getElementById('regWhatsapp').value,
+          country: document.getElementById('regCountry').value,
+          city: document.getElementById('regCity').value,
+          address: document.getElementById('regAddress').value,
+          agencyName: document.getElementById('regAgency').value,
+          customFields: {}
+        };
+
+        // Get custom fields
+        document.querySelectorAll('[id^="custom_"]').forEach(input => {
+          const key = input.id.replace('custom_', '');
+          data.customFields[key] = input.value;
+        });
+
+        if (editingClientKey) {
+          await api('PUT', `/api/ai/registered-clients/${editingClientKey}`, data);
+          showAlert('تم تحديث بيانات العميل');
+        } else {
+          await api('POST', '/api/ai/registered-clients', data);
+          showAlert('تم إضافة العميل بنجاح');
+        }
+
+        closeClientModal();
+        loadRegisteredClients();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    });
+
+    window.deleteClient = async function(key) {
+      if (!confirm('هل أنت متأكد من حذف هذا العميل؟')) return;
+      try {
+        await api('DELETE', `/api/ai/registered-clients/${key}`);
+        showAlert('تم حذف العميل');
+        loadRegisteredClients();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    };
+
+    // =====================================================
+    // LINKED CLIENTS
+    // =====================================================
+    async function loadLinkedClients() {
+      try {
+        const clients = await api('GET', '/api/ai/clients');
+        const tbody = document.querySelector('#linkedClientsTable tbody');
+        const mobile = document.getElementById('linkedClientsMobile');
+        
+        if (!clients.length) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">لا يوجد عملاء مربوطين</td></tr>';
+          mobile.innerHTML = '<div class="empty-state"><p>لا يوجد عملاء مربوطين</p></div>';
+          return;
+        }
+
+        tbody.innerHTML = clients.map(c => `
+          <tr>
+            <td>${c.phone || '-'}</td>
+            <td>${c.name || '-'}</td>
+            <td><span class="badge badge-success">متصل</span></td>
+            <td>${c.lastSeen ? new Date(c.lastSeen).toLocaleString('ar') : '-'}</td>
+          </tr>
+        `).join('');
+
+        mobile.innerHTML = clients.map(c => `
+          <div class="mobile-card">
+            <div class="mobile-card-header">
+              <div class="mobile-card-title">${c.name || c.phone}</div>
+              <span class="badge badge-success">متصل</span>
+            </div>
+            <div class="mobile-card-row">
+              <span class="mobile-card-label">واتساب</span>
+              <span class="mobile-card-value">${c.phone || '-'}</span>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        showAlert('فشل تحميل العملاء المربوطين: ' + err.message, 'error');
+      }
+    }
+
+    document.getElementById('refreshLinkedClientsBtn').addEventListener('click', loadLinkedClients);
+
+    // =====================================================
+    // CHATS
+    // =====================================================
+    let currentChatClientKey = null;
+    let chatRefreshInterval = null;
+
+    async function loadChats() {
+      try {
+        const chats = await api('GET', '/api/ai/chats');
+        const container = document.getElementById('chatsList');
+        
+        let unreadTotal = 0;
+        const chatEntries = Object.entries(chats);
+        
+        if (!chatEntries.length) {
+          container.innerHTML = '<div class="empty-state"><p>لا توجد محادثات</p></div>';
+          updateChatBadge(0);
+          return;
+        }
+
+        container.innerHTML = chatEntries.map(([clientKey, chat]) => {
+          const lastMsg = chat.messages?.[chat.messages.length - 1];
+          const isUnread = chat.unread;
+          if (isUnread) unreadTotal++;
+          
+          return `
+            <div class="chat-item ${isUnread ? 'unread' : ''}" onclick="openChat('${clientKey}', '${chat.clientName || 'عميل'}')">
+              <div class="chat-avatar">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </div>
+              <div class="chat-info">
+                <div class="chat-name">${chat.clientName || 'عميل'}</div>
+                <div class="chat-preview">${lastMsg?.message || ''}</div>
+              </div>
+              ${isUnread ? '<div class="badge badge-danger" style="width: 8px; height: 8px; padding: 0; border-radius: 50%;"></div>' : ''}
+            </div>
+          `;
+        }).join('');
+
+        updateChatBadge(unreadTotal);
+      } catch (err) {
+        console.error('Failed to load chats:', err);
+      }
+    }
+
+    function updateChatBadge(count) {
+      const desktopBadge = document.getElementById('chatsBadge');
+      const mobileBadge = document.getElementById('mobileChatsBadge');
+      
+      if (count > 0) {
+        desktopBadge.textContent = count;
+        desktopBadge.classList.remove('hidden');
+        mobileBadge.textContent = count;
+        mobileBadge.classList.remove('hidden');
+      } else {
+        desktopBadge.classList.add('hidden');
+        mobileBadge.classList.add('hidden');
+      }
+    }
+
+    window.openChat = async function(clientKey, clientName) {
+      currentChatClientKey = clientKey;
+      document.getElementById('currentChatTitle').textContent = clientName;
+      await loadChatMessages(clientKey);
+      
+      // Mark as read
+      try {
+        await api('POST', `/api/ai/chats/${clientKey}/read`);
+        loadChats();
+      } catch {}
+    };
+
+    async function loadChatMessages(clientKey) {
+      try {
+        const result = await api('GET', `/api/ai/chats/${clientKey}/messages`);
+        const container = document.getElementById('chatMessagesContainer');
+        
+        if (!result.messages?.length) {
+          container.innerHTML = '<div class="empty-state"><p>لا توجد رسائل</p></div>';
+          return;
+        }
+
+        container.innerHTML = result.messages.map(m => {
+          const time = new Date(m.timestamp).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
+          return `
+            <div class="chat-bubble ${m.sender}">
+              ${m.message}
+              <div class="chat-bubble-time">${time}</div>
+            </div>
+          `;
+        }).join('');
+
+        container.scrollTop = container.scrollHeight;
+      } catch (err) {
+        console.error('Failed to load messages:', err);
+      }
+    }
+
+    window.sendAdminChatMessage = async function() {
+      const input = document.getElementById('adminChatInput');
+      const message = input.value.trim();
+      if (!message || !currentChatClientKey) return;
+
+      try {
+        input.disabled = true;
+        await api('POST', `/api/ai/chats/${currentChatClientKey}/messages`, { message });
+        input.value = '';
+        await loadChatMessages(currentChatClientKey);
+      } catch (err) {
+        showAlert('فشل إرسال الرسالة', 'error');
+      } finally {
+        input.disabled = false;
+        input.focus();
+      }
+    };
+
+    document.getElementById('adminChatInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendAdminChatMessage();
+    });
+
+    // =====================================================
+    // NOTIFICATIONS
+    // =====================================================
+    async function loadNotifications() {
+      try {
+        const notifications = await api('GET', '/api/ai/notifications');
+        const container = document.getElementById('notificationsList');
+        
+        if (!notifications.length) {
+          container.innerHTML = '<div class="empty-state"><p>لا توجد إشعارات</p></div>';
+          return;
+        }
+
+        container.innerHTML = notifications.slice(0, 20).map(n => `
+          <div class="ticket-item">
+            <div class="ticket-header">
+              <span class="ticket-subject">${n.title}</span>
+              <span class="badge badge-${n.type === 'success' ? 'success' : n.type === 'warning' ? 'warning' : 'info'}">${n.type}</span>
+            </div>
+            <div class="ticket-message">${n.message}</div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 10px; color: var(--text-dim);">${new Date(n.createdAt).toLocaleString('ar')}</span>
+              <button class="btn btn-sm btn-danger" onclick="deleteNotification('${n.id}')">حذف</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        showAlert('فشل تحميل الإشعارات', 'error');
+      }
+    }
+
+    window.deleteNotification = async function(id) {
+      try {
+        await api('DELETE', `/api/ai/notifications/${id}`);
+        loadNotifications();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    };
+
+    document.getElementById('notificationForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await api('POST', '/api/ai/notifications', {
+          title: document.getElementById('notifTitle').value,
+          message: document.getElementById('notifMessage').value,
+          type: document.getElementById('notifType').value,
+          targetClients: [document.getElementById('notifTarget').value]
+        });
+        showAlert('تم إرسال الإشعار');
+        e.target.reset();
+        loadNotifications();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    });
+
+    async function loadNotificationTargets() {
+      try {
+        const clients = await api('GET', '/api/ai/registered-clients');
+        const select = document.getElementById('notifTarget');
+        select.innerHTML = '<option value="all">جميع العملاء</option>';
+        Object.entries(clients).forEach(([key, c]) => {
+          select.innerHTML += `<option value="${key}">${c.fullName}</option>`;
+        });
+      } catch {}
+    }
+
+    // =====================================================
+    // TICKETS
+    // =====================================================
+    async function loadTickets() {
+      try {
+        const tickets = await api('GET', '/api/ai/tickets');
+        const container = document.getElementById('ticketsList');
+        
+        const openCount = tickets.filter(t => t.status === 'open').length;
+        document.getElementById('ticketsStats').innerHTML = `
+          <div class="stat-card">
+            <div class="stat-value">${tickets.length}</div>
+            <div class="stat-label">إجمالي التذاكر</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" style="color: var(--warning);">${openCount}</div>
+            <div class="stat-label">مفتوحة</div>
+          </div>
+        `;
+        
+        // Update badge
+        const badge = document.getElementById('ticketsBadge');
+        if (openCount > 0) {
+          badge.textContent = openCount;
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+
+        if (!tickets.length) {
+          container.innerHTML = '<div class="empty-state"><p>لا توجد تذاكر</p></div>';
+          return;
+        }
+
+        container.innerHTML = tickets.map(t => `
+          <div class="ticket-item">
+            <div class="ticket-header">
+              <span class="ticket-subject">${t.subject}</span>
+              <span class="badge badge-${t.status === 'open' ? 'warning' : t.status === 'resolved' ? 'success' : 'info'}">${t.status === 'open' ? 'مفتوحة' : t.status === 'resolved' ? 'محلولة' : 'مغلقة'}</span>
+            </div>
+            <div class="ticket-message">${t.message}</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <span style="font-size: 10px; color: var(--text-dim);">${new Date(t.createdAt).toLocaleString('ar')}</span>
+              <div style="display: flex; gap: 4px;">
+                ${t.status === 'open' ? `<button class="btn btn-sm btn-primary" onclick="updateTicketStatus('${t.id}', 'resolved')">حل</button>` : ''}
+                <button class="btn btn-sm btn-danger" onclick="deleteTicket('${t.id}')">حذف</button>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        showAlert('فشل تحميل التذاكر', 'error');
+      }
+    }
+
+    window.updateTicketStatus = async function(id, status) {
+      try {
+        await api('PUT', `/api/ai/tickets/${id}`, { status });
+        loadTickets();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    };
+
+    window.deleteTicket = async function(id) {
+      if (!confirm('حذف هذه التذكرة؟')) return;
+      try {
+        await api('DELETE', `/api/ai/tickets/${id}`);
+        loadTickets();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    };
+
+    // =====================================================
+    // KNOWLEDGE BASE
+    // =====================================================
+    async function loadKnowledge() {
+      try {
+        const items = await api('GET', '/api/ai/knowledge');
+        const container = document.getElementById('knowledgeList');
+        
+        if (!items.length) {
+          container.innerHTML = '<div class="empty-state"><p>لا توجد أسئلة في قاعدة المعرفة</p></div>';
+          return;
+        }
+
+        container.innerHTML = items.map(item => `
+          <div class="knowledge-item ${!item.active ? 'inactive' : ''}">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+              <div class="knowledge-question">${item.question}</div>
+              <div style="display: flex; gap: 4px;">
+                <button class="btn btn-sm btn-secondary" onclick="toggleKnowledge('${item.id}', ${!item.active})">${item.active ? 'تعطيل' : 'تفعيل'}</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteKnowledge('${item.id}')">حذف</button>
+              </div>
+            </div>
+            <div class="knowledge-answer">${item.answer}</div>
+          </div>
+        `).join('');
+      } catch (err) {
+        showAlert('فشل تحميل قاعدة المعرفة', 'error');
+      }
+    }
+
+    window.toggleKnowledge = async function(id, active) {
+      try {
+        await api('PUT', `/api/ai/knowledge/${id}`, { active });
+        loadKnowledge();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    };
+
+    window.deleteKnowledge = async function(id) {
+      if (!confirm('حذف هذا السؤال؟')) return;
+      try {
+        await api('DELETE', `/api/ai/knowledge/${id}`);
+        loadKnowledge();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    };
+
+    window.resetKnowledge = async function() {
+      if (!confirm('إعادة تعيين قاعدة المعرفة للأسئلة الافتراضية؟')) return;
+      try {
+        await api('POST', '/api/ai/knowledge/reset');
+        showAlert('تم إعادة التعيين');
+        loadKnowledge();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    };
+
+    document.getElementById('knowledgeForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await api('POST', '/api/ai/knowledge', {
+          question: document.getElementById('kbQuestion').value,
+          answer: document.getElementById('kbAnswer').value,
+          keywords: document.getElementById('kbKeywords').value.split(',').map(k => k.trim()).filter(Boolean)
+        });
+        showAlert('تم إضافة السؤال');
+        e.target.reset();
+        loadKnowledge();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    });
+
+    // =====================================================
+    // USAGE
+    // =====================================================
+    async function loadUsage() {
+      try {
+        const usage = await api('GET', '/api/ai/usage');
+        
+        document.getElementById('usageStats').innerHTML = `
+          <div class="stat-card">
+            <div class="stat-value">${(usage.totalTokens || 0).toLocaleString()}</div>
+            <div class="stat-label">إجمالي التوكنات</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">$${(usage.totalCost || 0).toFixed(4)}</div>
+            <div class="stat-label">التكلفة الإجمالية</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${usage.requestCount || 0}</div>
+            <div class="stat-label">عدد الطلبات</div>
+          </div>
+        `;
+
+        const tbody = document.querySelector('#usageTable tbody');
+        if (!usage.logs?.length) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">لا يوجد سجل</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = usage.logs.slice(0, 50).map(log => `
+          <tr>
+            <td>${new Date(log.timestamp).toLocaleString('ar')}</td>
+            <td>${log.type || 'chat'}</td>
+            <td>${log.tokens || 0}</td>
+            <td>$${(log.cost || 0).toFixed(6)}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        showAlert('فشل تحميل الاستهلاك', 'error');
+      }
+    }
+
+    document.getElementById('refreshUsageBtn').addEventListener('click', loadUsage);
+    document.getElementById('resetUsageBtn').addEventListener('click', async () => {
+      if (!confirm('إعادة تعيين سجل الاستهلاك؟')) return;
+      try {
+        await api('POST', '/api/ai/usage/reset');
+        showAlert('تم إعادة التعيين');
+        loadUsage();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    });
+
+    // =====================================================
+    // CUSTOM FIELDS
+    // =====================================================
+    let editingFieldId = null;
+
+    async function loadCustomFields() {
+      try {
+        const fields = await api('GET', '/api/ai/custom-fields');
+        const container = document.getElementById('fieldsList');
+        
+        if (!fields.length) {
+          container.innerHTML = '<div class="empty-state"><p>لا توجد حقول مخصصة</p></div>';
+          return;
+        }
+
+        container.innerHTML = fields.map(f => `
+          <div class="period-card">
+            <div class="period-info">
+              <h4>${f.name}</h4>
+              <div class="period-meta">${f.type === 'dropdown' ? 'قائمة منسدلة' : f.type === 'number' ? 'رقم' : 'نص'}</div>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-sm btn-secondary" onclick="editField('${f.id}')">تعديل</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteField('${f.id}')">حذف</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        showAlert('فشل تحميل الحقول', 'error');
+      }
+    }
+
+    document.getElementById('refreshFieldsBtn').addEventListener('click', loadCustomFields);
+
+    document.getElementById('fieldType').addEventListener('change', function() {
+      document.getElementById('dropdownOptionsContainer').classList.toggle('hidden', this.value !== 'dropdown');
+    });
+
+    window.addDropdownOptionInputWithSubField = function(value = '', subType = '', subLabel = '') {
+      const container = document.getElementById('dropdownOptions');
+      const div = document.createElement('div');
+      div.className = 'dropdown-option';
+      div.innerHTML = `
+        <input type="text" class="form-input" placeholder="قيمة الخيار" value="${value}" style="flex: 1;">
+        <select class="form-select" style="width: 100px;">
+          <option value="">بدون حقل فرعي</option>
+          <option value="text" ${subType === 'text' ? 'selected' : ''}>نص</option>
+          <option value="number" ${subType === 'number' ? 'selected' : ''}>رقم</option>
+        </select>
+        <input type="text" class="form-input" placeholder="اسم الحقل الفرعي" value="${subLabel}" style="width: 120px;">
+        <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">×</button>
+      `;
+      container.appendChild(div);
+    };
+
+    function cancelEdit() {
+      editingFieldId = null;
+      document.getElementById('fieldName').value = '';
+      document.getElementById('fieldType').value = 'text';
+      document.getElementById('dropdownOptions').innerHTML = '';
+      document.getElementById('dropdownOptionsContainer').classList.add('hidden');
+      document.getElementById('cancelEditFieldBtn').classList.add('hidden');
+    }
+
+    window.editField = async function(id) {
+      try {
+        const fields = await api('GET', '/api/ai/custom-fields');
+        const field = fields.find(f => f.id === id);
+        if (!field) return;
+
+        editingFieldId = id;
+        document.getElementById('fieldName').value = field.name;
+        document.getElementById('fieldType').value = field.type;
+        document.getElementById('cancelEditFieldBtn').classList.remove('hidden');
+
+        if (field.type === 'dropdown') {
+          document.getElementById('dropdownOptionsContainer').classList.remove('hidden');
+          document.getElementById('dropdownOptions').innerHTML = '';
+          (field.options || []).forEach(opt => {
+            if (typeof opt === 'object') {
+              addDropdownOptionInputWithSubField(opt.value, opt.subType, opt.subLabel);
+            } else {
+              addDropdownOptionInputWithSubField(opt);
+            }
+          });
+        }
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    };
+
+    window.deleteField = async function(id) {
+      if (!confirm('حذف هذا الحقل؟')) return;
+      try {
+        await api('DELETE', `/api/ai/custom-fields/${id}`);
+        showAlert('تم حذف الحقل');
+        loadCustomFields();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    };
+
+    document.getElementById('addFieldBtn').addEventListener('click', async () => {
+      try {
+        const name = document.getElementById('fieldName').value.trim();
+        const type = document.getElementById('fieldType').value;
+
+        if (!name) {
+          showAlert('يرجى إدخال اسم الحقل', 'error');
+          return;
+        }
+
+        let options = [];
+        if (type === 'dropdown') {
+          document.querySelectorAll('#dropdownOptions .dropdown-option').forEach(row => {
+            const inputs = row.querySelectorAll('input');
+            const select = row.querySelector('select');
+            const value = inputs[0].value.trim();
+            const subType = select.value;
+            const subLabel = inputs[1].value.trim();
+            
+            if (value) {
+              if (subType) {
+                options.push({ value, subType, subLabel });
+              } else {
+                options.push(value);
+              }
+            }
+          });
+        }
+
+        const data = { name, type, options };
+
+        if (editingFieldId) {
+          await api('PUT', `/api/ai/custom-fields/${editingFieldId}`, data);
+          showAlert('تم تحديث الحقل');
+        } else {
+          await api('POST', '/api/ai/custom-fields', data);
+          showAlert('تم إضافة الحقل');
+        }
+
+        cancelEdit();
+        loadCustomFields();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    });
+
+    async function renderCustomFieldsInForm() {
+      try {
+        const fields = await api('GET', '/api/ai/custom-fields');
+        const container = document.getElementById('customFieldsContainer');
+        
+        container.innerHTML = fields.map(f => {
+          if (f.type === 'dropdown') {
+            return `
+              <div class="form-group">
+                <label class="form-label">${f.name}</label>
+                <select class="form-select" id="custom_${f.id}" onchange="handleDropdownSubField(this, '${f.id}')">
+                  <option value="">اختر...</option>
+                  ${(f.options || []).map(opt => {
+                    const val = typeof opt === 'object' ? opt.value : opt;
+                    return `<option value="${val}" data-sub-type="${opt.subType || ''}" data-sub-label="${opt.subLabel || ''}">${val}</option>`;
+                  }).join('')}
+                </select>
+                <div id="subField_${f.id}"></div>
+              </div>
+            `;
+          } else {
+            return `
+              <div class="form-group">
+                <label class="form-label">${f.name}</label>
+                <input type="${f.type === 'number' ? 'number' : 'text'}" class="form-input" id="custom_${f.id}">
+              </div>
+            `;
+          }
+        }).join('');
+      } catch {}
+    }
+
+    window.handleDropdownSubField = function(selectEl, fieldKey) {
+      const selected = selectEl.options[selectEl.selectedIndex];
+      const subType = selected.dataset.subType;
+      const subLabel = selected.dataset.subLabel;
+      const container = document.getElementById(`subField_${fieldKey}`);
+      
+      if (subType) {
+        container.innerHTML = `
+          <div class="form-group" style="margin-top: 8px;">
+            <label class="form-label">${subLabel || 'تفاصيل إضافية'}</label>
+            <input type="${subType === 'number' ? 'number' : 'text'}" class="form-input" id="custom_${fieldKey}__sub">
+          </div>
+        `;
+      } else {
+        container.innerHTML = '';
+      }
+    };
+
+    // =====================================================
+    // LOOKUPS
+    // =====================================================
+    let globalLookups = { agencies: [], countries: [] };
+
+    async function loadLookups() {
+      try {
+        globalLookups = await api('GET', '/api/ai/lookups');
+        renderLookupSelects();
+      } catch {}
+    }
+
+    function renderLookupSelects() {
+      const agencySelect = document.getElementById('regAgency');
+      const countrySelect = document.getElementById('regCountry');
+      
+      agencySelect.innerHTML = '<option value="">اختر الوكالة</option>';
+      (globalLookups.agencies || []).forEach(a => {
+        agencySelect.innerHTML += `<option value="${a}">${a}</option>`;
+      });
+
+      countrySelect.innerHTML = '<option value="">اختر الدولة</option>';
+      (globalLookups.countries || []).forEach(c => {
+        const name = typeof c === 'object' ? c.name : c;
+        countrySelect.innerHTML += `<option value="${name}">${name}</option>`;
+      });
+    }
+
+    document.getElementById('regCountry')?.addEventListener('change', function() {
+      const citySelect = document.getElementById('regCity');
+      const country = globalLookups.countries?.find(c => (typeof c === 'object' ? c.name : c) === this.value);
+      
+      citySelect.innerHTML = '<option value="">اختر المدينة</option>';
+      if (country && country.cities) {
+        country.cities.forEach(city => {
+          citySelect.innerHTML += `<option value="${city}">${city}</option>`;
+        });
+      }
+    });
+
+    // =====================================================
+    // NOTIFY CLIENT
+    // =====================================================
+    let currentNotifyClientKey = null;
+    let currentNotifyPhone = null;
+    let notifyType = 'salary';
+
+    window.promptNotify = function(key, name, phone) {
+      currentNotifyClientKey = key;
+      currentNotifyPhone = phone;
+      document.getElementById('notifyClientInfo').textContent = `إرسال إشعار لـ: ${name}`;
+      document.getElementById('notifyModal').classList.add('active');
+    };
+
+    function closeNotifyModal() {
+      document.getElementById('notifyModal').classList.remove('active');
+      currentNotifyClientKey = null;
+    }
+
+    window.toggleNotifyType = function(type) {
+      notifyType = type;
+      document.querySelectorAll('.inner-tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('notifyCustomContainer').classList.toggle('hidden', type !== 'custom');
+    };
+
+    window.sendNotification = async function() {
+      try {
+        if (notifyType === 'salary') {
+          await api('POST', '/api/ai/notify/salary', { clientKey: currentNotifyClientKey });
+          showAlert('تم إرسال إشعار الراتب');
+        } else {
+          const message = document.getElementById('notifyCustomMessage').value;
+          if (!message) {
+            showAlert('يرجى كتابة الرسالة', 'error');
+            return;
+          }
+          await api('POST', '/api/ai/notify/custom', { phone: currentNotifyPhone, message });
+          showAlert('تم إرسال الرسالة');
+        }
+        closeNotifyModal();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    };
+
+    // =====================================================
+    // OPENROUTER MODELS
+    // =====================================================
+    window.loadOpenRouterModels = async function() {
+      try {
+        showAlert('جاري تحميل الموديلات...');
+        const res = await fetch('https://openrouter.ai/api/v1/models');
+        const data = await res.json();
+        
+        const select = document.getElementById('openrouterModel');
+        select.innerHTML = '';
+        
+        data.data.sort((a, b) => a.id.localeCompare(b.id)).forEach(model => {
+          select.innerHTML += `<option value="${model.id}">${model.id}</option>`;
+        });
+        
+        showAlert(`تم تحميل ${data.data.length} موديل`);
+      } catch (err) {
+        showAlert('فشل تحميل الموديلات', 'error');
+      }
+    };
+
+    // =====================================================
+    // INITIALIZATION
+    // =====================================================
+    document.addEventListener('DOMContentLoaded', () => {
+      loadSettings();
+      loadPeriods();
+      loadRegisteredClients();
+      loadLinkedClients();
+      loadChats();
+      loadNotifications();
+      loadNotificationTargets();
+      loadTickets();
+      loadKnowledge();
+      loadUsage();
+      loadCustomFields();
+      loadLookups();
+
+      // Auto-refresh chats
+      setInterval(loadChats, 10000);
+    });
+  </script>
+</body>
+</html>
