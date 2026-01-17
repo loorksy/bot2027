@@ -17,6 +17,7 @@ const portal = require('./portal');
 const tickets = require('./tickets');
 const knowledgeBase = require('./knowledgeBase');
 const smartAgent = require('./smartAgent');
+const liveChat = require('./liveChat'); // For chat history
 
 let waClient = null;
 let initialized = false;
@@ -591,7 +592,7 @@ async function handleSupportRequest(message, linkedClient, messageText, isVoice)
             : null;
         
         // Get recent chat history (last 15 messages)
-        const chatHistory = await chats.getMessages(linkedClient.whatsappId) || [];
+        const chatHistory = await liveChat.getMessages(linkedClient.whatsappId);
         const recentMessages = chatHistory.slice(-15).map(msg => ({
             sender: msg.sender,
             message: msg.message,
