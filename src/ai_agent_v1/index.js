@@ -244,9 +244,19 @@ async function handleUnlinkedClient(message, linkedClient, messageText, isVoice)
 async function handleLinkedClient(message, linkedClient, messageText, isVoice) {
     const whatsappId = message.from;
 
-    // Check for PIN (exactly 6 digits)
-    if (pin.looksLikePin(messageText.trim())) {
-        await handlePinAttempt(message, linkedClient, messageText.trim(), isVoice);
+    // Check if PIN verification is needed (every 3 days)
+    const needsPinCheck = await shouldAskForPin(linkedClient);
+    
+    if (needsPinCheck && !linkedClient.trustedUntil) {
+        // Need PIN verification
+        if (pin.looksLikePin(messageText.trim())) {
+            await handlePinAttempt(message, linkedClient, messageText.trim(), isVoice);
+            return;
+        }
+        
+        // Ask for PIN
+        const pinReply = await reply.generateReply({ type: 'ASK_PIN', context: {} });
+        await sendReply(message, pinReply, isVoice);
         return;
     }
 
