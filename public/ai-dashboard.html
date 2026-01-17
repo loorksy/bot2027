@@ -1942,6 +1942,110 @@
     </div>
   </div>
 
+  <!-- Receipts Modal -->
+  <div class="modal" id="receiptsModal">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header">
+        <div class="modal-title" id="receiptsModalTitle">إيصالات العميل</div>
+        <button class="modal-close" onclick="closeReceiptsModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- Upload Area -->
+        <div class="file-upload-area" id="receiptDropZone" style="margin-bottom: 16px;">
+          <input type="file" id="receiptFile" style="display: none;">
+          <svg class="file-upload-icon" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>
+          </svg>
+          <div class="file-upload-text">اسحب الملف هنا أو اضغط للاختيار</div>
+          <div class="file-upload-hint">جميع أنواع الملفات مدعومة</div>
+        </div>
+
+        <div id="selectedFileInfo" class="hidden" style="background: var(--success-bg); padding: 12px; border-radius: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+          <span id="selectedFileName" style="color: var(--success);"></span>
+          <button class="btn btn-sm btn-danger" onclick="clearSelectedFile()">إلغاء</button>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+          <input type="text" class="form-input" id="receiptDescription" placeholder="ملاحظة (اختياري)" style="flex: 1;">
+          <button class="btn btn-primary" onclick="uploadReceipt()">رفع</button>
+        </div>
+
+        <p style="font-size: 10px; color: var(--text-dim); margin-bottom: 16px;">✅ سيتم إشعار العميل تلقائياً على واتساب</p>
+
+        <div class="card-title" style="margin-bottom: 12px;">الإيصالات المرفوعة</div>
+        <div id="receiptsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Broadcast Modal -->
+  <div class="modal" id="broadcastModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">إرسال رسالة جماعية</div>
+        <button class="modal-close" onclick="closeBroadcastModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">الفئة المستهدفة</label>
+          <select class="form-select" id="broadcastTarget">
+            <option value="all">جميع العملاء</option>
+            <option value="agency">وكالة معينة</option>
+          </select>
+        </div>
+        <div class="form-group hidden" id="broadcastAgencyGroup">
+          <label class="form-label">اختر الوكالة</label>
+          <select class="form-select" id="broadcastAgency"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">الرسالة</label>
+          <textarea class="form-textarea" id="broadcastMessage" placeholder="اكتب رسالتك هنا..." rows="5"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeBroadcastModal()">إلغاء</button>
+        <button class="btn btn-primary" onclick="sendBroadcast()">إرسال للجميع</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lookups Modal -->
+  <div class="modal" id="lookupsModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">إدارة القوائم</div>
+        <button class="modal-close" onclick="closeLookupsModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="inner-tabs">
+          <button class="inner-tab active" onclick="switchLookupTab('agencies')">الوكالات</button>
+          <button class="inner-tab" onclick="switchLookupTab('countries')">الدول</button>
+        </div>
+        <div id="lookupContent">
+          <div id="agenciesLookup">
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+              <input type="text" class="form-input" id="newAgencyName" placeholder="اسم الوكالة">
+              <button class="btn btn-primary btn-sm" onclick="addAgency()">إضافة</button>
+            </div>
+            <div id="agenciesList"></div>
+          </div>
+          <div id="countriesLookup" class="hidden">
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+              <input type="text" class="form-input" id="newCountryName" placeholder="اسم الدولة">
+              <button class="btn btn-primary btn-sm" onclick="addCountry()">إضافة</button>
+            </div>
+            <div id="countriesList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script>
     // =====================================================
