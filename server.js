@@ -2870,14 +2870,17 @@ app.use('/data/receipts', express.static(path.join(__dirname, 'data/receipts')))
 // NEW: Multiple Receipts per Client System
 // =====================================================
 
-// Upload receipt for a client
+// Upload receipt for a client (supports file OR text-only)
 app.post('/api/ai/clients/:clientKey/receipts', requireAdmin, receiptUpload.single('file'), async (req, res) => {
   try {
     const { clientKey } = req.params;
-    const { description } = req.body;
+    const { description, isTextOnly } = req.body;
 
-    if (!req.file) {
-      return res.status(400).json({ error: 'الرجاء اختيار ملف' });
+    // Check if text-only receipt or file upload
+    const textOnlyReceipt = isTextOnly === 'true' || isTextOnly === true;
+    
+    if (!textOnlyReceipt && !req.file) {
+      return res.status(400).json({ error: 'الرجاء اختيار ملف أو كتابة نص' });
     }
 
     // Verify client exists
@@ -2886,13 +2889,14 @@ app.post('/api/ai/clients/:clientKey/receipts', requireAdmin, receiptUpload.sing
       return res.status(404).json({ error: 'العميل غير موجود' });
     }
 
-    // Upload receipt
+    // Upload receipt (file or text-only)
     const receipt = await receipts.uploadReceipt(
       clientKey,
-      req.file.buffer,
-      req.file.originalname,
-      req.file.mimetype,
-      description || ''
+      textOnlyReceipt ? null : req.file.buffer,
+      textOnlyReceipt ? null : req.file.originalname,
+      textOnlyReceipt ? 'text/plain' : req.file.mimetype,
+      description || '',
+      textOnlyReceipt
     );
 
     // Send WhatsApp notification
@@ -2901,7 +2905,12 @@ app.post('/api/ai/clients/:clientKey/receipts', requireAdmin, receiptUpload.sing
       console.log(`[Receipts] Attempting to notify: ${whatsappNumber}, bot exists: ${!!bot}, client exists: ${!!(bot && bot.client)}, isReady: ${!!(bot && bot.isReady)}`);
       
       if (whatsappNumber && bot && bot.client) {
-        const message = `🧾 *إيصال جديد*\n\nمرحباً ${client.fullName}،\n\nتم رفع إيصال جديد لحسابك.\nيمكنك الاطلاع عليه من خلال بوابتك الشخصية.\n\n📁 ${req.file.originalname}`;
+        let message;
+        if (textOnlyReceipt) {
+          message = `🧾 *إيصال جديد*\n\nمرحباً ${client.fullName}،\n\nتم رفع إيصال جديد لحسابك:\n\n${description}\n\nيمكنك الاطلاع عليه من خلال بوابتك الشخصية.`;
+        } else {
+          message = `🧾 *إيصال جديد*\n\nمرحباً ${client.fullName}،\n\nتم رفع إيصال جديد لحسابك.\nيمكنك الاطلاع عليه من خلال بوابتك الشخصية.\n\n📁 ${req.file.originalname}`;
+        }
         const formattedNumber = whatsappNumber.replace(/[^0-9]/g, '') + '@c.us';
         await bot.client.sendMessage(formattedNumber, message);
         console.log(`[Receipts] WhatsApp notification sent to ${whatsappNumber}`);
