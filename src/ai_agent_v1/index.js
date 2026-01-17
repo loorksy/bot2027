@@ -89,6 +89,9 @@ async function processMessage(message) {
             await sendReply(message, emptyReply, isVoice);
             return;
         }
+        
+        // Save user message to chat history
+        await clients.addConversationEntry(whatsappId, 'user', messageText);
 
         // Save to history
         await clients.addConversationEntry(whatsappId, 'user', messageText);
