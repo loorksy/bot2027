@@ -945,6 +945,12 @@
       
       // Load PIN
       loadPin();
+      
+      // Load chat messages
+      loadChatMessages();
+      
+      // Auto-refresh chat every 5 seconds
+      setInterval(loadChatMessages, 5000);
     }
 
     // =====================================================
@@ -991,23 +997,83 @@
     }
 
     // =====================================================
-    // Chat with Admin
+    // Live Chat
     // =====================================================
-    async function sendChatMessage() {
-      const textarea = document.getElementById('chatMessage');
-      const message = textarea.value.trim();
+    let chatMessages = [];
+
+    async function loadChatMessages() {
+      try {
+        const result = await api('GET', `/api/portal/${token}/chat/messages`);
+        chatMessages = result.messages || [];
+        
+        // Update unread badge
+        const badge = document.getElementById('chatUnreadBadge');
+        if (result.unread > 0) {
+          badge.textContent = result.unread;
+          badge.style.display = 'inline';
+        } else {
+          badge.style.display = 'none';
+        }
+        
+        renderChatMessages();
+      } catch (e) {
+        console.error('Failed to load chat:', e);
+      }
+    }
+
+    function renderChatMessages() {
+      const container = document.getElementById('chatMessages');
       
-      if (!message) {
-        showAlert('اكتبي رسالتك أولاً', 'error');
+      if (chatMessages.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; color: #888; padding: 40px 0;">
+            <div style="font-size: 2rem; margin-bottom: 8px;">💬</div>
+            <p>ابدأي محادثة مع الإدارة</p>
+          </div>
+        `;
         return;
       }
       
+      container.innerHTML = chatMessages.map(msg => {
+        const time = new Date(msg.timestamp).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
+        const date = new Date(msg.timestamp).toLocaleDateString('ar', { month: 'short', day: 'numeric' });
+        const senderClass = msg.sender === 'client' ? 'client' : 'admin';
+        const senderLabel = msg.sender === 'client' ? 'أنت' : '👨‍💼 الإدارة';
+        
+        return `
+          <div class="chat-message ${senderClass}">
+            <div class="message-text">${msg.message}</div>
+            <div class="message-time">${senderLabel} • ${date} ${time}</div>
+          </div>
+        `;
+      }).join('');
+      
+      // Scroll to bottom
+      container.scrollTop = container.scrollHeight;
+    }
+
+    async function sendLiveChatMessage() {
+      const input = document.getElementById('chatInput');
+      const message = input.value.trim();
+      
+      if (!message) return;
+      
       try {
-        const result = await api('POST', `/api/portal/${token}/chat`, { message });
-        textarea.value = '';
-        showAlert('تم إرسال رسالتك بنجاح! ✅\nرقم الطلب: ' + result.ticketNumber + '\nسيتواصل معك أحد المسؤولين قريباً 💕');
+        input.disabled = true;
+        await api('POST', `/api/portal/${token}/chat/messages`, { message });
+        input.value = '';
+        await loadChatMessages();
       } catch (e) {
         showAlert('فشل إرسال الرسالة: ' + e.message, 'error');
+      } finally {
+        input.disabled = false;
+        input.focus();
+      }
+    }
+
+    // Old chat function (keep for backwards compatibility)
+    async function sendChatMessage() {
+      sendLiveChatMessage();
       }
     }
 
