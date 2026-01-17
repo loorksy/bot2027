@@ -871,61 +871,51 @@
         <div id="openrouterSettings" style="display: none;">
           <div class="form-group">
             <label>OpenRouter API Key</label>
-            <input type="password" id="openrouterKey" placeholder="sk-or-...">
+            <div style="display: flex; gap: 8px;">
+              <input type="password" id="openrouterKey" placeholder="sk-or-..." style="flex: 1;">
+              <button type="button" class="btn btn-primary" onclick="loadOpenRouterModels()" style="white-space: nowrap;">🔄 تحميل الموديلات</button>
+            </div>
             <small style="color: #64748b; display: block; margin-top: 4px;">
               احصل على مفتاحك من <a href="https://openrouter.ai/keys" target="_blank" style="color: #3b82f6;">openrouter.ai/keys</a>
             </small>
           </div>
 
           <div class="form-group">
-            <label>موديل المحادثة</label>
-            <select id="openrouterModel">
+            <label>🔍 البحث عن موديل</label>
+            <input type="text" id="openrouterModelSearch" placeholder="ابحث عن موديل... (مثل: gpt, claude, llama)" oninput="filterOpenRouterModels()">
+          </div>
+
+          <div class="form-group">
+            <label>موديل المحادثة <span id="modelsCount" style="color: #64748b; font-size: 0.8rem;"></span></label>
+            <select id="openrouterModel" size="10" style="height: 250px; overflow-y: auto;">
               <optgroup label="🟢 OpenAI">
                 <option value="openai/gpt-4o-mini">GPT-4o Mini - سريع ورخيص</option>
                 <option value="openai/gpt-4o">GPT-4o - متوازن</option>
-                <option value="openai/gpt-4-turbo">GPT-4 Turbo</option>
-                <option value="openai/o1-mini">O1 Mini - تفكير متقدم</option>
-                <option value="openai/o1-preview">O1 Preview - تفكير عميق</option>
               </optgroup>
               <optgroup label="🟣 Anthropic">
-                <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet - الأفضل</option>
-                <option value="anthropic/claude-3-opus">Claude 3 Opus - الأقوى</option>
-                <option value="anthropic/claude-3-haiku">Claude 3 Haiku - سريع</option>
+                <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet</option>
               </optgroup>
               <optgroup label="🔵 Google">
                 <option value="google/gemini-pro-1.5">Gemini Pro 1.5</option>
-                <option value="google/gemini-flash-1.5">Gemini Flash 1.5 - سريع</option>
-                <option value="google/gemini-2.0-flash-exp">Gemini 2.0 Flash</option>
-              </optgroup>
-              <optgroup label="🟡 Meta Llama">
-                <option value="meta-llama/llama-3.1-70b-instruct">Llama 3.1 70B</option>
-                <option value="meta-llama/llama-3.1-405b-instruct">Llama 3.1 405B - الأكبر</option>
-                <option value="meta-llama/llama-3.2-90b-vision-instruct">Llama 3.2 90B Vision</option>
-              </optgroup>
-              <optgroup label="🔴 Mistral">
-                <option value="mistralai/mistral-large">Mistral Large</option>
-                <option value="mistralai/mistral-medium">Mistral Medium</option>
-                <option value="mistralai/mixtral-8x22b-instruct">Mixtral 8x22B</option>
-              </optgroup>
-              <optgroup label="⚫ DeepSeek">
-                <option value="deepseek/deepseek-chat">DeepSeek Chat - رخيص جداً</option>
-                <option value="deepseek/deepseek-r1">DeepSeek R1 - تفكير</option>
-              </optgroup>
-              <optgroup label="🟠 Qwen">
-                <option value="qwen/qwen-2.5-72b-instruct">Qwen 2.5 72B</option>
-                <option value="qwen/qwen-2.5-coder-32b-instruct">Qwen 2.5 Coder 32B</option>
               </optgroup>
               <optgroup label="⚪ مجاني">
                 <option value="meta-llama/llama-3.2-3b-instruct:free">Llama 3.2 3B (مجاني)</option>
-                <option value="google/gemma-2-9b-it:free">Gemma 2 9B (مجاني)</option>
-                <option value="mistralai/mistral-7b-instruct:free">Mistral 7B (مجاني)</option>
               </optgroup>
             </select>
+            <small style="color: #64748b; display: block; margin-top: 4px;">
+              اضغط "تحميل الموديلات" لجلب كل الموديلات المتاحة (+300 موديل)
+            </small>
+          </div>
+
+          <div id="selectedModelInfo" style="display: none; background: rgba(34, 197, 94, 0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(34, 197, 94, 0.2); margin-bottom: 15px;">
+            <p style="margin: 0; font-size: 0.85rem; color: #94a3b8;">
+              <strong>الموديل المحدد:</strong> <span id="selectedModelName"></span>
+            </p>
           </div>
 
           <div class="form-group" style="background: rgba(59, 130, 246, 0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.2);">
             <p style="margin: 0; font-size: 0.85rem; color: #94a3b8;">
-              💡 <strong>OpenRouter</strong> يوفر وصولاً لأكثر من 500 موديل من مزودين مختلفين بـ API واحد.
+              💡 <strong>OpenRouter</strong> يوفر وصولاً لأكثر من 300 موديل من مزودين مختلفين بـ API واحد.
               <br>يمكنك رؤية كل الموديلات والأسعار على <a href="https://openrouter.ai/models" target="_blank" style="color: #3b82f6;">openrouter.ai/models</a>
             </p>
           </div>
