@@ -749,11 +749,6 @@ app.post('/api/ai/settings', requireAdmin, async (req, res) => {
         interval: googleSheetSyncState.interval
       });
 
-      // Save to .env file for persistence
-      if (body.googleSheetUrlAuto) envUpdates.GOOGLE_SHEET_URL = body.googleSheetUrlAuto;
-      if (body.googleSheetSyncInterval) envUpdates.GOOGLE_SHEET_INTERVAL = body.googleSheetSyncInterval;
-      envUpdates.GOOGLE_SHEET_ENABLED = body.googleSheetAutoSync ? '1' : '0';
-
       if (googleSheetSyncState.enabled && googleSheetSyncState.url) {
         startAutoSync(googleSheetSyncState.interval);
       } else {
@@ -780,7 +775,9 @@ app.post('/api/ai/settings', requireAdmin, async (req, res) => {
     // Google Sheet Settings
     if (body.googleSheetUrlAuto) envUpdates.GOOGLE_SHEET_URL = body.googleSheetUrlAuto;
     if (body.googleSheetSyncInterval) envUpdates.GOOGLE_SHEET_INTERVAL = body.googleSheetSyncInterval;
-    envUpdates.GOOGLE_SHEET_ENABLED = body.googleSheetAutoSync ? '1' : '0';
+    if (body.googleSheetAutoSync !== undefined) {
+      envUpdates.GOOGLE_SHEET_ENABLED = body.googleSheetAutoSync ? '1' : '0';
+    }
     
     // Update .env if there are any changes
     if (Object.keys(envUpdates).length > 0) {
