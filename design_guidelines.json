@@ -1,123 +1,181 @@
 {
-  "identity": {
-    "role": "E1: The Anti-AI Designer",
-    "mission": "Transform a basic HTML portal into a premium, native-feeling mobile app experience.",
-    "principles": [
-      "Fusion: Finance precision meets Consumer App fluidity.",
-      "Emotion: Trust and Clarity. Dark mode should feel 'expensive', not just dark.",
-      "Content: Salaries are the hero. Make them look like digital banknotes/receipts.",
-      "Zoom In: Small, crisp details. High density information without clutter."
-    ]
-  },
-  "typography": {
-    "font_family": "'IBM Plex Sans Arabic', 'Tajawal', sans-serif",
-    "cdn_link": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap",
-    "scale": {
-      "xs": "0.75rem",
-      "sm": "0.875rem",
-      "base": "1rem",
-      "lg": "1.125rem",
-      "xl": "1.25rem"
+  "design_system": {
+    "typography": {
+      "font_family": "IBM Plex Sans Arabic, sans-serif",
+      "scale": {
+        "h1": "text-3xl md:text-4xl font-bold tracking-tight",
+        "h2": "text-2xl md:text-3xl font-semibold tracking-tight",
+        "h3": "text-xl md:text-2xl font-semibold",
+        "body": "text-sm md:text-base font-normal leading-relaxed",
+        "small": "text-xs font-medium text-muted-foreground"
+      }
     },
-    "weights": {
-      "regular": 400,
-      "medium": 500,
-      "bold": 700
+    "colors": {
+      "theme": "dark",
+      "palette": {
+        "background": "#09090b",
+        "foreground": "#e4e4e7",
+        "card": "#18181b",
+        "card_foreground": "#e4e4e7",
+        "popover": "#09090b",
+        "popover_foreground": "#e4e4e7",
+        "primary": "#10b981",
+        "primary_foreground": "#ffffff",
+        "secondary": "#27272a",
+        "secondary_foreground": "#e4e4e7",
+        "muted": "#27272a",
+        "muted_foreground": "#a1a1aa",
+        "accent": "#27272a",
+        "accent_foreground": "#e4e4e7",
+        "destructive": "#ef4444",
+        "destructive_foreground": "#ffffff",
+        "border": "#27272a",
+        "input": "#27272a",
+        "ring": "#10b981"
+      }
+    },
+    "spacing": {
+      "container_padding": "p-4 md:p-8",
+      "section_gap": "gap-6",
+      "element_gap": "gap-4"
+    },
+    "radius": {
+      "default": "rounded-lg",
+      "sm": "rounded-md",
+      "lg": "rounded-xl"
+    },
+    "shadows": {
+      "card": "shadow-sm hover:shadow-md transition-shadow duration-200",
+      "dropdown": "shadow-lg border border-border"
     }
   },
-  "colors": {
-    "background": "#09090b",
-    "surface": "#18181b",
-    "surface_highlight": "#27272a",
-    "border": "#27272a",
-    "primary": "#10b981",
-    "primary_foreground": "#ffffff",
-    "secondary": "#27272a",
-    "secondary_foreground": "#fafafa",
-    "muted": "#71717a",
-    "text_main": "#e4e4e7",
-    "text_muted": "#a1a1aa",
-    "success": "#059669",
-    "success_bg": "rgba(5, 150, 105, 0.1)",
-    "danger": "#ef4444",
-    "danger_bg": "rgba(239, 68, 68, 0.1)"
-  },
-  "layout": {
-    "structure": "Mobile App Shell",
-    "elements": [
-      "Sticky Header (Glassmorphism)",
-      "Scrollable Content Area (Padding Bottom 80px)",
-      "Fixed Bottom Navigation Bar"
-    ],
-    "spacing": {
-      "container_padding": "16px",
-      "card_padding": "20px",
-      "gap": "12px"
+  "layout_strategy": {
+    "type": "responsive_hybrid",
+    "direction": "rtl",
+    "structure": {
+      "desktop": "sidebar_left_fixed",
+      "mobile": "bottom_nav_fixed",
+      "content_area": "scrollable_main"
+    },
+    "breakpoints": {
+      "mobile": "max-width: 768px",
+      "desktop": "min-width: 769px"
     }
   },
   "components": {
-    "bottom_nav": {
-      "description": "Fixed bottom bar with 4 tabs. Active state has a subtle glow.",
-      "height": "64px",
-      "background": "rgba(24, 24, 27, 0.9)",
-      "backdrop_blur": "12px",
-      "border_top": "1px solid #27272a",
-      "items": [
-        { "label": "الرئيسية", "icon": "home", "id": "nav-home" },
-        { "label": "الرواتب", "icon": "wallet", "id": "nav-salaries" },
-        { "label": "المحادثة", "icon": "message-circle", "id": "nav-chat" },
-        { "label": "حسابي", "icon": "user", "id": "nav-profile" }
-      ]
+    "Sidebar": {
+      "path": "/app/frontend/src/components/layout/Sidebar.jsx",
+      "description": "Desktop-only vertical navigation. Collapsible. Contains logo, user profile summary, and main navigation links.",
+      "styling": "w-64 h-screen bg-card border-l border-border fixed right-0 top-0 hidden md:flex flex-col z-50"
     },
-    "salary_card": {
-      "style": "Digital Ticket",
-      "background": "linear-gradient(180deg, #18181b 0%, #09090b 100%)",
-      "border": "1px solid #27272a",
-      "radius": "16px",
-      "features": [
-        "Dashed line separator between summary and details",
-        "Monospace font for numbers",
-        "Status badge (Paid/Pending) top left"
-      ]
+    "BottomNav": {
+      "path": "/app/frontend/src/components/layout/BottomNav.jsx",
+      "description": "Mobile-only horizontal navigation. Fixed at bottom. Contains 4-5 primary actions (Home, Clients, Chats, Menu). 'Menu' opens a drawer for other items.",
+      "styling": "fixed bottom-0 left-0 right-0 h-16 bg-card/90 backdrop-blur-lg border-t border-border flex justify-around items-center md:hidden z-50 safe-area-pb"
     },
-    "chat_interface": {
-      "style": "Modern Messenger",
-      "background": "transparent",
-      "bubble_client": "bg-emerald-600 text-white rounded-tr-none",
-      "bubble_admin": "bg-zinc-800 text-zinc-200 rounded-tl-none",
-      "input_area": "Fixed above bottom nav, glassmorphism background"
+    "DashboardCard": {
+      "path": "/app/frontend/src/components/ui/DashboardCard.jsx",
+      "description": "Standard container for widgets. Minimalist, dark background, subtle border.",
+      "styling": "bg-card border border-border rounded-xl p-6 shadow-sm"
+    },
+    "DataTable": {
+      "path": "/app/frontend/src/components/ui/DataTable.jsx",
+      "description": "Responsive table. On mobile, transforms into a stack of cards for readability.",
+      "features": ["Sortable", "Filterable", "Pagination", "Mobile Card View"]
     }
   },
-  "assets": {
-    "icons": {
-      "source": "Lucide Icons (SVG)",
-      "style": "Stroke width 1.5px, Size 20px",
-      "svgs": {
-        "home": "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/><polyline points='9 22 9 12 15 12 15 22'/></svg>",
-        "wallet": "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1'/><path d='M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4'/></svg>",
-        "user": "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'/><circle cx='12' cy='7' r='4'/></svg>",
-        "message_circle": "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M7.9 20A9 9 0 1 0 4 16.1L2 22Z'/></svg>",
-        "bell": "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9'/><path d='M10.3 21a1.94 1.94 0 0 0 3.4 0'/></svg>",
-        "chevron_left": "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m15 18-6-6 6-6'/></svg>",
-        "download": "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='7 10 12 15 17 10'/><line x1='12' x2='12' y1='15' y2='3'/></svg>"
-      }
+  "pages_and_routes": [
+    {
+      "name": "Settings",
+      "path": "/settings",
+      "id": "settings-tab",
+      "icon": "Settings",
+      "features": ["AI Provider Selection", "API Keys Input", "Bot Persona Editor"]
+    },
+    {
+      "name": "Custom Fields",
+      "path": "/custom-fields",
+      "id": "custom-fields-tab",
+      "icon": "Database",
+      "features": ["Field Management", "Data Types"]
+    },
+    {
+      "name": "Registered Clients",
+      "path": "/clients",
+      "id": "registered-clients-tab",
+      "icon": "Users",
+      "features": ["Client Table", "Search", "Add/Edit/Delete Actions"]
+    },
+    {
+      "name": "Linked Clients",
+      "path": "/linked-clients",
+      "id": "linked-clients-tab",
+      "icon": "Link",
+      "features": ["Connection Status", "Management"]
+    },
+    {
+      "name": "Salaries",
+      "path": "/salaries",
+      "id": "salaries-tab",
+      "icon": "Banknote",
+      "features": ["File Upload (Excel/CSV)", "Period Management", "Processing Status"]
+    },
+    {
+      "name": "Notifications",
+      "path": "/notifications",
+      "id": "notifications-tab",
+      "icon": "Bell",
+      "features": ["Send New Notification", "History Log"]
+    },
+    {
+      "name": "Live Chats",
+      "path": "/chats",
+      "id": "live-chats-tab",
+      "icon": "MessageSquare",
+      "features": ["Real-time Chat Interface", "User List", "History"]
+    },
+    {
+      "name": "Support Tickets",
+      "path": "/tickets",
+      "id": "support-tickets-tab",
+      "icon": "Ticket",
+      "features": ["Ticket Kanban/List", "Status Updates", "Reply Interface"]
+    },
+    {
+      "name": "Knowledge Base",
+      "path": "/knowledge-base",
+      "id": "knowledge-base-tab",
+      "icon": "BookOpen",
+      "features": ["Article Editor", "Category Management"]
+    },
+    {
+      "name": "Usage & Analytics",
+      "path": "/usage",
+      "id": "usage-tab",
+      "icon": "BarChart",
+      "features": ["Token Usage Charts", "Cost Analysis", "User Activity"]
     }
+  ],
+  "assets": {
+    "icons": "Lucide React (SVG)",
+    "logo": "Use existing project logo or placeholder text 'Admin Portal'",
+    "images": []
   },
   "instructions_to_main_agent": [
-    "REWRITE portal.html completely. Do not patch the existing code.",
-    "Use the provided Color Palette and Typography.",
-    "Implement the 'Bottom Navigation' logic using JavaScript to switch between sections (Home, Salaries, Chat, Profile).",
-    "Replace all Emojis with the provided SVG icons.",
-    "Ensure the layout is RTL (dir='rtl').",
-    "Use 'IBM Plex Sans Arabic' for all text.",
-    "Make the 'Salaries' section the most visually distinct part (High contrast numbers).",
-    "Add a 'Glassmorphism' effect to the Header and Bottom Nav.",
-    "Ensure all interactive elements have `data-testid` attributes."
+    "1. SETUP: Initialize a React application structure if not present. Ensure 'lucide-react', 'clsx', 'tailwind-merge' are installed.",
+    "2. MIGRATION: You are rewriting 'public/admin.html'. Extract all JavaScript logic (API calls, event listeners) and convert them into React Hooks (e.g., useClients, useSettings).",
+    "3. COMPATIBILITY: Maintain all 'id' and 'data-tab' attributes on the main wrapper elements of each page/section to ensure compatibility with any external scripts targeting them.",
+    "4. RTL: Ensure the <html> tag has dir='rtl'. Use logical properties (ms-*, me-*, ps-*, pe-*) where possible, or standard Tailwind classes knowing they will flip in RTL mode if configured correctly.",
+    "5. MOBILE FIRST: Design the mobile view first. Tables must become cards on mobile. Navigation moves to bottom.",
+    "6. THEME: Enforce the dark theme strictly. No white backgrounds. Use zinc-900/950 for backgrounds.",
+    "7. PERFORMANCE: Code split the heavy tabs (Charts, Tables) using React.lazy.",
+    "8. REWRITE: Do not copy-paste the old HTML. Rebuild the UI using the new Design System components while keeping the logic."
   ],
-  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
-    "Do not use gradients for backgrounds unless specified (use solid dark colors).",
-    "Use 2-3x more padding than usual. Let the content breathe.",
-    "Micro-interactions: Add transition: all 0.2s ease to buttons and cards.",
-    "Never center text in cards unless it's a specific stat. Align Right for RTL."
+  "universal_guidelines": [
+    "Use 'sonner' for toast notifications.",
+    "Use 'radix-ui' primitives for complex interactive components (Dialog, Dropdown, Tabs).",
+    "Avoid 'transition: all'. Animate specific properties (opacity, transform).",
+    "Ensure all interactive elements have 'data-testid'.",
+    "Do not use gradients for backgrounds, use solid dark colors with subtle borders."
   ]
 }
