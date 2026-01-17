@@ -2938,28 +2938,45 @@
       try {
         const usage = await api('GET', '/api/ai/usage');
         
+        // Handle different response formats
+        const totalTokens = (usage.totalInputTokens || 0) + (usage.totalOutputTokens || 0) || usage.totalTokens || 0;
+        const totalCost = usage.estimatedCost || usage.totalCost || 0;
+        const requestCount = (usage.totalChatCalls || 0) + (usage.totalSttCalls || 0) + (usage.totalTtsCalls || 0) || usage.requestCount || 0;
+        
         document.getElementById('usageStats').innerHTML = `
           <div class="stat-card">
-            <div class="stat-value">${(usage.totalTokens || 0).toLocaleString()}</div>
+            <div class="stat-value">${totalTokens.toLocaleString()}</div>
             <div class="stat-label">إجمالي التوكنات</div>
           </div>
           <div class="stat-card">
-            <div class="stat-value">$${(usage.totalCost || 0).toFixed(4)}</div>
+            <div class="stat-value">$${totalCost.toFixed(4)}</div>
             <div class="stat-label">التكلفة الإجمالية</div>
           </div>
           <div class="stat-card">
-            <div class="stat-value">${usage.requestCount || 0}</div>
+            <div class="stat-value">${requestCount}</div>
             <div class="stat-label">عدد الطلبات</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${usage.totalChatCalls || 0}</div>
+            <div class="stat-label">محادثات AI</div>
           </div>
         `;
 
         const tbody = document.querySelector('#usageTable tbody');
-        if (!usage.logs?.length) {
-          tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">لا يوجد سجل</td></tr>';
+        const logs = usage.logs || [];
+        if (!logs.length) {
+          tbody.innerHTML = `
+            <tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 20px;">
+              <strong>ملخص الاستهلاك:</strong><br>
+              محادثات: ${usage.totalChatCalls || 0}<br>
+              توكنات الإدخال: ${(usage.totalInputTokens || 0).toLocaleString()}<br>
+              توكنات الإخراج: ${(usage.totalOutputTokens || 0).toLocaleString()}
+            </td></tr>
+          `;
           return;
         }
 
-        tbody.innerHTML = usage.logs.slice(0, 50).map(log => `
+        tbody.innerHTML = logs.slice(0, 50).map(log => `
           <tr>
             <td>${new Date(log.timestamp).toLocaleString('ar')}</td>
             <td>${log.type || 'chat'}</td>
@@ -2968,7 +2985,7 @@
           </tr>
         `).join('');
       } catch (err) {
-        showAlert('فشل تحميل الاستهلاك', 'error');
+        console.error('Failed to load usage:', err);
       }
     }
 
