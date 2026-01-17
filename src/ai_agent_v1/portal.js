@@ -8,7 +8,7 @@ const path = require('path');
 const crypto = require('crypto');
 
 const TOKENS_FILE = path.join(__dirname, '../../data/portal_tokens.json');
-const MAIN_AGENCIES = ['Main', '', null, undefined];
+const MAIN_AGENCIES = ['Main', 'main', 'الوكالة الرئيسية', 'الرئيسية', '', null, undefined];
 
 /**
  * Ensure tokens file exists
