@@ -185,8 +185,8 @@ async function loadSettingsFromEnv() {
   // Google Sheet settings
   if (process.env.GOOGLE_SHEET_URL) {
     googleSheetSyncState.url = process.env.GOOGLE_SHEET_URL;
-    googleSheetSyncState.enabled = true;
     googleSheetSyncState.interval = parseInt(process.env.GOOGLE_SHEET_INTERVAL) || 5;
+    googleSheetSyncState.enabled = process.env.GOOGLE_SHEET_ENABLED === '1';
   }
   
   // Bot personality settings - always use env if available
@@ -748,6 +748,11 @@ app.post('/api/ai/settings', requireAdmin, async (req, res) => {
         sheetName: googleSheetSyncState.sheetName,
         interval: googleSheetSyncState.interval
       });
+
+      // Save to .env file for persistence
+      if (body.googleSheetUrlAuto) envUpdates.GOOGLE_SHEET_URL = body.googleSheetUrlAuto;
+      if (body.googleSheetSyncInterval) envUpdates.GOOGLE_SHEET_INTERVAL = body.googleSheetSyncInterval;
+      envUpdates.GOOGLE_SHEET_ENABLED = body.googleSheetAutoSync ? '1' : '0';
 
       if (googleSheetSyncState.enabled && googleSheetSyncState.url) {
         startAutoSync(googleSheetSyncState.interval);
