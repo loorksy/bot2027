@@ -3421,7 +3421,7 @@
       const agency = target === 'agency' ? document.getElementById('broadcastAgency').value : null;
 
       try {
-        await api('POST', '/api/ai/broadcast', { message, target, agency });
+        await api('POST', '/api/ai/notify/broadcast', { message, target, agency });
         showAlert('تم إرسال الرسالة الجماعية');
         closeBroadcastModal();
         document.getElementById('broadcastMessage').value = '';
