@@ -14,6 +14,8 @@ const voice = require('./voice');
 const salary = require('./salary');
 const usage = require('./usage');
 const portal = require('./portal');
+const tickets = require('./tickets');
+const knowledgeBase = require('./knowledgeBase');
 
 let waClient = null;
 let initialized = false;
