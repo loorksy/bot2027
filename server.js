@@ -2144,15 +2144,17 @@ app.get('/api/portal/:token/profile', async (req, res) => {
       return res.status(404).json({ error: 'العميل غير موجود' });
     }
     
-    // Return client data (excluding sensitive fields)
+    // Return client data (excluding sensitive fields like PIN)
     res.json({
       fullName: client.fullName,
       phone: client.phone,
+      whatsappPhone: client.whatsappPhone,
       country: client.country,
       city: client.city,
       address: client.address,
       agencyName: client.agencyName,
-      ids: client.ids || []
+      ids: client.ids || [],
+      customFields: client.customFields || {}
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
