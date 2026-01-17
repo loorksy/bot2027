@@ -383,7 +383,13 @@ function getTemplateReply(type, context) {
 
         case 'WELCOME_BACK':
             const name = context.clientName || d.dear;
-            return `${d.greeting} ${name}!${e('heart')}\n\n${d.how}؟ ${d.what} ${d.help} اليوم؟\n\n${e('bulb')} تذكير: إذا بدك تسألي عن راتبك، ${d.send} الرمز السري أول.`;
+            return `${d.greeting} ${name}!${e('heart')}\n\n${d.how}؟ ${d.what} ${d.help} اليوم؟`;
+
+        case 'GREETING_UNLINKED':
+            return `${d.greeting} ${d.dear}!${e('heart')}\n\nأنا ${botName}، مساعدتك الشخصية.\n\n${d.send}يلي رقم الـ ID تبعك حتى أربط حسابك وأقدر ساعدك${e('happy')}`;
+
+        case 'ASK_ID':
+            return `${d.dear}، ${d.send}يلي رقم الـ ID تبعك حتى أقدر ساعدك${e('happy')}\n\n${e('bulb')} الرقم عادة بيكون من 5-10 أرقام`;
 
         // === ID Verification ===
         case 'ID_FOUND_CONFIRM':
