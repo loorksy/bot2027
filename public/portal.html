@@ -964,14 +964,36 @@
         const updates = {
           fullName: document.getElementById('editName').value.trim(),
           phone: document.getElementById('editPhone').value.trim(),
+          whatsappPhone: document.getElementById('editWhatsapp').value.trim(),
           city: document.getElementById('editCity').value.trim(),
           address: document.getElementById('editAddress').value.trim()
         };
+
+        // Collect custom fields
+        const customFields = clientData.customFields || {};
+        const updatedCustomFields = {};
+        
+        for (const key of Object.keys(customFields)) {
+          if (key.endsWith('__sub')) continue;
+          
+          const input = document.getElementById(`editCustom_${key}`);
+          if (input) {
+            updatedCustomFields[key] = input.value.trim();
+          }
+          
+          const subInput = document.getElementById(`editCustom_${key}__sub`);
+          if (subInput) {
+            updatedCustomFields[key + '__sub'] = subInput.value.trim();
+          }
+        }
+        
+        updates.customFields = updatedCustomFields;
 
         await api('PUT', `/api/portal/${token}/profile`, updates);
         
         // Update local data
         Object.assign(clientData, updates);
+        clientData.customFields = updatedCustomFields;
         renderData();
         closeEditModal();
         showAlert('تم حفظ التعديلات بنجاح! 💕');
