@@ -560,6 +560,114 @@ async function handlePortalLinkRequest(message, linkedClient, isVoice) {
 }
 
 /**
+ * Get portal URL for a linked client
+ */
+async function getPortalUrl(linkedClient) {
+    if (!linkedClient.linkedClientId) return null;
+    
+    const regClient = await registeredClients.getClientById(linkedClient.linkedClientId);
+    if (!regClient) return null;
+    
+    const token = await portal.getOrCreateToken(regClient.key, regClient.agencyName);
+    if (!token) return null;
+    
+    return `https://lork.cloud/portal/${token}`;
+}
+
+/**
+ * Handle salary delay query
+ */
+async function handleSalaryDelayQuery(message, linkedClient, isVoice) {
+    const portalUrl = await getPortalUrl(linkedClient);
+    
+    const delayReply = await reply.generateReply({ 
+        type: 'SALARY_DELAY', 
+        context: { portalUrl } 
+    });
+    await sendReply(message, delayReply, isVoice);
+}
+
+/**
+ * Handle salary amount query
+ */
+async function handleSalaryAmountQuery(message, linkedClient, isVoice) {
+    const portalUrl = await getPortalUrl(linkedClient);
+    
+    const amountReply = await reply.generateReply({ 
+        type: 'SALARY_AMOUNT_QUERY', 
+        context: { portalUrl } 
+    });
+    await sendReply(message, amountReply, isVoice);
+}
+
+/**
+ * Handle receipt status query
+ */
+async function handleReceiptStatusQuery(message, linkedClient, isVoice) {
+    const portalUrl = await getPortalUrl(linkedClient);
+    
+    const receiptReply = await reply.generateReply({ 
+        type: 'RECEIPT_STATUS', 
+        context: { portalUrl } 
+    });
+    await sendReply(message, receiptReply, isVoice);
+}
+
+/**
+ * Handle support request - create ticket
+ */
+async function handleSupportRequest(message, linkedClient, messageText, isVoice) {
+    try {
+        // Get registered client info
+        const regClient = linkedClient.linkedClientId 
+            ? await registeredClients.getClientById(linkedClient.linkedClientId)
+            : null;
+        
+        // Create support ticket
+        const ticket = await tickets.createTicket({
+            clientKey: regClient?.key || null,
+            clientName: regClient?.fullName || linkedClient.profile?.fullName || 'غير معروف',
+            whatsappId: message.from,
+            type: tickets.TYPES.GENERAL,
+            subject: 'طلب دعم من العميل',
+            message: messageText,
+            priority: 'normal'
+        });
+        
+        const ticketReply = await reply.generateReply({ 
+            type: 'TICKET_CREATED', 
+            context: { ticketNumber: ticket.ticketNumber } 
+        });
+        await sendReply(message, ticketReply, isVoice);
+        
+    } catch (err) {
+        console.error('[AI Agent] Support request error:', err);
+        await sendReply(message, 'حصل خطأ في إنشاء الطلب، حاولي مرة تانية.', isVoice);
+    }
+}
+
+/**
+ * Handle knowledge base response
+ */
+async function handleKnowledgeBaseResponse(message, linkedClient, kbEntry, isVoice) {
+    let portalUrl = null;
+    
+    if (kbEntry.sendPortalLink) {
+        portalUrl = await getPortalUrl(linkedClient);
+    }
+    
+    const kbReply = await reply.generateReply({ 
+        type: 'KNOWLEDGE_RESPONSE', 
+        context: { 
+            answer: kbEntry.answer,
+            sendPortalLink: kbEntry.sendPortalLink,
+            portalUrl
+        } 
+    });
+    await sendReply(message, kbReply, isVoice);
+}
+
+/**
  * Handle general queries with AI
  */
 async function handleGeneralQuery(message, linkedClient, messageText, isVoice) {
