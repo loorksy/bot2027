@@ -63,6 +63,9 @@ async function createTicket(data) {
         clientKey: data.clientKey,
         clientName: data.clientName || 'غير معروف',
         whatsappId: data.whatsappId,
+        phone: data.phone || '',
+        clientInfo: data.clientInfo || null, // Full client information
+        recentMessages: data.recentMessages || [], // Last 15 messages
         type: data.type || TYPES.GENERAL,
         subject: data.subject || 'طلب جديد',
         message: data.message,
