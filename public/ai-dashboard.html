@@ -2946,7 +2946,8 @@
 
     window.updateTicketStatus = async function(id, status) {
       try {
-        await api('PUT', `/api/ai/tickets/${id}`, { status });
+        await api('PUT', `/api/ai/tickets/${id}/status`, { status });
+        showAlert('تم تحديث حالة التذكرة');
         loadTickets();
       } catch (err) {
         showAlert(err.message, 'error');
