@@ -1711,12 +1711,12 @@
           <div class="log-entry">
             <span class="log-type ${entry.type}">${entry.type}</span>
             <span class="log-details">
-              ${entry.type === 'CHAT' ? `${entry.inputTokens}+${entry.outputTokens} tokens` : ''}
-              ${entry.type === 'STT' ? `${entry.durationSeconds?.toFixed(1)}s` : ''}
-              ${entry.type === 'TTS' ? `${entry.characterCount} chars` : ''}
-              • ${entry.model}
+              ${entry.type === 'CHAT' ? `${entry.inputTokens || 0}+${entry.outputTokens || 0} tokens` : ''}
+              ${entry.type === 'STT' ? `${(entry.durationSeconds || 0).toFixed(1)}s` : ''}
+              ${entry.type === 'TTS' ? `${entry.characterCount || 0} chars` : ''}
+              • ${entry.model || 'unknown'}
             </span>
-            <span class="log-cost">$${entry.cost?.toFixed(4) || 0}</span>
+            <span class="log-cost">$${(entry.cost || 0).toFixed(4)}</span>
             <span style="color: #666; font-size: 0.8rem;">${new Date(entry.time).toLocaleString('ar')}</span>
           </div>
         `).join('');
