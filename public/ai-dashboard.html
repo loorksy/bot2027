@@ -1396,6 +1396,51 @@
             </div>
           </div>
         </div>
+
+        <!-- Google Sheet Sync Card -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+              المزامنة مع Google Sheet
+            </div>
+            <div class="form-switch">
+              <label class="switch">
+                <input type="checkbox" id="googleSheetAutoSync" onchange="toggleAutoSyncSettings()">
+                <span class="switch-slider"></span>
+              </label>
+              <span style="font-size: 11px; color: var(--text-muted);">تفعيل المزامنة التلقائية</span>
+            </div>
+          </div>
+
+          <div id="autoSyncSettings">
+            <div class="form-group">
+              <label class="form-label">رابط جدول البيانات (CSV Export)</label>
+              <input type="text" class="form-input" id="googleSheetUrlAuto" placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">اسم الورقة</label>
+                <input type="text" class="form-input" id="googleSheetNameAuto" placeholder="Sheet1">
+              </div>
+              <div class="form-group">
+                <label class="form-label">فترة المزامنة (دقائق)</label>
+                <select class="form-select" id="googleSheetSyncInterval">
+                  <option value="5">5 دقائق</option>
+                  <option value="15">15 دقيقة</option>
+                  <option value="30">30 دقيقة</option>
+                  <option value="60">ساعة</option>
+                </select>
+              </div>
+            </div>
+            <div style="background: var(--bg); padding: 12px; border-radius: 8px; margin-top: 12px;">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-size: 11px; color: var(--text-muted);">حالة المزامنة:</span>
+                <span id="syncStatusText" style="font-size: 11px; font-weight: 600; color: var(--text-muted);">غير مفعّلة</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Custom Fields Tab -->
