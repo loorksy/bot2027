@@ -3436,6 +3436,123 @@
       }
     });
 
+    // =====================================================
+    // RECEIPTS MANAGEMENT
+    // =====================================================
+    let currentReceiptsClientKey = null;
+    let currentReceiptsClientName = null;
+
+    window.openReceiptsModal = async (clientKey, clientName) => {
+      currentReceiptsClientKey = clientKey;
+      currentReceiptsClientName = clientName;
+      
+      document.getElementById('receiptsModalTitle').textContent = `🧾 إيصالات: ${clientName}`;
+      document.getElementById('receiptsModal').style.display = 'flex';
+      document.getElementById('receiptFile').value = '';
+      document.getElementById('receiptDescription').value = '';
+      
+      await loadClientReceipts();
+    };
+
+    window.closeReceiptsModal = () => {
+      document.getElementById('receiptsModal').style.display = 'none';
+      currentReceiptsClientKey = null;
+      currentReceiptsClientName = null;
+    };
+
+    async function loadClientReceipts() {
+      const container = document.getElementById('receiptsList');
+      container.innerHTML = '<div style="text-align: center; padding: 20px; color: #888;">جاري التحميل...</div>';
+      
+      try {
+        const receipts = await api('GET', `/api/ai/clients/${currentReceiptsClientKey}/receipts`);
+        
+        if (!receipts || receipts.length === 0) {
+          container.innerHTML = '<div style="text-align: center; padding: 20px; color: #888;">لا توجد إيصالات بعد</div>';
+          return;
+        }
+        
+        container.innerHTML = receipts.map(r => {
+          const isImage = r.mimeType && r.mimeType.startsWith('image/');
+          const date = new Date(r.uploadedAt).toLocaleDateString('ar', { year: 'numeric', month: 'short', day: 'numeric' });
+          const sizeKB = Math.round(r.size / 1024);
+          
+          return `
+            <div class="receipt-item" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 8px;">
+              <div style="flex-shrink: 0; width: 50px; height: 50px; background: rgba(255,255,255,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+                ${isImage ? '🖼️' : '📄'}
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${r.originalName}</div>
+                <div style="font-size: 0.75rem; color: #888;">${date} • ${sizeKB} KB</div>
+                ${r.description ? `<div style="font-size: 0.8rem; color: #aaa; margin-top: 4px;">${r.description}</div>` : ''}
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <a href="/api/receipts/file/${r.filename}" target="_blank" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;">👁️</a>
+                <a href="/api/receipts/file/${r.filename}" download="${r.originalName}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;">⬇️</a>
+                <button class="btn btn-danger" style="padding: 6px 12px; font-size: 0.8rem;" onclick="deleteReceipt('${r.id}')">🗑️</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        container.innerHTML = `<div style="text-align: center; padding: 20px; color: #ef4444;">خطأ: ${err.message}</div>`;
+      }
+    }
+
+    window.uploadReceipt = async () => {
+      const fileInput = document.getElementById('receiptFile');
+      const description = document.getElementById('receiptDescription').value.trim();
+      
+      if (!fileInput.files || fileInput.files.length === 0) {
+        showAlert('الرجاء اختيار ملف', 'error');
+        return;
+      }
+      
+      const file = fileInput.files[0];
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('description', description);
+      
+      try {
+        document.getElementById('uploadReceiptBtn').disabled = true;
+        document.getElementById('uploadReceiptBtn').textContent = 'جاري الرفع...';
+        
+        const response = await fetch(`/api/ai/clients/${currentReceiptsClientKey}/receipts`, {
+          method: 'POST',
+          body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(result.error || 'فشل الرفع');
+        }
+        
+        showAlert('✅ تم رفع الإيصال بنجاح وإرسال إشعار للعميل');
+        fileInput.value = '';
+        document.getElementById('receiptDescription').value = '';
+        await loadClientReceipts();
+      } catch (err) {
+        showAlert('❌ ' + err.message, 'error');
+      } finally {
+        document.getElementById('uploadReceiptBtn').disabled = false;
+        document.getElementById('uploadReceiptBtn').textContent = '📤 رفع';
+      }
+    };
+
+    window.deleteReceipt = async (receiptId) => {
+      if (!confirm('هل أنت متأكد من حذف هذا الإيصال؟')) return;
+      
+      try {
+        await api('DELETE', `/api/ai/receipts/${receiptId}`);
+        showAlert('تم حذف الإيصال');
+        await loadClientReceipts();
+      } catch (err) {
+        showAlert('❌ ' + err.message, 'error');
+      }
+    };
+
   </script>
         </div>
       </div>
