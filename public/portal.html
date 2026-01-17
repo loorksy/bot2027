@@ -750,17 +750,63 @@
 
       // Profile info
       document.getElementById('infoName').textContent = clientData.fullName || '-';
+      document.getElementById('infoIds').textContent = (clientData.ids || []).join(', ') || '-';
       document.getElementById('infoPhone').textContent = clientData.phone || '-';
+      document.getElementById('infoWhatsapp').textContent = clientData.whatsappPhone || clientData.phone || '-';
       document.getElementById('infoCountry').textContent = clientData.country || '-';
       document.getElementById('infoCity').textContent = clientData.city || '-';
       document.getElementById('infoAddress').textContent = clientData.address || '-';
-      document.getElementById('infoIds').textContent = (clientData.ids || []).join(', ') || '-';
+      document.getElementById('infoAgency').textContent = clientData.agencyName || '-';
+
+      // Custom Fields
+      renderCustomFields();
 
       // Salaries
       renderSalaries();
       
       // Receipts
       loadReceipts();
+    }
+
+    // Render custom fields
+    function renderCustomFields() {
+      const container = document.getElementById('customFieldsContainer');
+      const customFields = clientData.customFields || {};
+      
+      // Map of common field names to display labels
+      const fieldLabels = {
+        'طريقة_الاسلام': 'طريقة الاستلام',
+        'طريقة_الاستلام': 'طريقة الاستلام',
+        'طريقة الاستلام': 'طريقة الاستلام',
+        'معلومات_الاستلام': 'معلومات الاستلام',
+        'معلومات الاستلام': 'معلومات الاستلام',
+        'العملة': 'العملة',
+        'ملاحظات': 'ملاحظات'
+      };
+      
+      let html = '';
+      
+      for (const [key, value] of Object.entries(customFields)) {
+        // Skip sub-fields, they'll be shown with their parent
+        if (key.endsWith('__sub')) continue;
+        
+        const label = fieldLabels[key] || key.replace(/_/g, ' ');
+        const subValue = customFields[key + '__sub'];
+        
+        let displayValue = value || '-';
+        if (subValue) {
+          displayValue = `${value} (${subValue})`;
+        }
+        
+        html += `
+          <div class="info-row">
+            <span class="info-label">${label}</span>
+            <span class="info-value">${displayValue}</span>
+          </div>
+        `;
+      }
+      
+      container.innerHTML = html;
     }
 
     // Render salaries
