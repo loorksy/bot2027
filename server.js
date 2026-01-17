@@ -966,7 +966,41 @@ app.post('/api/ai/salary/upload', requireAdmin, upload.single('file'), async (re
     // Clean up temp file
     await fs.remove(req.file.path);
 
-    res.json({ success: true, period });
+    // === AUTO NOTIFICATIONS FOR NEW SALARY ===
+    try {
+      // Get all salary IDs from the uploaded file
+      const salaryIds = data.map(row => row[idColumn]?.toString().trim()).filter(Boolean);
+      
+      // Get all registered clients
+      const allClients = await registeredClients.getAllClients();
+      const clientsWithSalary = [];
+      
+      // Find clients whose IDs are in the salary file
+      for (const [clientKey, client] of Object.entries(allClients)) {
+        const clientIds = client.ids || [];
+        const hasMatch = clientIds.some(id => salaryIds.includes(id.toString().trim()));
+        if (hasMatch) {
+          clientsWithSalary.push(clientKey);
+        }
+      }
+      
+      // Create notification for clients with salary
+      if (clientsWithSalary.length > 0) {
+        const notifications = require('./src/ai_agent_v1/notifications');
+        await notifications.createNotification({
+          title: '💰 راتب جديد!',
+          message: `تم إصدار راتب الفترة "${name}".\nادخل لبوابتك لمعرفة التفاصيل.`,
+          type: 'success',
+          targetClients: clientsWithSalary
+        });
+        console.log(`[Salary] Auto-notification sent to ${clientsWithSalary.length} clients`);
+      }
+    } catch (notifErr) {
+      console.error('[Salary] Failed to send auto-notifications:', notifErr.message);
+      // Don't fail the main request if notifications fail
+    }
+
+    res.json({ success: true, period, notifiedClients: clientsWithSalary?.length || 0 });
 
   } catch (err) {
     if (req.file) await fs.remove(req.file.path).catch(() => { });
