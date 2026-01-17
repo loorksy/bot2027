@@ -262,16 +262,32 @@ async function handleAction(action, messageFrom, clientContext, originalMessage)
     switch (action) {
         case 'CREATE_TICKET':
             try {
+                // Get recent chat history from liveChat
+                const liveChat = require('./liveChat');
+                const recentMessages = await liveChat.getChatMessages(clientContext.clientKey || messageFrom, 15);
+                
+                // Create comprehensive ticket with all context
                 await tickets.createTicket({
                     clientKey: clientContext.clientKey || null,
                     clientName: clientContext.fullName || 'عميل',
                     whatsappId: messageFrom,
+                    phone: clientContext.phone || '',
+                    clientInfo: {
+                        fullName: clientContext.fullName,
+                        phone: clientContext.phone,
+                        ids: clientContext.ids || [],
+                        country: clientContext.country,
+                        city: clientContext.city,
+                        agencyName: clientContext.agencyName,
+                        customFields: clientContext.customFields || {}
+                    },
+                    recentMessages: recentMessages,
                     type: 'general',
                     subject: 'طلب من المحادثة',
                     message: originalMessage,
                     priority: 'normal'
                 });
-                console.log('[Smart AI] Created support ticket');
+                console.log('[Smart AI] Created support ticket with full context');
             } catch (e) {
                 console.error('[Smart AI] Failed to create ticket:', e);
             }
