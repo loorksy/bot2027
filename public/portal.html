@@ -646,6 +646,10 @@
           <input type="tel" id="editPhone">
         </div>
         <div class="form-group">
+          <label>واتساب</label>
+          <input type="tel" id="editWhatsapp">
+        </div>
+        <div class="form-group">
           <label>المدينة</label>
           <input type="text" id="editCity">
         </div>
@@ -656,8 +660,14 @@
         <div class="form-group">
           <label>الدولة</label>
           <input type="text" id="editCountry" disabled>
-          <p class="form-note">⚠️ لتغيير الدولة أو الوكالة تواصلي مع الإدارة</p>
         </div>
+        <div class="form-group">
+          <label>الوكالة</label>
+          <input type="text" id="editAgency" disabled>
+        </div>
+        <!-- Custom Fields Container in Edit Form -->
+        <div id="editCustomFieldsContainer"></div>
+        <p class="form-note">⚠️ لتغيير الدولة أو الوكالة تواصلي مع الإدارة</p>
         <div class="modal-actions">
           <button type="button" class="btn btn-secondary" onclick="closeEditModal()">إلغاء</button>
           <button type="submit" class="btn btn-primary">💾 حفظ</button>
