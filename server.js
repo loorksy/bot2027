@@ -2222,6 +2222,119 @@ app.post('/api/portal/:token/notifications/read-all', async (req, res) => {
   }
 });
 
+// ==========================================================
+// SUPPORT TICKETS APIs (Admin)
+// ==========================================================
+
+// Get all tickets
+app.get('/api/ai/tickets', requireAdmin, async (req, res) => {
+  try {
+    const { status, type } = req.query;
+    const allTickets = await tickets.getAllTickets({ status, type });
+    const stats = await tickets.getStats();
+    res.json({ tickets: allTickets, stats });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update ticket status
+app.put('/api/ai/tickets/:id/status', requireAdmin, async (req, res) => {
+  try {
+    const { status, note } = req.body;
+    const ticket = await tickets.updateTicketStatus(req.params.id, status, note);
+    res.json({ success: true, ticket });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Add note to ticket
+app.post('/api/ai/tickets/:id/note', requireAdmin, async (req, res) => {
+  try {
+    const { note } = req.body;
+    const ticket = await tickets.addAdminNote(req.params.id, note);
+    res.json({ success: true, ticket });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete ticket
+app.delete('/api/ai/tickets/:id', requireAdmin, async (req, res) => {
+  try {
+    await tickets.deleteTicket(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get open tickets count (for badge)
+app.get('/api/ai/tickets/count', requireAdmin, async (req, res) => {
+  try {
+    const count = await tickets.getOpenCount();
+    res.json({ count });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================================
+// KNOWLEDGE BASE APIs (Admin)
+// ==========================================================
+
+// Get all knowledge entries
+app.get('/api/ai/knowledge', requireAdmin, async (req, res) => {
+  try {
+    const knowledge = await knowledgeBase.getAll();
+    const categories = await knowledgeBase.getCategories();
+    res.json({ knowledge, categories });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Add knowledge entry
+app.post('/api/ai/knowledge', requireAdmin, async (req, res) => {
+  try {
+    const entry = await knowledgeBase.addEntry(req.body);
+    res.json({ success: true, entry });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update knowledge entry
+app.put('/api/ai/knowledge/:id', requireAdmin, async (req, res) => {
+  try {
+    const entry = await knowledgeBase.updateEntry(req.params.id, req.body);
+    res.json({ success: true, entry });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete knowledge entry
+app.delete('/api/ai/knowledge/:id', requireAdmin, async (req, res) => {
+  try {
+    await knowledgeBase.deleteEntry(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Reset knowledge to default
+app.post('/api/ai/knowledge/reset', requireAdmin, async (req, res) => {
+  try {
+    const knowledge = await knowledgeBase.resetToDefault();
+    res.json({ success: true, knowledge });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Serve portal page
 app.get('/portal/:token', async (req, res) => {
   const { token } = req.params;
