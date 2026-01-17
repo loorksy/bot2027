@@ -2650,7 +2650,8 @@
     // =====================================================
     async function loadTickets() {
       try {
-        const tickets = await api('GET', '/api/ai/tickets');
+        const result = await api('GET', '/api/ai/tickets');
+        const tickets = result.tickets || [];
         const container = document.getElementById('ticketsList');
         
         const openCount = tickets.filter(t => t.status === 'open').length;
