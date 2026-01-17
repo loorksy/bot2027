@@ -596,6 +596,38 @@ app.post('/api/ai/clients/bulk-delete', requireAdmin, async (req, res) => {
   }
 });
 
+// Fetch OpenRouter models
+app.get('/api/ai/openrouter/models', requireAdmin, async (req, res) => {
+  try {
+    const fetch = (await import('node-fetch')).default;
+    const response = await fetch('https://openrouter.ai/api/v1/models', {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch models');
+    }
+    
+    const data = await response.json();
+    
+    // Format models for frontend
+    const models = data.data.map(model => ({
+      id: model.id,
+      name: model.name || model.id,
+      context_length: model.context_length,
+      pricing: model.pricing,
+      description: model.description
+    })).sort((a, b) => a.name.localeCompare(b.name));
+    
+    res.json({ success: true, models });
+  } catch (err) {
+    console.error('[OpenRouter] Failed to fetch models:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // AI Usage
 app.get('/api/ai/usage', requireAdmin, async (req, res) => {
   try {
