@@ -2182,6 +2182,19 @@
         document.getElementById('adminContact').value = settings.adminContact || 'تواصلي مع الإدارة';
         document.getElementById('enableVoiceReplies').checked = settings.enableVoiceReplies || false;
         
+        // Google Sheet Sync settings
+        document.getElementById('googleSheetAutoSync').checked = settings.googleSheetAutoSync || false;
+        document.getElementById('googleSheetUrlAuto').value = settings.googleSheetUrlAuto || '';
+        document.getElementById('googleSheetNameAuto').value = settings.googleSheetNameAuto || '';
+        document.getElementById('googleSheetSyncInterval').value = settings.googleSheetSyncInterval || '5';
+        
+        // Toggle visibility
+        if (settings.googleSheetAutoSync) {
+          document.getElementById('autoSyncSettings').style.display = 'block';
+        } else {
+          document.getElementById('autoSyncSettings').style.display = 'none';
+        }
+        
         // AI Provider
         const provider = settings.aiProvider || 'openai';
         document.getElementById('aiProvider').value = provider;
@@ -2207,6 +2220,17 @@
       toggleAIProvider(e.target.value);
     });
 
+    // Toggle Auto Sync Settings
+    window.toggleAutoSyncSettings = function() {
+      const enabled = document.getElementById('googleSheetAutoSync').checked;
+      const settingsDiv = document.getElementById('autoSyncSettings');
+      if (enabled) {
+        settingsDiv.style.display = 'block';
+      } else {
+        settingsDiv.style.display = 'none';
+      }
+    };
+
     document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
       try {
         const provider = document.getElementById('aiProvider').value;
@@ -2226,7 +2250,11 @@
           friendliness: document.getElementById('friendliness').value,
           salaryCurrency: document.getElementById('salaryCurrency').value,
           adminContact: document.getElementById('adminContact').value,
-          enableVoiceReplies: document.getElementById('enableVoiceReplies').checked
+          enableVoiceReplies: document.getElementById('enableVoiceReplies').checked,
+          googleSheetAutoSync: document.getElementById('googleSheetAutoSync').checked,
+          googleSheetUrlAuto: document.getElementById('googleSheetUrlAuto').value,
+          googleSheetNameAuto: document.getElementById('googleSheetNameAuto').value,
+          googleSheetSyncInterval: parseInt(document.getElementById('googleSheetSyncInterval').value) || 5
         };
 
         const openaiKey = document.getElementById('openaiKey').value;
@@ -2456,13 +2484,24 @@
     }
 
     document.getElementById('searchRegClientInput').addEventListener('input', (e) => {
-      const q = e.target.value.toLowerCase();
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        renderClientsTable(allClientsData);
+        return;
+      }
+      
       const filtered = allClientsData.filter(c => 
         (c.fullName || '').toLowerCase().includes(q) ||
         (c.ids || []).some(id => id.toString().includes(q)) ||
         (c.phone || '').includes(q)
       );
       renderClientsTable(filtered);
+      
+      // Smart search: If only one result found, auto-open receipts modal
+      if (filtered.length === 1) {
+        const client = filtered[0];
+        openReceiptsModal(client.key, client.fullName || 'عميل');
+      }
     });
 
     document.getElementById('refreshRegClientsBtn').addEventListener('click', loadRegisteredClients);
