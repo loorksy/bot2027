@@ -2116,11 +2116,15 @@ app.post('/api/ai/clients/:clientKey/receipts', requireAdmin, receiptUpload.sing
     // Send WhatsApp notification
     try {
       const whatsappNumber = client.whatsappPhone || client.phone;
-      if (whatsappNumber && bot && bot.client && bot.isReady) {
+      console.log(`[Receipts] Attempting to notify: ${whatsappNumber}, bot exists: ${!!bot}, client exists: ${!!(bot && bot.client)}, isReady: ${!!(bot && bot.isReady)}`);
+      
+      if (whatsappNumber && bot && bot.client) {
         const message = `🧾 *إيصال جديد*\n\nمرحباً ${client.fullName}،\n\nتم رفع إيصال جديد لحسابك.\nيمكنك الاطلاع عليه من خلال بوابتك الشخصية.\n\n📁 ${req.file.originalname}`;
         const formattedNumber = whatsappNumber.replace(/[^0-9]/g, '') + '@c.us';
         await bot.client.sendMessage(formattedNumber, message);
         console.log(`[Receipts] WhatsApp notification sent to ${whatsappNumber}`);
+      } else {
+        console.log(`[Receipts] WhatsApp notification skipped - bot not ready or no phone number`);
       }
     } catch (notifyErr) {
       console.error('[Receipts] WhatsApp notification failed:', notifyErr.message);
