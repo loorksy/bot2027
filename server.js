@@ -1807,19 +1807,11 @@ io.use((socket, next) => {
 const portal = require('./src/ai_agent_v1/portal');
 const receipts = require('./src/ai_agent_v1/receipts');
 
-// Configure multer for receipt uploads
+// Configure multer for receipt uploads (accepts all file types)
 const receiptStorage = multer.memoryStorage();
 const receiptUpload = multer({ 
   storage: receiptStorage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
-  fileFilter: (req, file, cb) => {
-    const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
-    if (allowed.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('نوع الملف غير مدعوم'));
-    }
-  }
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB max - accepts any file type
 });
 
 // Serve portal page
