@@ -182,14 +182,14 @@ async function recordTts(characterCount, model = 'tts-1') {
 async function getUsageSummary() {
     const usage = await loadUsage();
     return {
-        totalChatCalls: usage.totalChatCalls,
-        totalSttCalls: usage.totalSttCalls,
-        totalTtsCalls: usage.totalTtsCalls,
-        totalInputTokens: usage.totalInputTokens,
-        totalOutputTokens: usage.totalOutputTokens,
-        totalSttMinutes: parseFloat(usage.totalSttMinutes.toFixed(2)),
-        totalTtsCharacters: usage.totalTtsCharacters,
-        estimatedCost: parseFloat(usage.estimatedCost.toFixed(4))
+        totalChatCalls: usage.totalChatCalls || 0,
+        totalSttCalls: usage.totalSttCalls || 0,
+        totalTtsCalls: usage.totalTtsCalls || 0,
+        totalInputTokens: usage.totalInputTokens || 0,
+        totalOutputTokens: usage.totalOutputTokens || 0,
+        totalSttMinutes: parseFloat((usage.totalSttMinutes || 0).toFixed(2)),
+        totalTtsCharacters: usage.totalTtsCharacters || 0,
+        estimatedCost: parseFloat((usage.estimatedCost || 0).toFixed(4))
     };
 }
 
