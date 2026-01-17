@@ -2835,6 +2835,8 @@
     loadCustomFields();
     renderCustomFieldsInForm();
     loadSettingsFromBackend(); // NEW: Load initial settings
+    loadNotifications(); // Load notifications
+    loadNotificationTargets(); // Load client list for targeting
 
     // Toggle Provider Settings
     window.toggleProviderSettings = function() {
