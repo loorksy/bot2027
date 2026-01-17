@@ -9,6 +9,7 @@ const registeredClients = require('./registeredClients');
 const salary = require('./salary');
 const portal = require('./portal');
 const tickets = require('./tickets');
+const genderDetector = require('./genderDetector');
 
 /**
  * Generate smart AI response based on context
@@ -45,6 +46,10 @@ function buildSystemPrompt(clientContext, settings) {
     const firstName = clientName.split(' ')[0];
     const portalUrl = clientContext.portalUrl || '';
     const hasPortal = !!portalUrl;
+    
+    // Detect gender from name for appropriate greeting
+    const genderInfo = genderDetector.getGreeting(clientName, settings.clientGender === 'مذكر' ? 'male' : 'female');
+    const greeting = genderInfo.greeting; // Will be حبيبي or حبيبتي based on name
     
     // Build salary info
     let salaryInfo = 'لا توجد رواتب مسجلة';
