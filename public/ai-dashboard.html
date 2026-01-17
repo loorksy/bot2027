@@ -1358,6 +1358,47 @@
     </div>
   </div>
 
+  <!-- Notifications Tab -->
+  <div id="notifications" class="tab-content">
+    <div class="ai-card">
+      <h2>🔔 إرسال إشعار جديد</h2>
+      <form id="notificationForm">
+        <div class="form-group">
+          <label for="notifTitle">العنوان</label>
+          <input type="text" id="notifTitle" placeholder="مثال: تهنئة بالعيد" required>
+        </div>
+        <div class="form-group">
+          <label for="notifMessage">الرسالة</label>
+          <textarea id="notifMessage" rows="4" placeholder="اكتب رسالتك هنا..." required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="notifType">نوع الإشعار</label>
+          <select id="notifType">
+            <option value="info">📢 إعلان عام</option>
+            <option value="success">✅ خبر سعيد</option>
+            <option value="celebration">🎉 تهنئة/احتفال</option>
+            <option value="warning">⚠️ تنبيه مهم</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="notifTarget">الإرسال إلى</label>
+          <select id="notifTarget">
+            <option value="all">جميع العملاء</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">📤 إرسال الإشعار</button>
+      </form>
+    </div>
+
+    <div class="ai-card">
+      <h2>📋 الإشعارات المرسلة</h2>
+      <button class="btn btn-secondary" onclick="loadNotifications()" style="margin-bottom: 16px;">🔄 تحديث</button>
+      <div id="notificationsList">
+        <p style="color: #666; text-align: center;">جاري التحميل...</p>
+      </div>
+    </div>
+  </div>
+
   <!-- Usage Tab -->
   <div id="usage" class="tab-content">
     <div class="ai-card">
