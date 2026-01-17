@@ -687,8 +687,17 @@ app.get('/api/ai/settings', requireAdmin, async (req, res) => {
   try {
     const aiSettings = await aiModules.analyzer.getSettings();
     const botSettings = await settings.getSettings();
-    // Merge both for frontend
-    res.json({ ...aiSettings, ...botSettings });
+    
+    // Add Google Sheet sync settings
+    const googleSheetSettings = {
+      googleSheetAutoSync: googleSheetSyncState.enabled,
+      googleSheetUrlAuto: googleSheetSyncState.url,
+      googleSheetNameAuto: googleSheetSyncState.sheetName,
+      googleSheetSyncInterval: googleSheetSyncState.interval
+    };
+    
+    // Merge all for frontend
+    res.json({ ...aiSettings, ...botSettings, ...googleSheetSettings });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

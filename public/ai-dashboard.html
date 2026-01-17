@@ -2189,6 +2189,15 @@
         document.getElementById('googleSheetNameAuto').value = settings.googleSheetNameAuto || '';
         document.getElementById('googleSheetSyncInterval').value = settings.googleSheetSyncInterval || '5';
         
+        // Update sync status text
+        if (settings.googleSheetAutoSync && settings.googleSheetUrlAuto) {
+          document.getElementById('syncStatusText').textContent = '🟢 مفعّلة';
+          document.getElementById('syncStatusText').style.color = 'var(--primary)';
+        } else {
+          document.getElementById('syncStatusText').textContent = 'غير مفعّلة';
+          document.getElementById('syncStatusText').style.color = 'var(--text-muted)';
+        }
+        
         // Toggle visibility
         if (settings.googleSheetAutoSync) {
           document.getElementById('autoSyncSettings').style.display = 'block';
@@ -2225,10 +2234,14 @@
     window.toggleAutoSyncSettings = function() {
       const enabled = document.getElementById('googleSheetAutoSync').checked;
       const settingsDiv = document.getElementById('autoSyncSettings');
+      const statusText = document.getElementById('syncStatusText');
+      
       if (enabled) {
         settingsDiv.style.display = 'block';
       } else {
         settingsDiv.style.display = 'none';
+        statusText.textContent = 'غير مفعّلة';
+        statusText.style.color = 'var(--text-muted)';
       }
     };
 
@@ -2271,6 +2284,17 @@
         data.openrouterModel = document.getElementById('openrouterModel').value;
 
         await api('POST', '/api/ai/settings', data);
+        
+        // Update sync status display after save
+        const syncStatusText = document.getElementById('syncStatusText');
+        if (data.googleSheetAutoSync && data.googleSheetUrlAuto) {
+          syncStatusText.textContent = '🟢 مفعّلة';
+          syncStatusText.style.color = 'var(--primary)';
+        } else {
+          syncStatusText.textContent = 'غير مفعّلة';
+          syncStatusText.style.color = 'var(--text-muted)';
+        }
+        
         showAlert('تم حفظ الإعدادات بنجاح ✅');
       } catch (err) {
         showAlert('فشل حفظ الإعدادات: ' + err.message, 'error');
