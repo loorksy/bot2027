@@ -2375,8 +2375,9 @@
           <td>${c.phone || '-'}</td>
           <td>${c.agencyName || '-'}</td>
           <td>
-            <div style="display: flex; gap: 4px;">
+            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
               <button class="btn btn-sm btn-secondary" onclick="editClient('${c.key}')">تعديل</button>
+              <button class="btn btn-sm btn-secondary" onclick="openReceiptsModal('${c.key}', '${c.fullName}')">إيصالات</button>
               <button class="btn btn-sm btn-secondary" onclick="promptNotify('${c.key}', '${c.fullName}', '${c.phone}')">إشعار</button>
               <button class="btn btn-sm btn-danger" onclick="deleteClient('${c.key}')">حذف</button>
             </div>
@@ -2401,6 +2402,7 @@
           </div>
           <div class="mobile-card-actions">
             <button class="btn btn-sm btn-secondary" onclick="editClient('${c.key}')" style="flex: 1;">تعديل</button>
+            <button class="btn btn-sm btn-secondary" onclick="openReceiptsModal('${c.key}', '${c.fullName}')" style="flex: 1;">إيصالات</button>
             <button class="btn btn-sm btn-secondary" onclick="promptNotify('${c.key}', '${c.fullName}', '${c.phone}')" style="flex: 1;">إشعار</button>
             <button class="btn btn-sm btn-danger" onclick="deleteClient('${c.key}')">حذف</button>
           </div>
