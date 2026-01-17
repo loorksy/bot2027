@@ -1133,6 +1133,7 @@ app.post('/api/ai/registered-clients/import-google-sheet', requireAdmin, async (
           ids: [],
           fullName: row.fullName || row['الاسم'] || row['الاسم الكامل'] || row.name || '',
           phone: row.phone || row['الهاتف'] || row['رقم الهاتف'] || '',
+          whatsappPhone: row.whatsappPhone || row['واتساب'] || row['رقم الواتساب'] || '',
           country: row.country || row['الدولة'] || '',
           city: row.city || row['المدينة'] || '',
           address: row.address || row['العنوان'] || '',
@@ -1144,6 +1145,18 @@ app.post('/api/ai/registered-clients/import-google-sheet', requireAdmin, async (
         const idValue = row.id || row.ids || row['رقم الهوية'] || row['ID'] || row['الرقم'] || '';
         if (idValue) {
           clientData.ids = idValue.toString().split(',').map(id => id.trim()).filter(id => id);
+        }
+        
+        // Skip if no ID
+        if (clientData.ids.length === 0) {
+          console.log('[Google Sheet Import] Skipping row - no ID');
+          failed++;
+          continue;
+        }
+        
+        // If no fullName, use ID as name
+        if (!clientData.fullName) {
+          clientData.fullName = `عميل ${clientData.ids[0]}`;
         }
         
         // Handle custom fields - Payment Method
@@ -1168,12 +1181,6 @@ app.post('/api/ai/registered-clients/import-google-sheet', requireAdmin, async (
         const notes = row.notes || row['ملاحظات'] || row['ملاحظة'] || row['note'] || '';
         if (notes) {
           clientData.customFields['ملاحظات'] = notes;
-        }
-        
-        // Skip if no ID
-        if (clientData.ids.length === 0) {
-          failed++;
-          continue;
         }
         
         // Check if client already exists
