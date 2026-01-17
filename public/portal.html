@@ -1,11 +1,29 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>بوابة العميل - أبو سلطان</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>بوابتي</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg: #09090b;
+      --surface: #18181b;
+      --surface-highlight: #27272a;
+      --border: #27272a;
+      --primary: #10b981;
+      --primary-dim: rgba(16, 185, 129, 0.1);
+      --text: #e4e4e7;
+      --text-muted: #a1a1aa;
+      --text-dim: #71717a;
+      --success: #059669;
+      --success-bg: rgba(5, 150, 105, 0.15);
+      --danger: #ef4444;
+      --danger-bg: rgba(239, 68, 68, 0.1);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -13,572 +31,541 @@
     }
 
     body {
-      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      font-family: 'IBM Plex Sans Arabic', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
       min-height: 100vh;
-      color: #fff;
-      padding: 20px;
+      -webkit-font-smoothing: antialiased;
     }
 
-    .container {
-      max-width: 600px;
+    /* App Shell */
+    .app-shell {
+      max-width: 480px;
       margin: 0 auto;
+      min-height: 100vh;
+      position: relative;
+      padding-bottom: 72px;
     }
 
+    /* Header */
     .header {
-      text-align: center;
-      margin-bottom: 30px;
-      padding: 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(9, 9, 11, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
     }
 
-    .header h1 {
-      font-size: 1.8rem;
-      color: #00d4ff;
-      margin-bottom: 10px;
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
 
-    .header .welcome {
-      font-size: 1.2rem;
-      color: #a0a0b0;
+    .header-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
     }
 
+    .header-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .header-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--primary-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+    }
+
+    .notification-btn {
+      position: relative;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .notification-btn:hover {
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    .notification-badge {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 16px;
+      height: 16px;
+      background: var(--danger);
+      border-radius: 50%;
+      font-size: 10px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+
+    /* Sections */
+    .section {
+      display: none;
+      padding: 16px;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cards */
     .card {
-      background: #1a1a2e;
-      border-radius: 16px;
-      padding: 24px;
-      margin-bottom: 20px;
-      border: 1px solid #2d2d44;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      transition: all 0.2s;
     }
 
     .card-header {
       display: flex;
+      align-items: center;
       justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      padding-bottom: 15px;
-      border-bottom: 1px solid #2d2d44;
+      margin-bottom: 12px;
     }
 
-    .card-header h2 {
-      font-size: 1.2rem;
-      color: #00d4ff;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .btn {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.95rem;
+    .card-title {
+      font-size: 13px;
       font-weight: 600;
-      transition: all 0.3s ease;
-    }
-
-    .btn-primary {
-      background: linear-gradient(90deg, #00d4ff, #7c3aed);
-      color: #fff;
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
-    }
-
-    .btn-secondary {
-      background: #2d2d44;
-      color: #fff;
-    }
-
-    .btn-secondary:hover {
-      background: #3d3d5c;
-    }
-
-    .btn-sm {
-      padding: 6px 14px;
-      font-size: 0.85rem;
-    }
-
-    .info-row {
+      color: var(--text);
       display: flex;
-      justify-content: space-between;
-      padding: 12px 0;
-      border-bottom: 1px solid #2d2d44;
+      align-items: center;
+      gap: 8px;
     }
 
-    .info-row:last-child {
-      border-bottom: none;
+    .card-title svg {
+      width: 16px;
+      height: 16px;
+      color: var(--primary);
     }
 
-    .info-label {
-      color: #a0a0b0;
-      font-size: 0.95rem;
-    }
-
-    .info-value {
-      color: #fff;
-      font-weight: 500;
-    }
-
+    /* Salary Card - Premium Style */
     .salary-card {
-      background: #0f0f1a;
-      border-radius: 12px;
+      background: linear-gradient(145deg, var(--surface) 0%, var(--bg) 100%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
       padding: 20px;
-      margin-bottom: 15px;
-      border: 1px solid #2d2d44;
+      margin-bottom: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .salary-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 100px;
+      height: 100px;
+      background: radial-gradient(circle, var(--primary-dim) 0%, transparent 70%);
+      opacity: 0.5;
     }
 
     .salary-header {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 15px;
+      justify-content: space-between;
+      margin-bottom: 16px;
     }
 
     .salary-period {
-      font-size: 1rem;
-      color: #00d4ff;
+      font-size: 12px;
+      color: var(--text-muted);
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
 
     .salary-status {
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 0.8rem;
+      font-size: 10px;
       font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
     }
 
     .status-paid {
-      background: rgba(34, 197, 94, 0.2);
-      color: #22c55e;
+      background: var(--success-bg);
+      color: var(--success);
     }
 
     .status-pending {
-      background: rgba(245, 158, 11, 0.2);
-      color: #f59e0b;
+      background: var(--warning-bg);
+      color: var(--warning);
     }
 
-    .salary-amounts {
+    .salary-amount {
+      text-align: center;
+      padding: 16px 0;
+      border-top: 1px dashed var(--border);
+      border-bottom: 1px dashed var(--border);
+      margin: 12px 0;
+    }
+
+    .salary-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+    }
+
+    .salary-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--primary);
+      font-family: 'IBM Plex Sans Arabic', monospace;
+      letter-spacing: -1px;
+    }
+
+    .salary-currency {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-muted);
+      margin-right: 4px;
+    }
+
+    .salary-details {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 15px;
-      margin-bottom: 15px;
-    }
-
-    .amount-box {
-      text-align: center;
-      padding: 10px;
-      background: #1a1a2e;
-      border-radius: 8px;
-    }
-
-    .amount-label {
-      font-size: 0.8rem;
-      color: #a0a0b0;
-      margin-bottom: 5px;
-    }
-
-    .amount-value {
-      font-size: 1.1rem;
-      font-weight: 700;
-    }
-
-    .amount-value.total {
-      color: #fff;
-    }
-
-    .amount-value.deduction {
-      color: #ef4444;
-    }
-
-    .amount-value.net {
-      color: #22c55e;
-    }
-
-    .receipt-section {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding-top: 15px;
-      border-top: 1px solid #2d2d44;
-    }
-
-    .receipt-info {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: #a0a0b0;
-      font-size: 0.9rem;
-    }
-
-    .receipt-btn {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    /* Edit Modal */
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      padding: 20px;
-    }
-
-    .modal.hidden {
-      display: none;
-    }
-
-    .modal-content {
-      background: #1a1a2e;
-      border-radius: 16px;
-      padding: 30px;
-      width: 100%;
-      max-width: 500px;
-      max-height: 90vh;
-      overflow-y: auto;
-      border: 1px solid #2d2d44;
-    }
-
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 25px;
-    }
-
-    .modal-header h2 {
-      color: #00d4ff;
-      font-size: 1.3rem;
-    }
-
-    .close-btn {
-      background: none;
-      border: none;
-      color: #a0a0b0;
-      font-size: 1.5rem;
-      cursor: pointer;
-      padding: 5px;
-    }
-
-    .close-btn:hover {
-      color: #fff;
-    }
-
-    .form-group {
-      margin-bottom: 20px;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 8px;
-      color: #a0a0b0;
-      font-size: 0.95rem;
-    }
-
-    .form-group input {
-      width: 100%;
-      padding: 14px;
-      border: 1px solid #3d3d5c;
-      border-radius: 10px;
-      background: #0f0f1a;
-      color: #fff;
-      font-size: 1rem;
-    }
-
-    .form-group input:focus {
-      border-color: #00d4ff;
-      outline: none;
-    }
-
-    .form-group input:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .form-note {
-      font-size: 0.85rem;
-      color: #f59e0b;
-      margin-top: 8px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .modal-actions {
-      display: flex;
       gap: 12px;
-      margin-top: 25px;
+      margin-top: 12px;
     }
 
-    .modal-actions .btn {
-      flex: 1;
-    }
-
-    /* Receipt Modal */
-    .receipt-modal-content {
+    .salary-detail {
       text-align: center;
     }
 
-    .receipt-modal-content img {
-      max-width: 100%;
-      max-height: 70vh;
-      border-radius: 12px;
-      margin-bottom: 20px;
+    .detail-label {
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-bottom: 4px;
     }
 
-    /* Loading */
-    .loading {
-      text-align: center;
-      padding: 60px 20px;
+    .detail-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
     }
 
-    .loading-spinner {
-      width: 50px;
-      height: 50px;
-      border: 4px solid #2d2d44;
-      border-top-color: #00d4ff;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 20px;
+    .detail-value.deduction {
+      color: var(--danger);
     }
 
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
+    /* Info List */
+    .info-list {
+      display: flex;
+      flex-direction: column;
     }
 
-    /* Error */
-    .error-page {
-      text-align: center;
-      padding: 60px 20px;
-    }
-
-    .error-icon {
-      font-size: 4rem;
-      margin-bottom: 20px;
-    }
-
-    .error-page h2 {
-      color: #ef4444;
-      margin-bottom: 15px;
-    }
-
-    .error-page p {
-      color: #a0a0b0;
-    }
-
-    /* Empty state */
-    .empty-state {
-      text-align: center;
-      padding: 40px 20px;
-      color: #a0a0b0;
-    }
-
-    .empty-state-icon {
-      font-size: 3rem;
-      margin-bottom: 15px;
-    }
-
-    /* Alert */
-    .alert {
-      padding: 15px 20px;
-      border-radius: 10px;
-      margin-bottom: 20px;
+    .info-item {
       display: flex;
       align-items: center;
-      gap: 10px;
-    }
-
-    .alert-success {
-      background: rgba(34, 197, 94, 0.2);
-      border: 1px solid #22c55e;
-      color: #22c55e;
-    }
-
-    .alert-error {
-      background: rgba(239, 68, 68, 0.2);
-      border: 1px solid #ef4444;
-      color: #ef4444;
-    }
-
-    .alert.hidden {
-      display: none;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    /* Notification styles */
-    .notification-item {
-      padding: 16px;
-      border-radius: 12px;
-      margin-bottom: 12px;
-      border-right: 4px solid;
-      position: relative;
-      transition: all 0.3s ease;
-    }
-
-    .notification-item.unread {
-      background: rgba(0, 212, 255, 0.1);
-    }
-
-    .notification-item.read {
-      background: rgba(255, 255, 255, 0.03);
-      opacity: 0.7;
-    }
-
-    .notification-item.info {
-      border-right-color: #00d4ff;
-    }
-
-    .notification-item.success {
-      border-right-color: #22c55e;
-    }
-
-    .notification-item.warning {
-      border-right-color: #f59e0b;
-    }
-
-    .notification-item.celebration {
-      border-right-color: #ec4899;
-      background: linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(139, 92, 246, 0.1));
-    }
-
-    .notification-header {
-      display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 8px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
     }
 
-    .notification-title {
-      font-weight: 600;
-      font-size: 1rem;
+    .info-item:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      font-size: 12px;
+      color: var(--text-muted);
       display: flex;
       align-items: center;
       gap: 8px;
     }
 
-    .notification-time {
-      font-size: 0.75rem;
-      color: #888;
+    .info-label svg {
+      width: 14px;
+      height: 14px;
+      color: var(--text-dim);
     }
 
-    .notification-message {
-      color: #d0d0e0;
-      font-size: 0.95rem;
-      line-height: 1.6;
-      white-space: pre-wrap;
-    }
-
-    .unread-badge {
-      background: #ef4444;
-      color: white;
-      font-size: 0.7rem;
-      padding: 2px 8px;
-      border-radius: 10px;
-      margin-right: 8px;
-    }
-
-    .unread-dot {
-      width: 8px;
-      height: 8px;
-      background: #00d4ff;
-      border-radius: 50%;
-      position: absolute;
-      top: 16px;
-      left: 16px;
-    }
-
-    .notification-icon {
-      font-size: 1.2rem;
-    }
-
-    /* Chat message styles */
-    .chat-message {
-      max-width: 80%;
-      padding: 10px 14px;
-      border-radius: 16px;
-      margin-bottom: 10px;
-      position: relative;
-      animation: fadeIn 0.3s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .chat-message.client {
-      background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
-      color: white;
-      margin-left: auto;
-      border-bottom-right-radius: 4px;
-    }
-
-    .chat-message.admin {
-      background: rgba(255, 255, 255, 0.1);
-      color: #e0e0e0;
-      margin-right: auto;
-      border-bottom-left-radius: 4px;
-    }
-
-    .chat-message .message-text {
-      word-wrap: break-word;
-      white-space: pre-wrap;
-    }
-
-    .chat-message .message-time {
-      font-size: 0.7rem;
-      opacity: 0.7;
-      margin-top: 4px;
+    .info-value {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
       text-align: left;
     }
 
-    .chat-message.client .message-time {
-      text-align: right;
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
     }
 
-    /* Receipt styles */
+    .btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #0d9668;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--surface-highlight);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: var(--border);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      padding: 8px;
+    }
+
+    .btn-ghost:hover {
+      color: var(--text);
+      background: var(--surface);
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 11px;
+    }
+
+    /* PIN Display */
+    .pin-display {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 20px;
+      background: var(--bg);
+      border-radius: 12px;
+      margin: 12px 0;
+    }
+
+    .pin-value {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      font-family: monospace;
+      color: var(--primary);
+    }
+
+    .pin-warning {
+      font-size: 11px;
+      color: var(--warning);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    /* Chat */
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 180px);
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .chat-bubble {
+      max-width: 80%;
+      padding: 10px 14px;
+      border-radius: 16px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .chat-bubble.client {
+      align-self: flex-start;
+      background: var(--primary);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .chat-bubble.admin {
+      align-self: flex-end;
+      background: var(--surface-highlight);
+      color: var(--text);
+      border-bottom-left-radius: 4px;
+    }
+
+    .chat-time {
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    .chat-input-area {
+      display: flex;
+      gap: 8px;
+      padding: 12px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .chat-input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 10px 16px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .chat-input:focus {
+      border-color: var(--primary);
+    }
+
+    .chat-input::placeholder {
+      color: var(--text-dim);
+    }
+
+    .chat-send {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--primary);
+      border: none;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .chat-send:hover {
+      transform: scale(1.05);
+    }
+
+    /* Notifications */
+    .notification-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px;
+      background: var(--surface);
+      border-radius: 10px;
+      margin-bottom: 8px;
+      border: 1px solid var(--border);
+      transition: all 0.2s;
+    }
+
+    .notification-item.unread {
+      border-color: var(--primary);
+      background: var(--primary-dim);
+    }
+
+    .notification-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--surface-highlight);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .notification-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .notification-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    .notification-message {
+      font-size: 12px;
+      color: var(--text-muted);
+      white-space: pre-line;
+    }
+
+    .notification-time {
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-top: 6px;
+    }
+
+    /* Receipt Items */
     .receipt-item {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 14px;
-      background: rgba(255, 255, 255, 0.03);
+      padding: 12px;
+      background: var(--bg);
       border-radius: 10px;
-      margin-bottom: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      transition: all 0.2s ease;
-    }
-
-    .receipt-item:hover {
-      background: rgba(255, 255, 255, 0.06);
-      border-color: rgba(0, 212, 255, 0.2);
+      margin-bottom: 8px;
     }
 
     .receipt-icon {
-      flex-shrink: 0;
-      width: 45px;
-      height: 45px;
-      background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+      width: 40px;
+      height: 40px;
       border-radius: 10px;
+      background: var(--surface-highlight);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
+      color: var(--primary);
     }
 
     .receipt-info {
@@ -587,286 +574,537 @@
     }
 
     .receipt-name {
+      font-size: 12px;
       font-weight: 500;
+      color: var(--text);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      margin-bottom: 4px;
     }
 
     .receipt-meta {
-      font-size: 0.8rem;
-      color: #888;
-    }
-
-    .receipt-description {
-      font-size: 0.85rem;
-      color: #a0a0b0;
-      margin-top: 4px;
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-top: 2px;
     }
 
     .receipt-actions {
       display: flex;
-      gap: 8px;
-    }
-
-    .receipt-btn {
-      padding: 8px 14px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.85rem;
-      transition: all 0.2s ease;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
       gap: 4px;
     }
 
-    .receipt-btn.view {
-      background: rgba(0, 212, 255, 0.2);
-      color: #00d4ff;
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      background: rgba(24, 24, 27, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 0;
+      padding-bottom: max(8px, env(safe-area-inset-bottom));
+      z-index: 100;
     }
 
-    .receipt-btn.download {
-      background: rgba(34, 197, 94, 0.2);
-      color: #22c55e;
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 16px;
+      border: none;
+      background: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.2s;
+      border-radius: 12px;
     }
 
-    .receipt-btn:hover {
-      transform: translateY(-1px);
+    .nav-item svg {
+      width: 20px;
+      height: 20px;
     }
 
-    /* Responsive */
-    @media (max-width: 480px) {
-      .salary-amounts {
-        grid-template-columns: 1fr;
-      }
+    .nav-item span {
+      font-size: 10px;
+      font-weight: 500;
+    }
 
-      .modal-content {
-        padding: 20px;
-      }
+    .nav-item.active {
+      color: var(--primary);
+    }
 
-      .receipt-actions {
-        flex-direction: column;
-      }
+    .nav-item.active svg {
+      filter: drop-shadow(0 0 6px var(--primary));
+    }
+
+    .nav-item:hover:not(.active) {
+      color: var(--text-muted);
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+    }
+
+    .empty-state p {
+      font-size: 13px;
+    }
+
+    /* Loading & Error States */
+    .state-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .state-text {
+      margin-top: 16px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Modal */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 200;
+      padding: 0;
+    }
+
+    .modal-content {
+      background: var(--surface);
+      width: 100%;
+      max-width: 480px;
+      max-height: 90vh;
+      border-radius: 20px 20px 0 0;
+      padding: 20px;
+      overflow-y: auto;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    /* Form Fields */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .form-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .form-input:focus {
+      border-color: var(--primary);
+    }
+
+    /* Alert */
+    .alert {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      z-index: 300;
+      animation: slideDown 0.3s ease;
+      max-width: 90%;
+    }
+
+    .alert.success {
+      border-color: var(--success);
+      background: var(--success-bg);
+    }
+
+    .alert.error {
+      border-color: var(--danger);
+      background: var(--danger-bg);
+    }
+
+    @keyframes slideDown {
+      from { transform: translate(-50%, -100%); opacity: 0; }
+      to { transform: translate(-50%, 0); opacity: 1; }
+    }
+
+    /* Quick Stats Row */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Section Title */
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title svg {
+      width: 16px;
+      height: 16px;
+      color: var(--primary);
     }
   </style>
 </head>
-
 <body>
-  <div class="container">
+  <div class="app-shell">
     <!-- Loading State -->
-    <div id="loadingState" class="loading">
-      <div class="loading-spinner"></div>
-      <p>جاري التحميل...</p>
+    <div id="loadingState" class="state-container">
+      <div class="spinner"></div>
+      <p class="state-text">جاري التحميل...</p>
     </div>
 
     <!-- Error State -->
-    <div id="errorState" class="error-page hidden">
-      <div class="error-icon">🔒</div>
-      <h2>الرابط غير صالح</h2>
-      <p>هذا الرابط غير موجود أو تم إلغاؤه.<br>تواصلي مع الإدارة للحصول على رابط جديد.</p>
+    <div id="errorState" class="state-container hidden">
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--danger);">
+        <circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>
+      </svg>
+      <p class="state-text">رابط غير صالح أو منتهي الصلاحية</p>
     </div>
 
     <!-- Main Content -->
     <div id="mainContent" class="hidden">
       <!-- Header -->
-      <div class="header">
-        <h1>👋 أهلاً <span id="clientName">...</span>!</h1>
-        <p class="welcome">هذه صفحتك الخاصة</p>
-      </div>
-
-      <!-- Alert -->
-      <div id="alertBox" class="alert hidden"></div>
-
-      <!-- Notifications Card -->
-      <div class="card" id="notificationsCard" style="display: none;">
-        <div class="card-header">
-          <h2>🔔 الإشعارات <span id="unreadBadge" class="unread-badge" style="display: none;">0</span></h2>
-          <button class="btn btn-secondary btn-sm" onclick="markAllNotificationsRead()">✓ قراءة الكل</button>
-        </div>
-        <div id="notificationsList"></div>
-      </div>
-
-      <!-- Profile Card -->
-      <div class="card">
-        <div class="card-header">
-          <h2>📋 بياناتك</h2>
-          <button class="btn btn-secondary btn-sm" onclick="openEditModal()">✏️ تعديل</button>
-        </div>
-        <div id="profileInfo">
-          <div class="info-row">
-            <span class="info-label">الاسم الكامل</span>
-            <span class="info-value" id="infoName">-</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">أرقام ID</span>
-            <span class="info-value" id="infoIds">-</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">الهاتف</span>
-            <span class="info-value" id="infoPhone">-</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">واتساب</span>
-            <span class="info-value" id="infoWhatsapp">-</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">الدولة</span>
-            <span class="info-value" id="infoCountry">-</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">المدينة</span>
-            <span class="info-value" id="infoCity">-</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">العنوان</span>
-            <span class="info-value" id="infoAddress">-</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">الوكالة</span>
-            <span class="info-value" id="infoAgency">-</span>
-          </div>
-          <!-- Custom Fields Container -->
-          <div id="customFieldsContainer"></div>
-        </div>
-      </div>
-
-      <!-- PIN Card -->
-      <div class="card">
-        <div class="card-header">
-          <h2>🔐 الرمز السري</h2>
-        </div>
-        <div style="text-align: center; padding: 20px;">
-          <div id="pinDisplay" style="font-size: 2rem; font-weight: bold; letter-spacing: 8px; color: #00d4ff; margin-bottom: 16px;">******</div>
-          <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-            <button class="btn btn-secondary" onclick="togglePinVisibility()">👁️ إظهار/إخفاء</button>
-            <button class="btn btn-warning" onclick="regeneratePin()">🔄 طلب رمز جديد</button>
-          </div>
-          <p style="color: #888; font-size: 0.85rem; margin-top: 12px;">⚠️ احفظي هذا الرمز ولا تعطيه لأحد</p>
-        </div>
-      </div>
-
-      <!-- Live Chat Card -->
-      <div class="card">
-        <div class="card-header">
-          <h2>💬 الدردشة مع الإدارة <span id="chatUnreadBadge" class="unread-badge" style="display: none;">0</span></h2>
-          <button class="btn btn-secondary btn-sm" onclick="loadChatMessages()">🔄</button>
-        </div>
-        <div id="chatContainer" style="height: 350px; display: flex; flex-direction: column;">
-          <!-- Messages Area -->
-          <div id="chatMessages" style="flex: 1; overflow-y: auto; padding: 16px; background: rgba(0,0,0,0.2); border-radius: 12px; margin-bottom: 12px;">
-            <div style="text-align: center; color: #888; padding: 40px 0;">
-              <div style="font-size: 2rem; margin-bottom: 8px;">💬</div>
-              <p>ابدأي محادثة مع الإدارة</p>
+      <header class="header">
+        <div class="header-content">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="header-avatar">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+            </div>
+            <div>
+              <div class="header-title" data-testid="header-name">مرحباً</div>
+              <div class="header-subtitle">بوابتك الشخصية</div>
             </div>
           </div>
-          
-          <!-- Input Area -->
-          <div style="display: flex; gap: 10px;">
-            <input type="text" id="chatInput" placeholder="اكتبي رسالتك..." 
-              style="flex: 1; padding: 12px; border-radius: 25px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white;"
-              onkeypress="if(event.key==='Enter') sendLiveChatMessage()">
-            <button class="btn btn-primary" onclick="sendLiveChatMessage()" style="border-radius: 25px; padding: 12px 24px;">
-              إرسال
+          <button class="notification-btn" onclick="showNotifications()" data-testid="notification-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+            </svg>
+            <span id="notifBadge" class="notification-badge hidden">0</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Home Section -->
+      <section id="section-home" class="section active" data-testid="section-home">
+        <!-- Quick Stats -->
+        <div class="stats-row">
+          <div class="stat-card" data-testid="stat-total-salary">
+            <div class="stat-value" id="statTotalSalary">0</div>
+            <div class="stat-label">إجمالي الراتب</div>
+          </div>
+          <div class="stat-card" data-testid="stat-net-salary">
+            <div class="stat-value" id="statNetSalary">0</div>
+            <div class="stat-label">صافي الراتب</div>
+          </div>
+        </div>
+
+        <!-- Latest Salary -->
+        <div class="section-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>
+          </svg>
+          آخر راتب
+        </div>
+        <div id="latestSalaryCard"></div>
+
+        <!-- Recent Notifications -->
+        <div class="section-title" style="margin-top: 20px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+          </svg>
+          آخر الإشعارات
+        </div>
+        <div id="recentNotifications"></div>
+      </section>
+
+      <!-- Salaries Section -->
+      <section id="section-salaries" class="section" data-testid="section-salaries">
+        <div class="section-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>
+          </svg>
+          سجل الرواتب
+        </div>
+        <div id="salariesList"></div>
+      </section>
+
+      <!-- Chat Section -->
+      <section id="section-chat" class="section" data-testid="section-chat">
+        <div class="chat-container">
+          <div class="chat-messages" id="chatMessages"></div>
+          <div class="chat-input-area">
+            <input type="text" class="chat-input" id="chatInput" placeholder="اكتب رسالتك..." data-testid="chat-input">
+            <button class="chat-send" onclick="sendMessage()" data-testid="chat-send">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>
+              </svg>
             </button>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Salaries Card -->
-      <div class="card">
-        <div class="card-header">
-          <h2>💰 رواتبك</h2>
+      <!-- Profile Section -->
+      <section id="section-profile" class="section" data-testid="section-profile">
+        <!-- Profile Info -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+              بياناتي
+            </div>
+            <button class="btn btn-sm btn-secondary" onclick="openEditModal()" data-testid="edit-profile-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>
+              </svg>
+              تعديل
+            </button>
+          </div>
+          <div class="info-list" id="profileInfo"></div>
         </div>
-        <div id="salariesList">
-          <div class="empty-state">
-            <div class="empty-state-icon">📭</div>
-            <p>لا توجد رواتب مسجلة حالياً</p>
+
+        <!-- PIN Card -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              الرمز السري
+            </div>
+          </div>
+          <div class="pin-display">
+            <span class="pin-value" id="pinDisplay" data-testid="pin-display">******</span>
+            <button class="btn btn-ghost" onclick="togglePin()" data-testid="toggle-pin-btn">
+              <svg id="pinEyeIcon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          <div style="display: flex; gap: 8px; justify-content: center;">
+            <button class="btn btn-primary btn-sm" onclick="regeneratePin()" data-testid="regenerate-pin-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
+              </svg>
+              طلب رمز جديد
+            </button>
+          </div>
+          <div class="pin-warning">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>
+            </svg>
+            احفظ هذا الرمز ولا تشاركه مع أحد
           </div>
         </div>
-      </div>
 
-      <!-- Receipts Card -->
-      <div class="card">
-        <div class="card-header">
-          <h2>🧾 الإيصالات</h2>
-        </div>
-        <div id="receiptsList">
-          <div class="empty-state">
-            <div class="empty-state-icon">📄</div>
-            <p>لا توجد إيصالات حالياً</p>
+        <!-- Receipts Card -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>
+              </svg>
+              الإيصالات
+            </div>
           </div>
+          <div id="receiptsList"></div>
         </div>
-      </div>
+      </section>
 
-      <!-- Regenerate Link -->
-      <div class="card" style="text-align: center;">
-        <p style="color: #a0a0b0; margin-bottom: 15px; font-size: 0.9rem;">
-          إذا شاركتِ الرابط بالخطأ، يمكنك توليد رابط جديد (يلغي القديم)
-        </p>
-        <button class="btn btn-secondary" onclick="regenerateLink()">🔄 توليد رابط جديد</button>
+      <!-- Bottom Navigation -->
+      <nav class="bottom-nav">
+        <button class="nav-item active" onclick="switchSection('home')" data-testid="nav-home">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          <span>الرئيسية</span>
+        </button>
+        <button class="nav-item" onclick="switchSection('salaries')" data-testid="nav-salaries">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>
+          </svg>
+          <span>الرواتب</span>
+        </button>
+        <button class="nav-item" onclick="switchSection('chat')" data-testid="nav-chat">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>
+          </svg>
+          <span>المحادثة</span>
+        </button>
+        <button class="nav-item" onclick="switchSection('profile')" data-testid="nav-profile">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span>حسابي</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="editModal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-title">تعديل البيانات</div>
+          <button class="modal-close" onclick="closeEditModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+            </svg>
+          </button>
+        </div>
+        <form id="editForm" onsubmit="saveProfile(event)">
+          <div class="form-group">
+            <label class="form-label">الاسم الكامل</label>
+            <input type="text" class="form-input" id="editName" data-testid="edit-name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">رقم الهاتف</label>
+            <input type="tel" class="form-input" id="editPhone" data-testid="edit-phone">
+          </div>
+          <div class="form-group">
+            <label class="form-label">الدولة</label>
+            <input type="text" class="form-input" id="editCountry" data-testid="edit-country">
+          </div>
+          <div class="form-group">
+            <label class="form-label">المدينة</label>
+            <input type="text" class="form-input" id="editCity" data-testid="edit-city">
+          </div>
+          <div class="form-group">
+            <label class="form-label">العنوان</label>
+            <input type="text" class="form-input" id="editAddress" data-testid="edit-address">
+          </div>
+          <div id="editCustomFields"></div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;" data-testid="save-profile-btn">حفظ التغييرات</button>
+        </form>
       </div>
     </div>
-  </div>
 
-  <!-- Edit Modal -->
-  <div id="editModal" class="modal hidden">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>✏️ تعديل البيانات</h2>
-        <button class="close-btn" onclick="closeEditModal()">×</button>
+    <!-- Notifications Modal -->
+    <div id="notifModal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-title">الإشعارات</div>
+          <button class="modal-close" onclick="closeNotifModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div id="allNotifications"></div>
       </div>
-      <form id="editForm">
-        <div class="form-group">
-          <label>الاسم الكامل</label>
-          <input type="text" id="editName" required>
-        </div>
-        <div class="form-group">
-          <label>الهاتف</label>
-          <input type="tel" id="editPhone">
-        </div>
-        <div class="form-group">
-          <label>واتساب</label>
-          <input type="tel" id="editWhatsapp">
-        </div>
-        <div class="form-group">
-          <label>المدينة</label>
-          <input type="text" id="editCity">
-        </div>
-        <div class="form-group">
-          <label>العنوان</label>
-          <input type="text" id="editAddress">
-        </div>
-        <div class="form-group">
-          <label>الدولة</label>
-          <input type="text" id="editCountry" disabled>
-        </div>
-        <div class="form-group">
-          <label>الوكالة</label>
-          <input type="text" id="editAgency" disabled>
-        </div>
-        <!-- Custom Fields Container in Edit Form -->
-        <div id="editCustomFieldsContainer"></div>
-        <p class="form-note">⚠️ لتغيير الدولة أو الوكالة تواصلي مع الإدارة</p>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-secondary" onclick="closeEditModal()">إلغاء</button>
-          <button type="submit" class="btn btn-primary">💾 حفظ</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Receipt Modal -->
-  <div id="receiptModal" class="modal hidden">
-    <div class="modal-content receipt-modal-content">
-      <div class="modal-header">
-        <h2>🧾 وصل التحويل</h2>
-        <button class="close-btn" onclick="closeReceiptModal()">×</button>
-      </div>
-      <img id="receiptImage" src="" alt="وصل التحويل">
-      <p id="receiptDate" style="color: #a0a0b0;"></p>
     </div>
   </div>
 
@@ -874,10 +1112,13 @@
     // Get token from URL
     const pathParts = window.location.pathname.split('/');
     const token = pathParts[pathParts.length - 1];
-
+    
     let clientData = null;
     let salariesData = [];
     let notificationsData = [];
+    let clientPin = null;
+    let pinVisible = false;
+    let currency = 'ر.س';
 
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
@@ -886,9 +1127,14 @@
         return;
       }
       loadData();
+      
+      // Enter to send chat
+      document.getElementById('chatInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+      });
     });
 
-    // API helper
+    // API Helper
     async function api(method, url, data = null) {
       const options = { method, credentials: 'include' };
       if (data) {
@@ -904,561 +1150,222 @@
     // Load all data
     async function loadData() {
       try {
-        // Load profile
         clientData = await api('GET', `/api/portal/${token}/profile`);
         
-        // Load salaries
         try {
           salariesData = await api('GET', `/api/portal/${token}/salaries`);
-        } catch (e) {
-          salariesData = [];
-        }
+        } catch (e) { salariesData = []; }
 
-        // Load notifications
         try {
           const notifResult = await api('GET', `/api/portal/${token}/notifications`);
           notificationsData = notifResult.notifications || [];
-          renderNotifications(notifResult.unreadCount || 0);
-        } catch (e) {
-          notificationsData = [];
-        }
+          updateNotifBadge(notifResult.unreadCount || 0);
+        } catch (e) { notificationsData = []; }
 
-        renderData();
+        // Load settings for currency
+        try {
+          const settings = await api('GET', '/api/ai/settings');
+          currency = settings.salaryCurrency || 'ر.س';
+        } catch (e) {}
+
+        renderAll();
         showMain();
+        loadPin();
+        loadChat();
+        setInterval(loadChat, 5000);
       } catch (err) {
         console.error('Load error:', err);
         showError();
       }
     }
 
-    // Show states
     function showError() {
       document.getElementById('loadingState').classList.add('hidden');
       document.getElementById('errorState').classList.remove('hidden');
-      document.getElementById('mainContent').classList.add('hidden');
     }
 
     function showMain() {
       document.getElementById('loadingState').classList.add('hidden');
-      document.getElementById('errorState').classList.add('hidden');
       document.getElementById('mainContent').classList.remove('hidden');
-      
-      // Load PIN
-      loadPin();
-      
-      // Load chat messages
-      loadChatMessages();
-      
-      // Auto-refresh chat every 5 seconds
-      setInterval(loadChatMessages, 5000);
     }
 
-    // =====================================================
-    // PIN Management
-    // =====================================================
-    let clientPin = null;
-    let pinVisible = false;
-
-    async function loadPin() {
-      try {
-        const result = await api('GET', `/api/portal/${token}/pin`);
-        clientPin = result.pin;
-      } catch (e) {
-        console.error('Failed to load PIN:', e);
-      }
+    // Navigation
+    function switchSection(section) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById(`section-${section}`).classList.add('active');
+      document.querySelector(`[data-testid="nav-${section}"]`).classList.add('active');
     }
 
-    function togglePinVisibility() {
-      pinVisible = !pinVisible;
-      const display = document.getElementById('pinDisplay');
-      
-      if (pinVisible && clientPin) {
-        display.textContent = clientPin;
-      } else {
-        display.textContent = '******';
-      }
-    }
+    // Render all data
+    function renderAll() {
+      const firstName = (clientData.fullName || '').split(' ')[0] || 'مرحباً';
+      document.querySelector('.header-title').textContent = `مرحباً ${firstName}`;
 
-    async function regeneratePin() {
-      if (!confirm('هل تريدين طلب رمز سري جديد؟')) return;
-      
-      try {
-        const result = await api('POST', `/api/portal/${token}/pin/regenerate`);
-        clientPin = result.pin;
-        
-        // Show new PIN
-        pinVisible = true;
-        document.getElementById('pinDisplay').textContent = result.pin;
-        
-        showAlert('تم توليد رمز جديد: ' + result.pin + '\nاحفظيه جيداً! 💕');
-      } catch (e) {
-        showAlert('فشل توليد الرمز: ' + e.message, 'error');
-      }
-    }
-
-    // =====================================================
-    // Live Chat
-    // =====================================================
-    let chatMessages = [];
-
-    async function loadChatMessages() {
-      try {
-        const result = await api('GET', `/api/portal/${token}/chat/messages`);
-        chatMessages = result.messages || [];
-        
-        // Update unread badge
-        const badge = document.getElementById('chatUnreadBadge');
-        if (result.unread > 0) {
-          badge.textContent = result.unread;
-          badge.style.display = 'inline';
-        } else {
-          badge.style.display = 'none';
-        }
-        
-        renderChatMessages();
-      } catch (e) {
-        console.error('Failed to load chat:', e);
-      }
-    }
-
-    function renderChatMessages() {
-      const container = document.getElementById('chatMessages');
-      
-      if (chatMessages.length === 0) {
-        container.innerHTML = `
-          <div style="text-align: center; color: #888; padding: 40px 0;">
-            <div style="font-size: 2rem; margin-bottom: 8px;">💬</div>
-            <p>ابدأي محادثة مع الإدارة</p>
-          </div>
-        `;
-        return;
-      }
-      
-      container.innerHTML = chatMessages.map(msg => {
-        const time = new Date(msg.timestamp).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
-        const date = new Date(msg.timestamp).toLocaleDateString('ar', { month: 'short', day: 'numeric' });
-        const senderClass = msg.sender === 'client' ? 'client' : 'admin';
-        const senderLabel = msg.sender === 'client' ? 'أنت' : '👨‍💼 الإدارة';
-        
-        return `
-          <div class="chat-message ${senderClass}">
-            <div class="message-text">${msg.message}</div>
-            <div class="message-time">${senderLabel} • ${date} ${time}</div>
-          </div>
-        `;
-      }).join('');
-      
-      // Scroll to bottom
-      container.scrollTop = container.scrollHeight;
-    }
-
-    async function sendLiveChatMessage() {
-      const input = document.getElementById('chatInput');
-      const message = input.value.trim();
-      
-      if (!message) return;
-      
-      try {
-        input.disabled = true;
-        await api('POST', `/api/portal/${token}/chat/messages`, { message });
-        input.value = '';
-        await loadChatMessages();
-      } catch (e) {
-        showAlert('فشل إرسال الرسالة: ' + e.message, 'error');
-      } finally {
-        input.disabled = false;
-        input.focus();
-      }
-    }
-
-    // Old chat function (keep for backwards compatibility)
-    async function sendChatMessage() {
-      sendLiveChatMessage();
-    }
-
-    // Render data
-    function renderData() {
-      // Name in header
-      const firstName = (clientData.fullName || '').split(' ')[0] || 'عزيزتي';
-      document.getElementById('clientName').textContent = firstName;
-
-      // Profile info
-      document.getElementById('infoName').textContent = clientData.fullName || '-';
-      document.getElementById('infoIds').textContent = (clientData.ids || []).join(', ') || '-';
-      document.getElementById('infoPhone').textContent = clientData.phone || '-';
-      document.getElementById('infoWhatsapp').textContent = clientData.whatsappPhone || clientData.phone || '-';
-      document.getElementById('infoCountry').textContent = clientData.country || '-';
-      document.getElementById('infoCity').textContent = clientData.city || '-';
-      document.getElementById('infoAddress').textContent = clientData.address || '-';
-      document.getElementById('infoAgency').textContent = clientData.agencyName || '-';
-
-      // Custom Fields
-      renderCustomFields();
-
-      // Salaries
+      renderStats();
+      renderLatestSalary();
       renderSalaries();
-      
-      // Receipts
-      loadReceipts();
+      renderProfile();
+      renderReceipts();
+      renderRecentNotifications();
     }
 
-    // Render custom fields
-    function renderCustomFields() {
-      const container = document.getElementById('customFieldsContainer');
-      const customFields = clientData.customFields || {};
+    // Stats
+    function renderStats() {
+      let totalSalary = 0;
+      let netSalary = 0;
       
-      // Map of common field names to display labels
-      const fieldLabels = {
-        'طريقة_الاسلام': 'طريقة الاستلام',
-        'طريقة_الاستلام': 'طريقة الاستلام',
-        'طريقة الاستلام': 'طريقة الاستلام',
-        'معلومات_الاستلام': 'معلومات الاستلام',
-        'معلومات الاستلام': 'معلومات الاستلام',
-        'العملة': 'العملة',
-        'ملاحظات': 'ملاحظات'
-      };
-      
-      let html = '';
-      
-      for (const [key, value] of Object.entries(customFields)) {
-        // Skip sub-fields, they'll be shown with their parent
-        if (key.endsWith('__sub')) continue;
-        
-        const label = fieldLabels[key] || key.replace(/_/g, ' ');
-        const subValue = customFields[key + '__sub'];
-        
-        let displayValue = value || '-';
-        if (subValue) {
-          displayValue = `${value} (${subValue})`;
-        }
-        
-        html += `
-          <div class="info-row">
-            <span class="info-label">${label}</span>
-            <span class="info-value">${displayValue}</span>
-          </div>
-        `;
+      if (salariesData.length > 0) {
+        const latest = salariesData[0];
+        totalSalary = latest.total || 0;
+        netSalary = latest.net || latest.total || 0;
       }
-      
-      container.innerHTML = html;
+
+      document.getElementById('statTotalSalary').textContent = formatNumber(totalSalary);
+      document.getElementById('statNetSalary').textContent = formatNumber(netSalary);
     }
 
-    // Render notifications
-    function renderNotifications(unreadCount) {
-      const card = document.getElementById('notificationsCard');
-      const list = document.getElementById('notificationsList');
-      const badge = document.getElementById('unreadBadge');
-      
-      if (!notificationsData || notificationsData.length === 0) {
-        card.style.display = 'none';
-        return;
-      }
-      
-      card.style.display = 'block';
-      
-      // Show unread badge
-      if (unreadCount > 0) {
-        badge.textContent = unreadCount;
-        badge.style.display = 'inline';
-      } else {
-        badge.style.display = 'none';
-      }
-      
-      const typeIcons = {
-        'info': '📢',
-        'success': '✅',
-        'warning': '⚠️',
-        'celebration': '🎉'
-      };
-      
-      list.innerHTML = notificationsData.map(n => {
-        const icon = typeIcons[n.type] || '📢';
-        const readClass = n.isRead ? 'read' : 'unread';
-        const date = new Date(n.createdAt).toLocaleDateString('ar', { 
-          year: 'numeric', 
-          month: 'short', 
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-        
-        return `
-          <div class="notification-item ${n.type} ${readClass}" data-id="${n.id}" onclick="markNotificationRead('${n.id}')">
-            ${!n.isRead ? '<div class="unread-dot"></div>' : ''}
-            <div class="notification-header">
-              <span class="notification-title">
-                <span class="notification-icon">${icon}</span>
-                ${n.title}
-              </span>
-              <span class="notification-time">${date}</span>
-            </div>
-            <div class="notification-message">${n.message}</div>
-          </div>
-        `;
-      }).join('');
+    function formatNumber(num) {
+      return new Intl.NumberFormat('ar-SA').format(num);
     }
 
-    // Mark single notification as read
-    async function markNotificationRead(notificationId) {
-      try {
-        await api('POST', `/api/portal/${token}/notifications/${notificationId}/read`);
-        
-        // Update UI
-        const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
-        if (item) {
-          item.classList.remove('unread');
-          item.classList.add('read');
-          const dot = item.querySelector('.unread-dot');
-          if (dot) dot.remove();
-        }
-        
-        // Update badge
-        const badge = document.getElementById('unreadBadge');
-        let count = parseInt(badge.textContent) - 1;
-        if (count <= 0) {
-          badge.style.display = 'none';
-        } else {
-          badge.textContent = count;
-        }
-      } catch (e) {
-        console.error('Error marking notification read:', e);
-      }
-    }
-
-    // Mark all notifications as read
-    async function markAllNotificationsRead() {
-      try {
-        await api('POST', `/api/portal/${token}/notifications/read-all`);
-        
-        // Update UI
-        document.querySelectorAll('.notification-item.unread').forEach(item => {
-          item.classList.remove('unread');
-          item.classList.add('read');
-          const dot = item.querySelector('.unread-dot');
-          if (dot) dot.remove();
-        });
-        
-        document.getElementById('unreadBadge').style.display = 'none';
-        showAlert('تم تحديد جميع الإشعارات كمقروءة');
-      } catch (e) {
-        showAlert('حدث خطأ', 'error');
-      }
-    }
-
-    // Render salaries
-    function renderSalaries() {
-      const container = document.getElementById('salariesList');
-
-      if (!salariesData || salariesData.length === 0) {
+    // Latest Salary Card
+    function renderLatestSalary() {
+      const container = document.getElementById('latestSalaryCard');
+      
+      if (!salariesData.length) {
         container.innerHTML = `
           <div class="empty-state">
-            <div class="empty-state-icon">📭</div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>
+            </svg>
+            <p>لا توجد رواتب مسجلة</p>
+          </div>
+        `;
+        return;
+      }
+
+      const salary = salariesData[0];
+      container.innerHTML = renderSalaryCard(salary, true);
+    }
+
+    // Salaries List
+    function renderSalaries() {
+      const container = document.getElementById('salariesList');
+      
+      if (!salariesData.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>
+            </svg>
             <p>لا توجد رواتب مسجلة حالياً</p>
           </div>
         `;
         return;
       }
 
-      container.innerHTML = salariesData.map(salary => {
-        const hasReceipt = salary.receipt && salary.receipt.filename;
-        const statusClass = hasReceipt ? 'status-paid' : 'status-pending';
-        const statusText = hasReceipt ? '✅ تم التحويل' : '⏳ قيد المعالجة';
+      container.innerHTML = salariesData.map(s => renderSalaryCard(s)).join('');
+    }
 
-        return `
-          <div class="salary-card">
-            <div class="salary-header">
-              <span class="salary-period">📅 ${salary.periodName || 'غير محدد'}</span>
-              <span class="salary-status ${statusClass}">${statusText}</span>
+    function renderSalaryCard(salary, isLatest = false) {
+      const total = salary.total || 0;
+      const deduction = salary.deduction || 0;
+      const net = salary.net || total;
+      const isPaid = salary.status === 'paid';
+
+      return `
+        <div class="salary-card" data-testid="salary-card">
+          <div class="salary-header">
+            <div class="salary-period">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
+              </svg>
+              ${salary.periodName || 'الفترة الحالية'}
             </div>
-            <div class="salary-amounts">
-              <div class="amount-box">
-                <div class="amount-label">المبلغ</div>
-                <div class="amount-value total">${formatNumber(salary.amount)} ${salary.currency || 'ر.س'}</div>
-              </div>
-              <div class="amount-box">
-                <div class="amount-label">الخصم (${salary.deductionPercent || 0}%)</div>
-                <div class="amount-value deduction">- ${formatNumber(salary.deduction || 0)}</div>
-              </div>
-              <div class="amount-box">
-                <div class="amount-label">الصافي</div>
-                <div class="amount-value net">${formatNumber(salary.net)} ✨</div>
-              </div>
-            </div>
-            ${hasReceipt ? `
-              <div class="receipt-section">
-                <div class="receipt-info">
-                  <span>🧾 تاريخ التحويل: ${salary.receipt.transferDate || '-'}</span>
-                </div>
-                <button class="btn btn-primary btn-sm receipt-btn" onclick="showReceipt('${salary.receipt.filename}', '${salary.receipt.transferDate || ''}')">
-                  📄 عرض الوصل
-                </button>
-              </div>
-            ` : `
-              <div class="receipt-section">
-                <div class="receipt-info">
-                  <span>⏳ الوصل سيتوفر بعد التحويل</span>
-                </div>
-              </div>
-            `}
+            <span class="salary-status ${isPaid ? 'status-paid' : 'status-pending'}">
+              ${isPaid ? 'تم الدفع' : 'قيد المعالجة'}
+            </span>
           </div>
-        `;
-      }).join('');
+          <div class="salary-amount">
+            <div class="salary-label">صافي الراتب</div>
+            <div class="salary-value">
+              ${formatNumber(net)}
+              <span class="salary-currency">${currency}</span>
+            </div>
+          </div>
+          <div class="salary-details">
+            <div class="salary-detail">
+              <div class="detail-label">الإجمالي</div>
+              <div class="detail-value">${formatNumber(total)}</div>
+            </div>
+            <div class="salary-detail">
+              <div class="detail-label">الخصومات</div>
+              <div class="detail-value deduction">-${formatNumber(deduction)}</div>
+            </div>
+            <div class="salary-detail">
+              <div class="detail-label">المعرفات</div>
+              <div class="detail-value">${salary.salaries ? salary.salaries.length : 1}</div>
+            </div>
+          </div>
+        </div>
+      `;
     }
 
-    // Format number
-    function formatNumber(num) {
-      return Number(num || 0).toLocaleString('ar-SA');
-    }
+    // Profile
+    function renderProfile() {
+      const fields = [
+        { label: 'الاسم الكامل', value: clientData.fullName, icon: 'user' },
+        { label: 'أرقام ID', value: (clientData.ids || []).join('، '), icon: 'hash' },
+        { label: 'الهاتف', value: clientData.phone, icon: 'phone' },
+        { label: 'واتساب', value: clientData.whatsappPhone || clientData.phone, icon: 'message' },
+        { label: 'الدولة', value: clientData.country, icon: 'globe' },
+        { label: 'المدينة', value: clientData.city, icon: 'map' },
+        { label: 'العنوان', value: clientData.address, icon: 'home' },
+        { label: 'الوكالة', value: clientData.agencyName, icon: 'building' }
+      ];
 
-    // Show alert
-    function showAlert(message, type = 'success') {
-      const alert = document.getElementById('alertBox');
-      alert.className = `alert alert-${type}`;
-      alert.innerHTML = `<span>${type === 'success' ? '✅' : '❌'}</span> ${message}`;
-      alert.classList.remove('hidden');
-      setTimeout(() => alert.classList.add('hidden'), 5000);
-    }
-
-    // Edit Modal
-    function openEditModal() {
-      document.getElementById('editName').value = clientData.fullName || '';
-      document.getElementById('editPhone').value = clientData.phone || '';
-      document.getElementById('editWhatsapp').value = clientData.whatsappPhone || '';
-      document.getElementById('editCity').value = clientData.city || '';
-      document.getElementById('editAddress').value = clientData.address || '';
-      document.getElementById('editCountry').value = clientData.country || '';
-      document.getElementById('editAgency').value = clientData.agencyName || '';
-      
-      // Render custom fields in edit form
-      renderEditCustomFields();
-      
-      document.getElementById('editModal').classList.remove('hidden');
-    }
-
-    // Render custom fields in edit form
-    function renderEditCustomFields() {
-      const container = document.getElementById('editCustomFieldsContainer');
+      // Add custom fields
       const customFields = clientData.customFields || {};
-      
-      const fieldLabels = {
-        'طريقة_الاسلام': 'طريقة الاستلام',
-        'طريقة_الاستلام': 'طريقة الاستلام',
-        'طريقة الاستلام': 'طريقة الاستلام',
-        'معلومات_الاستلام': 'معلومات الاستلام',
-        'معلومات الاستلام': 'معلومات الاستلام',
-        'العملة': 'العملة',
-        'ملاحظات': 'ملاحظات'
+      Object.entries(customFields).forEach(([key, value]) => {
+        if (!key.endsWith('__sub') && value) {
+          const subValue = customFields[key + '__sub'];
+          fields.push({
+            label: key.replace(/_/g, ' '),
+            value: subValue ? `${value} (${subValue})` : value,
+            icon: 'tag'
+          });
+        }
+      });
+
+      document.getElementById('profileInfo').innerHTML = fields.map(f => `
+        <div class="info-item">
+          <span class="info-label">
+            ${getIcon(f.icon, 14)}
+            ${f.label}
+          </span>
+          <span class="info-value">${f.value || '-'}</span>
+        </div>
+      `).join('');
+    }
+
+    function getIcon(name, size = 16) {
+      const icons = {
+        user: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+        hash: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg>`,
+        phone: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`,
+        message: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>`,
+        globe: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>`,
+        map: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`,
+        home: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
+        building: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>`,
+        tag: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>`
       };
-      
-      let html = '';
-      
-      for (const [key, value] of Object.entries(customFields)) {
-        if (key.endsWith('__sub')) continue;
-        
-        const label = fieldLabels[key] || key.replace(/_/g, ' ');
-        const subValue = customFields[key + '__sub'];
-        
-        html += `
-          <div class="form-group">
-            <label>${label}</label>
-            <input type="text" id="editCustom_${key}" value="${value || ''}">
-          </div>
-        `;
-        
-        if (subValue !== undefined) {
-          html += `
-            <div class="form-group">
-              <label>${label} - التفاصيل</label>
-              <input type="text" id="editCustom_${key}__sub" value="${subValue || ''}">
-            </div>
-          `;
-        }
-      }
-      
-      container.innerHTML = html;
+      return icons[name] || '';
     }
 
-    function closeEditModal() {
-      document.getElementById('editModal').classList.add('hidden');
-    }
-
-    // Edit form submit
-    document.getElementById('editForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      try {
-        const updates = {
-          fullName: document.getElementById('editName').value.trim(),
-          phone: document.getElementById('editPhone').value.trim(),
-          whatsappPhone: document.getElementById('editWhatsapp').value.trim(),
-          city: document.getElementById('editCity').value.trim(),
-          address: document.getElementById('editAddress').value.trim()
-        };
-
-        // Collect custom fields
-        const customFields = clientData.customFields || {};
-        const updatedCustomFields = {};
-        
-        for (const key of Object.keys(customFields)) {
-          if (key.endsWith('__sub')) continue;
-          
-          const input = document.getElementById(`editCustom_${key}`);
-          if (input) {
-            updatedCustomFields[key] = input.value.trim();
-          }
-          
-          const subInput = document.getElementById(`editCustom_${key}__sub`);
-          if (subInput) {
-            updatedCustomFields[key + '__sub'] = subInput.value.trim();
-          }
-        }
-        
-        updates.customFields = updatedCustomFields;
-
-        await api('PUT', `/api/portal/${token}/profile`, updates);
-        
-        // Update local data
-        Object.assign(clientData, updates);
-        clientData.customFields = updatedCustomFields;
-        renderData();
-        closeEditModal();
-        showAlert('تم حفظ التعديلات بنجاح! 💕');
-      } catch (err) {
-        showAlert(err.message, 'error');
-      }
-    });
-
-    // Receipt Modal
-    function showReceipt(filename, date) {
-      document.getElementById('receiptImage').src = `/uploads/receipts/${filename}`;
-      document.getElementById('receiptDate').textContent = date ? `تاريخ التحويل: ${date}` : '';
-      document.getElementById('receiptModal').classList.remove('hidden');
-    }
-
-    function closeReceiptModal() {
-      document.getElementById('receiptModal').classList.add('hidden');
-    }
-
-    // Regenerate link
-    async function regenerateLink() {
-      if (!confirm('هل أنتِ متأكدة؟ سيتم إلغاء الرابط الحالي وتوليد رابط جديد.')) {
-        return;
-      }
-
-      try {
-        const result = await api('POST', `/api/portal/${token}/regenerate`);
-        
-        if (result.newToken) {
-          alert('تم توليد رابط جديد! سيتم توجيهك للرابط الجديد.');
-          window.location.href = `/portal/${result.newToken}`;
-        }
-      } catch (err) {
-        showAlert(err.message, 'error');
-      }
-    }
-
-    // Load and render receipts
-    async function loadReceipts() {
+    // Receipts
+    async function renderReceipts() {
       const container = document.getElementById('receiptsList');
       
       try {
@@ -1467,57 +1374,294 @@
         if (!receipts || receipts.length === 0) {
           container.innerHTML = `
             <div class="empty-state">
-              <div class="empty-state-icon">📄</div>
-              <p>لا توجد إيصالات حالياً</p>
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/>
+              </svg>
+              <p>لا توجد إيصالات</p>
             </div>
           `;
           return;
         }
-        
-        container.innerHTML = receipts.map(receipt => {
-          const isImage = receipt.mimeType && receipt.mimeType.startsWith('image/');
-          const date = new Date(receipt.uploadedAt).toLocaleDateString('ar', { 
-            year: 'numeric', 
-            month: 'short', 
-            day: 'numeric' 
-          });
-          const sizeKB = Math.round(receipt.size / 1024);
-          
+
+        container.innerHTML = receipts.map(r => {
+          const date = new Date(r.uploadedAt).toLocaleDateString('ar', { month: 'short', day: 'numeric' });
+          const sizeKB = Math.round((r.size || 0) / 1024);
           return `
-            <div class="receipt-item">
-              <div class="receipt-icon">${isImage ? '🖼️' : '📄'}</div>
+            <div class="receipt-item" data-testid="receipt-item">
+              <div class="receipt-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/>
+                </svg>
+              </div>
               <div class="receipt-info">
-                <div class="receipt-name">${receipt.originalName}</div>
+                <div class="receipt-name">${r.originalName}</div>
                 <div class="receipt-meta">${date} • ${sizeKB} KB</div>
-                ${receipt.description ? `<div class="receipt-description">${receipt.description}</div>` : ''}
               </div>
               <div class="receipt-actions">
-                <a href="/api/receipts/file/${receipt.filename}" target="_blank" class="receipt-btn view">👁️ عرض</a>
-                <a href="/api/receipts/file/${receipt.filename}" download="${receipt.originalName}" class="receipt-btn download">⬇️ تحميل</a>
+                <a href="/api/receipts/file/${r.filename}" target="_blank" class="btn btn-ghost btn-sm">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>
+                  </svg>
+                </a>
+                <a href="/api/receipts/file/${r.filename}" download class="btn btn-ghost btn-sm">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>
+                  </svg>
+                </a>
               </div>
             </div>
           `;
         }).join('');
       } catch (err) {
-        console.error('Error loading receipts:', err);
+        container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 20px;">خطأ في تحميل الإيصالات</p>';
+      }
+    }
+
+    // Notifications
+    function updateNotifBadge(count) {
+      const badge = document.getElementById('notifBadge');
+      if (count > 0) {
+        badge.textContent = count > 9 ? '9+' : count;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    function renderRecentNotifications() {
+      const container = document.getElementById('recentNotifications');
+      const recent = notificationsData.slice(0, 2);
+      
+      if (!recent.length) {
         container.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-state-icon">⚠️</div>
-            <p>حدث خطأ في تحميل الإيصالات</p>
+          <div class="empty-state" style="padding: 20px;">
+            <p>لا توجد إشعارات</p>
           </div>
         `;
+        return;
       }
+
+      container.innerHTML = recent.map(n => renderNotificationItem(n)).join('');
+    }
+
+    function renderNotificationItem(n) {
+      const date = new Date(n.createdAt).toLocaleDateString('ar', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      return `
+        <div class="notification-item ${!n.isRead ? 'unread' : ''}" onclick="markAsRead('${n.id}')" data-testid="notification-item">
+          <div class="notification-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--primary);">
+              <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+            </svg>
+          </div>
+          <div class="notification-content">
+            <div class="notification-title">${n.title}</div>
+            <div class="notification-message">${n.message}</div>
+            <div class="notification-time">${date}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function showNotifications() {
+      document.getElementById('allNotifications').innerHTML = notificationsData.length 
+        ? notificationsData.map(n => renderNotificationItem(n)).join('')
+        : '<p style="color: var(--text-muted); text-align: center; padding: 40px;">لا توجد إشعارات</p>';
+      document.getElementById('notifModal').classList.remove('hidden');
+    }
+
+    function closeNotifModal() {
+      document.getElementById('notifModal').classList.add('hidden');
+    }
+
+    async function markAsRead(id) {
+      try {
+        await api('POST', `/api/portal/${token}/notifications/${id}/read`);
+        const notif = notificationsData.find(n => n.id === id);
+        if (notif) notif.isRead = true;
+        const unread = notificationsData.filter(n => !n.isRead).length;
+        updateNotifBadge(unread);
+        renderRecentNotifications();
+      } catch (e) {}
+    }
+
+    // PIN
+    async function loadPin() {
+      try {
+        const result = await api('GET', `/api/portal/${token}/pin`);
+        clientPin = result.pin;
+      } catch (e) {}
+    }
+
+    function togglePin() {
+      pinVisible = !pinVisible;
+      document.getElementById('pinDisplay').textContent = pinVisible && clientPin ? clientPin : '******';
+      document.getElementById('pinEyeIcon').innerHTML = pinVisible 
+        ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" x2="23" y1="1" y2="23"/>'
+        : '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>';
+    }
+
+    async function regeneratePin() {
+      if (!confirm('هل تريد طلب رمز سري جديد؟')) return;
+      
+      try {
+        const result = await api('POST', `/api/portal/${token}/pin/regenerate`);
+        clientPin = result.pin;
+        pinVisible = true;
+        document.getElementById('pinDisplay').textContent = result.pin;
+        showAlert('تم توليد رمز جديد: ' + result.pin);
+      } catch (e) {
+        showAlert('فشل توليد الرمز', 'error');
+      }
+    }
+
+    // Chat
+    async function loadChat() {
+      try {
+        const result = await api('GET', `/api/portal/${token}/chat/messages`);
+        renderChat(result.messages || []);
+      } catch (e) {}
+    }
+
+    function renderChat(messages) {
+      const container = document.getElementById('chatMessages');
+      
+      if (!messages.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>
+            </svg>
+            <p>ابدأ محادثة مع الإدارة</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = messages.map(m => {
+        const time = new Date(m.timestamp).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
+        return `
+          <div class="chat-bubble ${m.sender}" data-testid="chat-bubble">
+            ${m.message}
+            <div class="chat-time">${time}</div>
+          </div>
+        `;
+      }).join('');
+
+      container.scrollTop = container.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('chatInput');
+      const message = input.value.trim();
+      if (!message) return;
+
+      try {
+        input.disabled = true;
+        await api('POST', `/api/portal/${token}/chat/messages`, { message });
+        input.value = '';
+        await loadChat();
+      } catch (e) {
+        showAlert('فشل إرسال الرسالة', 'error');
+      } finally {
+        input.disabled = false;
+        input.focus();
+      }
+    }
+
+    // Edit Profile
+    function openEditModal() {
+      document.getElementById('editName').value = clientData.fullName || '';
+      document.getElementById('editPhone').value = clientData.phone || '';
+      document.getElementById('editCountry').value = clientData.country || '';
+      document.getElementById('editCity').value = clientData.city || '';
+      document.getElementById('editAddress').value = clientData.address || '';
+
+      // Custom fields
+      const customFields = clientData.customFields || {};
+      let customHtml = '';
+      Object.entries(customFields).forEach(([key, value]) => {
+        if (!key.endsWith('__sub')) {
+          customHtml += `
+            <div class="form-group">
+              <label class="form-label">${key.replace(/_/g, ' ')}</label>
+              <input type="text" class="form-input" id="editCustom_${key}" value="${value || ''}">
+            </div>
+          `;
+          const subValue = customFields[key + '__sub'];
+          if (subValue !== undefined) {
+            customHtml += `
+              <div class="form-group">
+                <label class="form-label">${key.replace(/_/g, ' ')} (تفاصيل)</label>
+                <input type="text" class="form-input" id="editCustom_${key}__sub" value="${subValue || ''}">
+              </div>
+            `;
+          }
+        }
+      });
+      document.getElementById('editCustomFields').innerHTML = customHtml;
+
+      document.getElementById('editModal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').classList.add('hidden');
+    }
+
+    async function saveProfile(e) {
+      e.preventDefault();
+      
+      const updates = {
+        fullName: document.getElementById('editName').value.trim(),
+        phone: document.getElementById('editPhone').value.trim(),
+        country: document.getElementById('editCountry').value.trim(),
+        city: document.getElementById('editCity').value.trim(),
+        address: document.getElementById('editAddress').value.trim()
+      };
+
+      // Custom fields
+      const customFields = clientData.customFields || {};
+      const updatedCustomFields = {};
+      Object.keys(customFields).forEach(key => {
+        if (!key.endsWith('__sub')) {
+          const input = document.getElementById(`editCustom_${key}`);
+          if (input) updatedCustomFields[key] = input.value.trim();
+          const subInput = document.getElementById(`editCustom_${key}__sub`);
+          if (subInput) updatedCustomFields[key + '__sub'] = subInput.value.trim();
+        }
+      });
+      updates.customFields = updatedCustomFields;
+
+      try {
+        await api('PUT', `/api/portal/${token}/profile`, updates);
+        Object.assign(clientData, updates);
+        clientData.customFields = updatedCustomFields;
+        renderAll();
+        closeEditModal();
+        showAlert('تم حفظ التغييرات');
+      } catch (e) {
+        showAlert(e.message, 'error');
+      }
+    }
+
+    // Alert
+    function showAlert(message, type = 'success') {
+      const existing = document.querySelector('.alert');
+      if (existing) existing.remove();
+
+      const alert = document.createElement('div');
+      alert.className = `alert ${type}`;
+      alert.textContent = message;
+      document.body.appendChild(alert);
+
+      setTimeout(() => alert.remove(), 3000);
     }
 
     // Close modals on outside click
     document.querySelectorAll('.modal').forEach(modal => {
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-          modal.classList.add('hidden');
-        }
+      modal.addEventListener('click', e => {
+        if (e.target === modal) modal.classList.add('hidden');
       });
     });
   </script>
 </body>
-
 </html>
