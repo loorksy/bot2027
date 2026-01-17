@@ -1,0 +1,123 @@
+{
+  "identity": {
+    "role": "E1: The Anti-AI Designer",
+    "mission": "Transform a basic HTML portal into a premium, native-feeling mobile app experience.",
+    "principles": [
+      "Fusion: Finance precision meets Consumer App fluidity.",
+      "Emotion: Trust and Clarity. Dark mode should feel 'expensive', not just dark.",
+      "Content: Salaries are the hero. Make them look like digital banknotes/receipts.",
+      "Zoom In: Small, crisp details. High density information without clutter."
+    ]
+  },
+  "typography": {
+    "font_family": "'IBM Plex Sans Arabic', 'Tajawal', sans-serif",
+    "cdn_link": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap",
+    "scale": {
+      "xs": "0.75rem",
+      "sm": "0.875rem",
+      "base": "1rem",
+      "lg": "1.125rem",
+      "xl": "1.25rem"
+    },
+    "weights": {
+      "regular": 400,
+      "medium": 500,
+      "bold": 700
+    }
+  },
+  "colors": {
+    "background": "#09090b",
+    "surface": "#18181b",
+    "surface_highlight": "#27272a",
+    "border": "#27272a",
+    "primary": "#10b981",
+    "primary_foreground": "#ffffff",
+    "secondary": "#27272a",
+    "secondary_foreground": "#fafafa",
+    "muted": "#71717a",
+    "text_main": "#e4e4e7",
+    "text_muted": "#a1a1aa",
+    "success": "#059669",
+    "success_bg": "rgba(5, 150, 105, 0.1)",
+    "danger": "#ef4444",
+    "danger_bg": "rgba(239, 68, 68, 0.1)"
+  },
+  "layout": {
+    "structure": "Mobile App Shell",
+    "elements": [
+      "Sticky Header (Glassmorphism)",
+      "Scrollable Content Area (Padding Bottom 80px)",
+      "Fixed Bottom Navigation Bar"
+    ],
+    "spacing": {
+      "container_padding": "16px",
+      "card_padding": "20px",
+      "gap": "12px"
+    }
+  },
+  "components": {
+    "bottom_nav": {
+      "description": "Fixed bottom bar with 4 tabs. Active state has a subtle glow.",
+      "height": "64px",
+      "background": "rgba(24, 24, 27, 0.9)",
+      "backdrop_blur": "12px",
+      "border_top": "1px solid #27272a",
+      "items": [
+        { "label": "الرئيسية", "icon": "home", "id": "nav-home" },
+        { "label": "الرواتب", "icon": "wallet", "id": "nav-salaries" },
+        { "label": "المحادثة", "icon": "message-circle", "id": "nav-chat" },
+        { "label": "حسابي", "icon": "user", "id": "nav-profile" }
+      ]
+    },
+    "salary_card": {
+      "style": "Digital Ticket",
+      "background": "linear-gradient(180deg, #18181b 0%, #09090b 100%)",
+      "border": "1px solid #27272a",
+      "radius": "16px",
+      "features": [
+        "Dashed line separator between summary and details",
+        "Monospace font for numbers",
+        "Status badge (Paid/Pending) top left"
+      ]
+    },
+    "chat_interface": {
+      "style": "Modern Messenger",
+      "background": "transparent",
+      "bubble_client": "bg-emerald-600 text-white rounded-tr-none",
+      "bubble_admin": "bg-zinc-800 text-zinc-200 rounded-tl-none",
+      "input_area": "Fixed above bottom nav, glassmorphism background"
+    }
+  },
+  "assets": {
+    "icons": {
+      "source": "Lucide Icons (SVG)",
+      "style": "Stroke width 1.5px, Size 20px",
+      "svgs": {
+        "home": "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/><polyline points='9 22 9 12 15 12 15 22'/></svg>",
+        "wallet": "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1'/><path d='M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4'/></svg>",
+        "user": "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'/><circle cx='12' cy='7' r='4'/></svg>",
+        "message_circle": "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M7.9 20A9 9 0 1 0 4 16.1L2 22Z'/></svg>",
+        "bell": "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9'/><path d='M10.3 21a1.94 1.94 0 0 0 3.4 0'/></svg>",
+        "chevron_left": "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m15 18-6-6 6-6'/></svg>",
+        "download": "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='7 10 12 15 17 10'/><line x1='12' x2='12' y1='15' y2='3'/></svg>"
+      }
+    }
+  },
+  "instructions_to_main_agent": [
+    "REWRITE portal.html completely. Do not patch the existing code.",
+    "Use the provided Color Palette and Typography.",
+    "Implement the 'Bottom Navigation' logic using JavaScript to switch between sections (Home, Salaries, Chat, Profile).",
+    "Replace all Emojis with the provided SVG icons.",
+    "Ensure the layout is RTL (dir='rtl').",
+    "Use 'IBM Plex Sans Arabic' for all text.",
+    "Make the 'Salaries' section the most visually distinct part (High contrast numbers).",
+    "Add a 'Glassmorphism' effect to the Header and Bottom Nav.",
+    "Ensure all interactive elements have `data-testid` attributes."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Do not use gradients for backgrounds unless specified (use solid dark colors).",
+    "Use 2-3x more padding than usual. Let the content breathe.",
+    "Micro-interactions: Add transition: all 0.2s ease to buttons and cards.",
+    "Never center text in cards unless it's a specific stat. Align Right for RTL."
+  ]
+}
