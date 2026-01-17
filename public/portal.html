@@ -894,6 +894,58 @@
       }
     }
 
+    // Load and render receipts
+    async function loadReceipts() {
+      const container = document.getElementById('receiptsList');
+      
+      try {
+        const receipts = await api('GET', `/api/portal/${token}/receipts`);
+        
+        if (!receipts || receipts.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">📄</div>
+              <p>لا توجد إيصالات حالياً</p>
+            </div>
+          `;
+          return;
+        }
+        
+        container.innerHTML = receipts.map(receipt => {
+          const isImage = receipt.mimeType && receipt.mimeType.startsWith('image/');
+          const date = new Date(receipt.uploadedAt).toLocaleDateString('ar', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+          });
+          const sizeKB = Math.round(receipt.size / 1024);
+          
+          return `
+            <div class="receipt-item">
+              <div class="receipt-icon">${isImage ? '🖼️' : '📄'}</div>
+              <div class="receipt-info">
+                <div class="receipt-name">${receipt.originalName}</div>
+                <div class="receipt-meta">${date} • ${sizeKB} KB</div>
+                ${receipt.description ? `<div class="receipt-description">${receipt.description}</div>` : ''}
+              </div>
+              <div class="receipt-actions">
+                <a href="/api/receipts/file/${receipt.filename}" target="_blank" class="receipt-btn view">👁️ عرض</a>
+                <a href="/api/receipts/file/${receipt.filename}" download="${receipt.originalName}" class="receipt-btn download">⬇️ تحميل</a>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Error loading receipts:', err);
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">⚠️</div>
+            <p>حدث خطأ في تحميل الإيصالات</p>
+          </div>
+        `;
+      }
+    }
+
     // Close modals on outside click
     document.querySelectorAll('.modal').forEach(modal => {
       modal.addEventListener('click', (e) => {
