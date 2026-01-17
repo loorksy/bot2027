@@ -126,29 +126,34 @@ async function loadSettingsFromEnv() {
   try {
     const content = await fs.readFile(settingsPath, 'utf8');
     settings = JSON.parse(content);
+    // If file is empty object, treat as empty
+    if (Object.keys(settings).length === 0) {
+      settings = {};
+    }
   } catch {
     settings = {};
   }
   
-  // Only set from env if not already configured
+  // ALWAYS override with env values if they exist (env is source of truth)
   let updated = false;
   
-  if (!settings.openrouterKey && process.env.OPENROUTER_KEY) {
+  // API Keys - always use env if available
+  if (process.env.OPENROUTER_KEY) {
     settings.openrouterKey = process.env.OPENROUTER_KEY;
     updated = true;
   }
   
-  if (!settings.openaiKey && process.env.OPENAI_KEY) {
+  if (process.env.OPENAI_KEY) {
     settings.openaiKey = process.env.OPENAI_KEY;
     updated = true;
   }
   
-  if (!settings.aiProvider && process.env.AI_PROVIDER) {
+  if (process.env.AI_PROVIDER) {
     settings.aiProvider = process.env.AI_PROVIDER;
     updated = true;
   }
   
-  if (!settings.openrouterModel && process.env.OPENROUTER_MODEL) {
+  if (process.env.OPENROUTER_MODEL) {
     settings.openrouterModel = process.env.OPENROUTER_MODEL;
     updated = true;
   }
@@ -160,25 +165,31 @@ async function loadSettingsFromEnv() {
     googleSheetSyncState.interval = parseInt(process.env.GOOGLE_SHEET_INTERVAL) || 5;
   }
   
-  // Bot personality settings
-  if (!settings.botName && process.env.BOT_NAME) {
+  // Bot personality settings - always use env if available
+  if (process.env.BOT_NAME) {
     settings.botName = process.env.BOT_NAME;
     updated = true;
   }
   
-  if (!settings.ownerName && process.env.OWNER_NAME) {
+  if (process.env.OWNER_NAME) {
     settings.ownerName = process.env.OWNER_NAME;
     updated = true;
   }
   
-  if (!settings.salaryCurrency && process.env.SALARY_CURRENCY) {
+  if (process.env.SALARY_CURRENCY) {
     settings.salaryCurrency = process.env.SALARY_CURRENCY;
+    updated = true;
+  }
+  
+  // Add default enabled flag if not set
+  if (settings.enabled === undefined) {
+    settings.enabled = true;
     updated = true;
   }
   
   if (updated) {
     await fs.writeJSON(settingsPath, settings, { spaces: 2 });
-    console.log('[Startup] Settings loaded from environment');
+    console.log('[Startup] Settings restored from .env:', Object.keys(settings).join(', '));
   }
 }
 
