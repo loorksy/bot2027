@@ -107,9 +107,11 @@ WhatsApp bot system with admin dashboard for client management, AI agent integra
 
 ### P0 - Critical (Blocked)
 - [ ] WhatsApp bot fails to initialize on VPS (Puppeteer/libatk issue)
+  - Error: `libatk-1.0.so.0` missing
+  - Suggested solution: Docker container with all dependencies
 
 ### P1 - High Priority
-- [ ] PIN reset bug verification (after bot is working)
+- [ ] PIN reset bug verification (after bot is working) - Bot rejects valid PIN after reset
 - [ ] Bot personality settings verification (currency, etc.)
 
 ### P2 - Medium Priority  
@@ -117,6 +119,7 @@ WhatsApp bot system with admin dashboard for client management, AI agent integra
 
 ### Backlog
 - [ ] Frontend code refactoring (extract JS from HTML)
+- [ ] server.js refactoring - currently 2300+ lines, needs modular routes
 - [ ] Alternative to Puppeteer (playwright or docker)
 
 ## Known Issues
