@@ -2007,6 +2007,11 @@
       </div>
       <div class="modal-body">
         <!-- Upload Area -->
+        <div class="inner-tabs" style="margin-bottom: 16px;">
+          <button class="inner-tab active" id="receiptTabFile" onclick="toggleReceiptType('file')">📁 رفع ملف</button>
+          <button class="inner-tab" id="receiptTabText" onclick="toggleReceiptType('text')">📝 نص فقط</button>
+        </div>
+        
         <div class="file-upload-area" id="receiptDropZone" style="margin-bottom: 16px;">
           <input type="file" id="receiptFile" style="display: none;">
           <svg class="file-upload-icon" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -2022,7 +2027,7 @@
         </div>
 
         <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-          <input type="text" class="form-input" id="receiptDescription" placeholder="ملاحظة (اختياري)" style="flex: 1;">
+          <input type="text" class="form-input" id="receiptDescription" placeholder="معلومات الإيصال (مثال: حوالة 1000 ر.س - بنك الراجحي)" style="flex: 1;">
           <button class="btn btn-primary" onclick="uploadReceipt()">رفع</button>
         </div>
 
