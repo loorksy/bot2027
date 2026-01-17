@@ -16,6 +16,7 @@ const usage = require('./usage');
 const portal = require('./portal');
 const tickets = require('./tickets');
 const knowledgeBase = require('./knowledgeBase');
+const smartAgent = require('./smartAgent');
 
 let waClient = null;
 let initialized = false;
