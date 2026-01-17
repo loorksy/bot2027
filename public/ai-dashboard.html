@@ -1457,6 +1457,83 @@
     </div>
   </div>
 
+  <!-- Tickets Tab -->
+  <div id="tickets" class="tab-content">
+    <div class="ai-card">
+      <h2>🎫 طلبات الدعم</h2>
+      <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
+        <button class="btn btn-secondary" onclick="loadTickets()">🔄 تحديث</button>
+        <select id="ticketStatusFilter" onchange="loadTickets()" style="padding: 8px 12px; border-radius: 8px; background: #1e293b; color: white; border: 1px solid #334155;">
+          <option value="">جميع الحالات</option>
+          <option value="open">مفتوحة</option>
+          <option value="in_progress">قيد المعالجة</option>
+          <option value="resolved">تم الحل</option>
+          <option value="closed">مغلقة</option>
+        </select>
+      </div>
+      <div id="ticketsStats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-bottom: 20px;">
+        <div class="stat-card" style="padding: 12px;">
+          <div class="stat-value" id="ticketsOpen" style="font-size: 1.5rem;">0</div>
+          <div class="stat-label">مفتوحة</div>
+        </div>
+        <div class="stat-card" style="padding: 12px;">
+          <div class="stat-value" id="ticketsInProgress" style="font-size: 1.5rem;">0</div>
+          <div class="stat-label">قيد المعالجة</div>
+        </div>
+        <div class="stat-card" style="padding: 12px;">
+          <div class="stat-value" id="ticketsResolved" style="font-size: 1.5rem;">0</div>
+          <div class="stat-label">تم الحل</div>
+        </div>
+      </div>
+      <div id="ticketsList">
+        <p style="color: #666; text-align: center;">جاري التحميل...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Knowledge Base Tab -->
+  <div id="knowledge" class="tab-content">
+    <div class="ai-card">
+      <h2>📚 إضافة معرفة جديدة</h2>
+      <form id="knowledgeForm">
+        <div class="form-group">
+          <label for="kbCategory">التصنيف</label>
+          <input type="text" id="kbCategory" placeholder="مثال: الرواتب، الوصولات، عام" required>
+        </div>
+        <div class="form-group">
+          <label for="kbQuestion">السؤال المتوقع</label>
+          <input type="text" id="kbQuestion" placeholder="مثال: لماذا تأخر الراتب؟" required>
+        </div>
+        <div class="form-group">
+          <label for="kbKeywords">الكلمات المفتاحية (مفصولة بفاصلة)</label>
+          <input type="text" id="kbKeywords" placeholder="تأخر، راتب، وين، متى" required>
+        </div>
+        <div class="form-group">
+          <label for="kbAnswer">الإجابة</label>
+          <textarea id="kbAnswer" rows="4" placeholder="الرد الذي سيرسله البوت..." required></textarea>
+        </div>
+        <div class="form-group">
+          <label style="display: flex; align-items: center; gap: 10px;">
+            <input type="checkbox" id="kbSendPortal">
+            إرسال رابط البوابة مع الرد
+          </label>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">➕ إضافة</button>
+      </form>
+    </div>
+
+    <div class="ai-card">
+      <h2>📋 قاعدة المعرفة الحالية</h2>
+      <div style="margin-bottom: 16px;">
+        <button class="btn btn-secondary" onclick="loadKnowledge()">🔄 تحديث</button>
+        <button class="btn btn-warning" onclick="resetKnowledge()">↩️ استعادة الافتراضي</button>
+      </div>
+      <div id="knowledgeList">
+        <p style="color: #666; text-align: center;">جاري التحميل...</p>
+      </div>
+    </div>
+  </div>
+
   <!-- Usage Tab -->
   <div id="usage" class="tab-content">
     <div class="ai-card">
