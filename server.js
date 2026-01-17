@@ -2106,12 +2106,117 @@ io.use((socket, next) => {
 // ==========================================================
 const portal = require('./src/ai_agent_v1/portal');
 const receipts = require('./src/ai_agent_v1/receipts');
+const notifications = require('./src/ai_agent_v1/notifications');
 
 // Configure multer for receipt uploads (accepts all file types)
 const receiptStorage = multer.memoryStorage();
 const receiptUpload = multer({ 
   storage: receiptStorage,
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB max - accepts any file type
+});
+
+// ==========================================================
+// NOTIFICATIONS APIs (Admin)
+// ==========================================================
+
+// Get all notifications (admin)
+app.get('/api/ai/notifications', requireAdmin, async (req, res) => {
+  try {
+    const allNotifications = await notifications.getAllNotifications();
+    res.json(allNotifications);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Create notification (admin)
+app.post('/api/ai/notifications', requireAdmin, async (req, res) => {
+  try {
+    const { title, message, type, targetClients, expiresAt } = req.body;
+    
+    if (!message) {
+      return res.status(400).json({ error: 'الرسالة مطلوبة' });
+    }
+    
+    const notification = await notifications.createNotification({
+      title,
+      message,
+      type: type || 'info',
+      targetClients: targetClients || ['all'],
+      expiresAt
+    });
+    
+    res.json({ success: true, notification });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete notification (admin)
+app.delete('/api/ai/notifications/:id', requireAdmin, async (req, res) => {
+  try {
+    await notifications.deleteNotification(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================================
+// NOTIFICATIONS APIs (Portal/Client)
+// ==========================================================
+
+// Get notifications for client (portal)
+app.get('/api/portal/:token/notifications', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const clientKey = await portal.getClientKeyByToken(token);
+    
+    if (!clientKey) {
+      return res.status(404).json({ error: 'رابط غير صالح' });
+    }
+    
+    const clientNotifications = await notifications.getClientNotifications(clientKey);
+    const unreadCount = await notifications.getUnreadCount(clientKey);
+    
+    res.json({ notifications: clientNotifications, unreadCount });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Mark notification as read (portal)
+app.post('/api/portal/:token/notifications/:notificationId/read', async (req, res) => {
+  try {
+    const { token, notificationId } = req.params;
+    const clientKey = await portal.getClientKeyByToken(token);
+    
+    if (!clientKey) {
+      return res.status(404).json({ error: 'رابط غير صالح' });
+    }
+    
+    await notifications.markAsRead(notificationId, clientKey);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Mark all notifications as read (portal)
+app.post('/api/portal/:token/notifications/read-all', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const clientKey = await portal.getClientKeyByToken(token);
+    
+    if (!clientKey) {
+      return res.status(404).json({ error: 'رابط غير صالح' });
+    }
+    
+    await notifications.markAllAsRead(clientKey);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Serve portal page
