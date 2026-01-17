@@ -286,7 +286,9 @@ async function generateReply(options) {
     }
 
     // For complex cases, use AI
-    if (!openaiClient) {
+    const { client, model, provider } = getActiveClient();
+    
+    if (!client) {
         return getFallbackReply(type, context);
     }
 
@@ -294,27 +296,29 @@ async function generateReply(options) {
         const prompt = buildReplyPrompt(type, context);
         const systemPrompt = buildSystemPrompt();
 
-        const response = await openaiClient.chat.completions.create({
-            model: settingsCache.modelChat || 'gpt-4o-mini',
+        const requestOptions = {
+            model: model,
             messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: prompt }
             ],
             temperature: 0.7,
             max_tokens: 200
-        });
+        };
+
+        const response = await client.chat.completions.create(requestOptions);
 
         const reply = response.choices[0]?.message?.content || getFallbackReply(type, context);
 
         // Record usage
         const inputTokens = response.usage?.prompt_tokens || 0;
         const outputTokens = response.usage?.completion_tokens || 0;
-        await usage.recordChat(settingsCache.modelChat || 'gpt-4o-mini', inputTokens, outputTokens);
+        await usage.recordChat(model, inputTokens, outputTokens);
 
         return reply.trim();
 
     } catch (err) {
-        console.error('[Reply] OpenAI error:', err.message);
+        console.error(`[Reply] ${provider} error:`, err.message);
         return getFallbackReply(type, context);
     }
 }
