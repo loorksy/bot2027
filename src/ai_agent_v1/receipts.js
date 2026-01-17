@@ -47,42 +47,51 @@ async function writeReceipts(receipts) {
  * @param {string} description - Optional description/note
  * @returns {Object} Receipt info
  */
-async function uploadReceipt(clientKey, fileBuffer, originalName, mimeType, description = '') {
+async function uploadReceipt(clientKey, fileBuffer, originalName, mimeType, description = '', isTextOnly = false) {
     await ensureFiles();
 
-    // Get file extension from original name or mime type
-    let ext = path.extname(originalName).toLowerCase();
-    if (!ext) {
-        // Try to get from mime type
-        const mimeExts = {
-            'image/jpeg': '.jpg',
-            'image/png': '.png',
-            'image/gif': '.gif',
-            'image/webp': '.webp',
-            'application/pdf': '.pdf',
-            'application/msword': '.doc',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx'
-        };
-        ext = mimeExts[mimeType] || '.bin';
+    let filename = null;
+    let filepath = null;
+    let size = 0;
+    
+    // Handle file upload if not text-only
+    if (!isTextOnly && fileBuffer) {
+        // Get file extension from original name or mime type
+        let ext = path.extname(originalName).toLowerCase();
+        if (!ext) {
+            // Try to get from mime type
+            const mimeExts = {
+                'image/jpeg': '.jpg',
+                'image/png': '.png',
+                'image/gif': '.gif',
+                'image/webp': '.webp',
+                'application/pdf': '.pdf',
+                'application/msword': '.doc',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx'
+            };
+            ext = mimeExts[mimeType] || '.bin';
+        }
+
+        // Generate unique filename
+        const receiptId = uuidv4();
+        filename = `${clientKey}_${Date.now()}_${receiptId.slice(0, 8)}${ext}`;
+        filepath = path.join(UPLOADS_DIR, filename);
+
+        // Save file
+        await fs.writeFile(filepath, fileBuffer);
+        size = fileBuffer.length;
     }
-
-    // Generate unique filename
-    const receiptId = uuidv4();
-    const filename = `${clientKey}_${Date.now()}_${receiptId.slice(0, 8)}${ext}`;
-    const filepath = path.join(UPLOADS_DIR, filename);
-
-    // Save file
-    await fs.writeFile(filepath, fileBuffer);
 
     // Create receipt record
     const receipt = {
-        id: receiptId,
+        id: uuidv4(),
         clientKey,
         filename,
-        originalName,
-        mimeType,
+        originalName: isTextOnly ? 'نص فقط' : originalName,
+        mimeType: isTextOnly ? 'text/plain' : mimeType,
         description,
-        size: fileBuffer.length,
+        size,
+        isTextOnly: isTextOnly,
         uploadedAt: new Date().toISOString()
     };
 
