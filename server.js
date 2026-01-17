@@ -1599,21 +1599,17 @@ async function performGoogleSheetSync() {
           clientData.fullName = `عميل ${clientData.ids[0]}`;
         }
 
-        // Check if exists - update if found, add if not
+        // Check if exists - only add NEW clients, don't update existing
         const existingClient = await registeredClients.getClientById(clientData.ids[0]);
         if (existingClient) {
-          // Update existing client with new data (merge)
-          const mergedData = {
-            ...existingClient,
-            ...clientData,
-            ids: [...new Set([...(existingClient.ids || []), ...clientData.ids])],
-            customFields: { ...(existingClient.customFields || {}), ...clientData.customFields }
-          };
-          await registeredClients.updateClient(existingClient.key, mergedData);
-          updated++;
+          // Client already exists - skip to preserve local changes
+          skipped++;
+          console.log('[Google Sheet Sync] Skipping existing client:', clientData.ids[0]);
         } else {
+          // New client - add it
           await registeredClients.addClient(clientData);
           imported++;
+          console.log('[Google Sheet Sync] Added new client:', clientData.ids[0]);
         }
       } catch (err) {
         failed++;
