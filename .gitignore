@@ -29,3 +29,7 @@ prisma/migrations/
 # Uploads
 uploads/
 temp/
+-e 
+# Environment files
+*.env
+*.env.*
