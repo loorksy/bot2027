@@ -23,7 +23,7 @@ const DEFAULT_SETTINGS = {
     voiceTts: 'alloy',
     trustedSessionMinutes: 15,
     agencyPercent: 0,
-    // New settings
+    // Bot personality
     botName: 'مساعد أبو سلطان',
     ownerName: 'أبو سلطان',
     dialect: 'سورية',
@@ -31,7 +31,11 @@ const DEFAULT_SETTINGS = {
     friendliness: 'عالي',
     salaryCurrency: 'ر.س',
     enableVoiceReplies: false,
-    adminContact: 'تواصلي مع الإدارة'
+    adminContact: 'تواصلي مع الإدارة',
+    // New settings for bot behavior
+    allowDirectDataUpdate: true, // السماح بتعديل البيانات مباشرة
+    autoCreateTickets: true, // إنشاء طلبات تلقائياً للمشاكل
+    useKnowledgeBase: true // استخدام قاعدة المعرفة
 };
 
 let openaiClient = null;
