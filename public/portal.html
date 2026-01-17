@@ -506,6 +506,51 @@
       font-size: 1.2rem;
     }
 
+    /* Chat message styles */
+    .chat-message {
+      max-width: 80%;
+      padding: 10px 14px;
+      border-radius: 16px;
+      margin-bottom: 10px;
+      position: relative;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .chat-message.client {
+      background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+      color: white;
+      margin-left: auto;
+      border-bottom-right-radius: 4px;
+    }
+
+    .chat-message.admin {
+      background: rgba(255, 255, 255, 0.1);
+      color: #e0e0e0;
+      margin-right: auto;
+      border-bottom-left-radius: 4px;
+    }
+
+    .chat-message .message-text {
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+
+    .chat-message .message-time {
+      font-size: 0.7rem;
+      opacity: 0.7;
+      margin-top: 4px;
+      text-align: left;
+    }
+
+    .chat-message.client .message-time {
+      text-align: right;
+    }
+
     /* Receipt styles */
     .receipt-item {
       display: flex;
