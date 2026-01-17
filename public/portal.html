@@ -897,10 +897,59 @@
     function openEditModal() {
       document.getElementById('editName').value = clientData.fullName || '';
       document.getElementById('editPhone').value = clientData.phone || '';
+      document.getElementById('editWhatsapp').value = clientData.whatsappPhone || '';
       document.getElementById('editCity').value = clientData.city || '';
       document.getElementById('editAddress').value = clientData.address || '';
       document.getElementById('editCountry').value = clientData.country || '';
+      document.getElementById('editAgency').value = clientData.agencyName || '';
+      
+      // Render custom fields in edit form
+      renderEditCustomFields();
+      
       document.getElementById('editModal').classList.remove('hidden');
+    }
+
+    // Render custom fields in edit form
+    function renderEditCustomFields() {
+      const container = document.getElementById('editCustomFieldsContainer');
+      const customFields = clientData.customFields || {};
+      
+      const fieldLabels = {
+        'طريقة_الاسلام': 'طريقة الاستلام',
+        'طريقة_الاستلام': 'طريقة الاستلام',
+        'طريقة الاستلام': 'طريقة الاستلام',
+        'معلومات_الاستلام': 'معلومات الاستلام',
+        'معلومات الاستلام': 'معلومات الاستلام',
+        'العملة': 'العملة',
+        'ملاحظات': 'ملاحظات'
+      };
+      
+      let html = '';
+      
+      for (const [key, value] of Object.entries(customFields)) {
+        if (key.endsWith('__sub')) continue;
+        
+        const label = fieldLabels[key] || key.replace(/_/g, ' ');
+        const subValue = customFields[key + '__sub'];
+        
+        html += `
+          <div class="form-group">
+            <label>${label}</label>
+            <input type="text" id="editCustom_${key}" value="${value || ''}">
+          </div>
+        `;
+        
+        if (subValue !== undefined) {
+          html += `
+            <div class="form-group">
+              <label>${label} - التفاصيل</label>
+              <input type="text" id="editCustom_${key}__sub" value="${subValue || ''}">
+            </div>
+          `;
+        }
+      }
+      
+      container.innerHTML = html;
     }
 
     function closeEditModal() {
