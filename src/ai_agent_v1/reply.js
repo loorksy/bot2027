@@ -333,6 +333,12 @@ function buildReplyPrompt(type, context) {
         case 'GREETING':
             return `رحبي بالعميلة الجديدة واسأليها عن رقم الـ ID بطريقة لطيفة.`;
 
+        case 'GREETING_UNLINKED':
+            return `هذه عميلة جديدة لم تربط حسابها بعد. رحبي بها واطلبي منها رقم الـ ID تبعها.`;
+
+        case 'ASK_ID':
+            return `اطلبي من العميلة رقم الـ ID تبعها بطريقة لطيفة. قوليلها "ابعتيلي رقم الـ ID تبعك لربط حسابك".`;
+
         case 'ASK_FIELD':
             const fieldName = FIELD_NAMES_AR[context.field] || context.field;
             return `اسألي العميلة عن ${fieldName} بطريقة لطيفة ومختصرة.`;
