@@ -3456,11 +3456,33 @@
       }
 
       const target = document.getElementById('broadcastTarget').value;
-      const agency = target === 'agency' ? document.getElementById('broadcastAgency').value : null;
+      const selectedAgency = target === 'agency' ? document.getElementById('broadcastAgency').value : null;
 
       try {
-        await api('POST', '/api/ai/notify/broadcast', { message, target, agency });
-        showAlert('تم إرسال الرسالة الجماعية');
+        // Get clients to send to
+        let clients = [];
+        
+        if (target === 'all') {
+          clients = allClientsData.filter(c => c.phone || c.whatsappPhone).map(c => ({
+            key: c.key,
+            phone: c.whatsappPhone || c.phone,
+            name: c.fullName
+          }));
+        } else if (target === 'agency' && selectedAgency) {
+          clients = allClientsData.filter(c => c.agencyName === selectedAgency && (c.phone || c.whatsappPhone)).map(c => ({
+            key: c.key,
+            phone: c.whatsappPhone || c.phone,
+            name: c.fullName
+          }));
+        }
+
+        if (!clients.length) {
+          showAlert('لا يوجد عملاء للإرسال', 'error');
+          return;
+        }
+
+        await api('POST', '/api/ai/notify/broadcast', { clients, message });
+        showAlert(`تم إرسال الرسالة لـ ${clients.length} عميل`);
         closeBroadcastModal();
         document.getElementById('broadcastMessage').value = '';
       } catch (err) {
