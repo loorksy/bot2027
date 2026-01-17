@@ -321,9 +321,36 @@ async function handleLinkedClient(message, linkedClient, messageText, isVoice) {
             await handlePortalLinkRequest(message, linkedClient, isVoice);
             break;
 
+        // === NEW INTENTS ===
+        
+        case 'SALARY_DELAY':
+            await handleSalaryDelayQuery(message, linkedClient, isVoice);
+            break;
+
+        case 'SALARY_AMOUNT':
+            await handleSalaryAmountQuery(message, linkedClient, isVoice);
+            break;
+
+        case 'RECEIPT_STATUS':
+            await handleReceiptStatusQuery(message, linkedClient, isVoice);
+            break;
+
+        case 'SUPPORT_REQUEST':
+            await handleSupportRequest(message, linkedClient, messageText, isVoice);
+            break;
+
         default:
-            // Natural AI response
-            await handleGeneralQuery(message, linkedClient, messageText, isVoice);
+            // First, check knowledge base for matching answer
+            const kbMatch = await knowledgeBase.findMatch(messageText);
+            if (kbMatch) {
+                await handleKnowledgeBaseResponse(message, linkedClient, kbMatch, isVoice);
+            } else if (analysis.needsAdminHelp) {
+                // Create support ticket for complex issues
+                await handleSupportRequest(message, linkedClient, messageText, isVoice);
+            } else {
+                // Natural AI response
+                await handleGeneralQuery(message, linkedClient, messageText, isVoice);
+            }
     }
 }
 
