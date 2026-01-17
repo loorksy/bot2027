@@ -1033,6 +1033,8 @@ app.get('/api/ai/registered-clients/:id', requireAdmin, async (req, res) => {
 // Add new client
 app.post('/api/ai/registered-clients', requireAdmin, async (req, res) => {
   try {
+    // Always set agency to main agency
+    req.body.agencyName = 'الوكالة الرئيسية';
     const client = await registeredClients.addClient(req.body);
     res.json({ success: true, client });
   } catch (err) {
@@ -1043,6 +1045,8 @@ app.post('/api/ai/registered-clients', requireAdmin, async (req, res) => {
 // Update client
 app.put('/api/ai/registered-clients/:id', requireAdmin, async (req, res) => {
   try {
+    // Always set agency to main agency
+    req.body.agencyName = 'الوكالة الرئيسية';
     const client = await registeredClients.updateClient(req.params.id, req.body);
     res.json({ success: true, client });
   } catch (err) {
