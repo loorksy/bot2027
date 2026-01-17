@@ -2391,14 +2391,19 @@
         const tbody = document.getElementById('regClientsBody');
         const countEl = document.getElementById('regClientCount');
 
+        allRegisteredClients = clients; // Store globally for search
         const clientsArray = Object.values(clients);
         countEl.textContent = `إجمالي: ${clientsArray.length} عميل`;
 
-        renderClientsList(clientsArray);
+        renderRegisteredClientsTable(clientsArray);
 
       } catch (err) {
         showAlert('فشل تحميل العملاء: ' + err.message, 'error');
       }
+    }
+
+    function renderRegisteredClientsTable(clientsArray) {
+      renderClientsList(clientsArray);
     }
 
     document.getElementById('refreshRegClientsBtn').addEventListener('click', loadRegisteredClients);
