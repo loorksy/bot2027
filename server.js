@@ -2174,13 +2174,18 @@ app.put('/api/portal/:token/profile', async (req, res) => {
     const registeredClients = require('./src/ai_agent_v1/registeredClients');
     
     // Only allow certain fields to be updated
-    const allowedFields = ['fullName', 'phone', 'city', 'address'];
+    const allowedFields = ['fullName', 'phone', 'whatsappPhone', 'city', 'address'];
     const updates = {};
     
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
         updates[field] = req.body[field];
       }
+    }
+    
+    // Handle custom fields update
+    if (req.body.customFields) {
+      updates.customFields = req.body.customFields;
     }
     
     if (Object.keys(updates).length === 0) {
@@ -2193,9 +2198,11 @@ app.put('/api/portal/:token/profile', async (req, res) => {
       success: true,
       fullName: updated.fullName,
       phone: updated.phone,
+      whatsappPhone: updated.whatsappPhone,
       country: updated.country,
       city: updated.city,
-      address: updated.address
+      address: updated.address,
+      customFields: updated.customFields || {}
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
