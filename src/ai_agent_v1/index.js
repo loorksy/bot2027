@@ -311,15 +311,17 @@ async function handleSmartConversation(message, linkedClient, messageText, isVoi
         // Get full client context
         const clientContext = await smartAgent.getClientContext(linkedClient);
         
-        // Get recent chat history for context (last 10 messages)
+        // Get recent chat history for context (from conversationHistory)
         let chatHistory = [];
         try {
-            const liveChat = require('./liveChat');
-            const messages = await liveChat.getChatMessages(linkedClient.whatsappId, 10);
-            chatHistory = messages.map(m => ({
-                role: m.sender === 'client' ? 'user' : 'assistant',
-                content: m.message
-            }));
+            // Use conversation history from clients module
+            if (linkedClient.conversationHistory && linkedClient.conversationHistory.length > 0) {
+                // Get last 10 messages
+                chatHistory = linkedClient.conversationHistory.slice(-10).map(entry => ({
+                    role: entry.role,
+                    content: entry.content
+                }));
+            }
         } catch (e) {
             console.log('[AI Agent] Could not load chat history:', e.message);
         }
