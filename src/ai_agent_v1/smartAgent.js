@@ -125,9 +125,17 @@ function buildSystemPrompt(clientContext, settings) {
 }
 
 /**
- * Call OpenRouter API
+ * Call OpenRouter API with chat history
  */
-async function callOpenRouter(systemPrompt, userMessage, settings) {
+async function callOpenRouter(systemPrompt, userMessage, settings, messages = null) {
+    const fetch = (await import('node-fetch')).default;
+    
+    // Use provided messages array or create simple one
+    const apiMessages = messages || [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage }
+    ];
+    
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -138,10 +146,7 @@ async function callOpenRouter(systemPrompt, userMessage, settings) {
         },
         body: JSON.stringify({
             model: settings.openrouterModel || 'openai/gpt-4o-mini',
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userMessage }
-            ],
+            messages: apiMessages,
             max_tokens: 500,
             temperature: 0.7
         })
