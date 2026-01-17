@@ -1,260 +1,801 @@
 <analysis>**original_problem_statement:**
 The user's initial request was for a WhatsApp bot system. The project has since evolved to include:
-1.  **AI Agent Enhancement:** Overhauled the AI's personality, UI for settings, and integrated OpenRouter.ai for a wide selection of models.
-2.  **Client Portal:** A secure portal for clients to view their profile and salary history.
-3.  **PIN Management:** Admins can reset client PINs, triggering a WhatsApp notification.
-4.  **Deployment & Debugging:** Extensive support for deploying the application on the user's VPS using , Nginx, and a custom domain.
-5.  **UI/UX Overhaul:** A complete redesign of the admin dashboard.
-6.  **Data Management:** Functionality for Google Sheet import and automatic synchronization.
-7.  **Bulk Operations:** Bulk-deleting clients.
-8.  **Feature Expansion:**
-    *   Added separate fields for Contact Phone and WhatsApp Phone.
-    *   **Implemented Salary Receipt Upload:** Admins can upload multiple receipts of any file type for each client, who can then view/download them from their portal. An automatic WhatsApp notification is sent upon upload.
-    *   **Dynamic OpenRouter Models:** The UI now dynamically fetches all available models from OpenRouter's API, with a search bar, instead of a static list.
-    *   **Persistent Configuration:** Moved critical settings (API keys, URLs, bot personality) from volatile JSON files to a persistent  file, which can now be updated directly from the admin dashboard UI.
-    *   **Data Persistence:** Ensured client data stored in the  directory is ignored by Git, preventing it from being deleted during updates.
-    *   **Forced Agency:** All new or updated clients (whether from manual entry or Google Sheet sync) are now automatically assigned to the الوكالة الرئيسية (Main Agency).
+1.  **AI Agent Enhancement:** Overhauled the AI's personality, UI for settings, and integrated OpenRouter.ai for a wide selection of models. A new Smart Agent was created to use LLMs for understanding all user messages and dialects, moving away from a rigid intent-based system.
+2.  **Client Portal:** A secure portal for clients to view/edit their profile, see salary history, view/download receipts, and access new features.
+3.  **PIN Management:** Admins can reset client PINs. Clients can now view their PIN and request a new one directly from their portal.
+4.  **Deployment & Debugging:** Extensive support for deploying the application on the user's VPS using  and Nginx. A critical, long-standing Puppeteer/Chromium issue prevents the bot from running on the live server.
+5.  **UI/UX Overhaul:** A complete redesign of the admin dashboard, including drag-and-drop file uploads.
+6.  **Data Management & Persistence:** Moved settings to a persistent  file, with the UI able to write to it. Data files in  are ignored by Git.
+7.  **Feature Expansion:**
+    *   **Salary Receipt Upload:** Admins can upload multiple receipts for each client.
+    *   **Notification System:** Admins can send broadcast or targeted notifications to clients, who see them in their portal.
+    *   **Support Ticket System:** The bot can automatically create tickets for complex issues, which admins manage in the dashboard.
+    *   **Knowledge Base:** A system to provide instant answers to common questions without using an LLM.
+    *   **Live Chat:** A real-time chat system between clients (in their portal) and admins (in the dashboard).
 
 **User's preferred language**: العربية (Arabic)
 
 **what currently exists?**
-The application is a Node.js/Express project with a server-side rendered vanilla JavaScript and HTML frontend. It's deployed on the user's VPS, managed by , and served via Nginx on the domain . The server has been completely re-installed from scratch during this session.
+The application is a Node.js/Express project with a server-side rendered vanilla JavaScript and HTML frontend. It's deployed on the user's VPS, managed by . Data is stored in JSON files within the  directory, and persistent configuration is managed in the  file.
 
-Data persistence is handled by JSON files within the  directory, which is now correctly excluded from version control via . Critical configuration (API keys, URLs, bot settings) is now stored in and managed via the  file, which the admin dashboard can write to.
+The application has many advanced features: a Smart AI agent, a full-featured client portal (profile editing, PIN reset, notifications, live chat), and an admin dashboard for managing clients, receipts, tickets, and the knowledge base.
 
-The main functionalities (client management, dynamic OpenRouter integration, receipt uploads, Google Sheet sync) are implemented. However, the core WhatsApp bot functionality is currently broken on the user's live server due to a Puppeteer/Chromium dependency issue.
+However, two critical issues exist:
+1.  The client portal is currently inaccessible, stuck on a loading screen, likely due to a server-side error.
+2.  The core WhatsApp bot functionality has been broken for a long time on the user's live server due to a Puppeteer/Chromium dependency error ().
 
 **Last working item**:
--   **Last item agent was working**: The agent implemented a robust solution to make application settings persistent. It modified  so that when an admin saves settings in the UI (e.g., API keys, bot personality), the changes are written directly to the  file. This prevents settings from being lost after application updates.
--   **Status**: USER VERIFICATION PENDING
--   **Agent Testing Done**: N (Code implemented, but requires user to deploy and test on their server).
--   **Which testing method agent to use?**: Manual testing by user after deploying the latest changes. The user needs to save settings from the UI and verify they persist after a .
--   **User Testing Done**: N
+-   **Last item agent was working**: Debugging an issue where the client portal page () is stuck on a loading screen. The agent identified a server crash caused by a duplicate  declaration in .
+-   **Status**: IN PROGRESS
+-   **Agent Testing Done**: N
+-   **Which testing method agent to use?**: Manual testing.
+    1.  Check supervisor logs for the  process to confirm the server starts without crashing: ==> /var/log/supervisor/whatsapp_bot.err.log <==
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+/app/server.js:2121
+const notifications = require('./src/ai_agent_v1/notifications');
+      ^
+
+SyntaxError: Identifier 'notifications' has already been declared
+    at wrapSafe (node:internal/modules/cjs/loader:1464:18)
+    at Module._compile (node:internal/modules/cjs/loader:1495:20)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+    at node:internal/main/run_main_module:28:49
+
+Node.js v20.19.6
+/app/server.js:2121
+const notifications = require('./src/ai_agent_v1/notifications');
+      ^
+
+SyntaxError: Identifier 'notifications' has already been declared
+    at wrapSafe (node:internal/modules/cjs/loader:1464:18)
+    at Module._compile (node:internal/modules/cjs/loader:1495:20)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+    at node:internal/main/run_main_module:28:49
+
+Node.js v20.19.6
+/app/server.js:2121
+const notifications = require('./src/ai_agent_v1/notifications');
+      ^
+
+SyntaxError: Identifier 'notifications' has already been declared
+    at wrapSafe (node:internal/modules/cjs/loader:1464:18)
+    at Module._compile (node:internal/modules/cjs/loader:1495:20)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+    at node:internal/main/run_main_module:28:49
+
+Node.js v20.19.6
+/app/server.js:2121
+const notifications = require('./src/ai_agent_v1/notifications');
+      ^
+
+SyntaxError: Identifier 'notifications' has already been declared
+    at wrapSafe (node:internal/modules/cjs/loader:1464:18)
+    at Module._compile (node:internal/modules/cjs/loader:1495:20)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+    at node:internal/main/run_main_module:28:49
+
+Node.js v20.19.6
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+
+==> /var/log/supervisor/whatsapp_bot.out.log <==
+[Startup] Settings restored from .env: enabled
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3050
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: openaiKey, botName, ownerName, salaryCurrency, enabled
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3050
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3050
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized.
+    2.  If the server is running, use  to test the portal API and ensure it returns data, not an error: {"error":"رابط غير صالح"} (a valid token needs to be obtained first).
+-   **User Testing Done**: N (User reported the bug but has not confirmed the fix).
 
 **All Pending/In progress Issue list**:
--   **Issue 1**: CRITICAL: WhatsApp bot fails to initialize on the user's live server. (Priority: P0)
--   **Issue 2**: The bot incorrectly rejects a valid PIN after it has been reset. (Priority: P1)
--   **Issue 3**: Bot personality settings (e.g., currency) are not being applied correctly. (Priority: P2)
+-   Issue 1: Client portal is stuck on a loading screen. (Priority: P0)
+-   Issue 2: CRITICAL: WhatsApp bot fails to initialize on the user's live server. (Priority: P0)
+-   Issue 3: The bot incorrectly rejects a valid PIN after it has been reset. (Priority: P1)
 
 **Issues Detail**:
--   **Issue 1: CRITICAL: WhatsApp bot fails to initialize on the user's live server.**
-    -   **Attempted fixes**: This is a severe blocker. The error is . The agent has tried:
-        1.  Re-installing the entire VPS from scratch (Ubuntu 22.04).
-        2.  Installing numerous dependency packages (, , , and a comprehensive list of all puppeteer dependencies).
-        3.  Forcing Puppeteer to use the system-installed Chromium () instead of its bundled version by setting  in  and hardcoding the path in .
-        4.  Using an  file for PM2 to manage environment variables.
-        None of these attempts have resolved the core library issue.
+-   **Issue 1: Client portal is stuck on a loading screen.**
+    -   **Attempted fixes**: The agent found and removed a duplicate  statement in  that was causing the server to crash. The server was restarted.
     -   **Next debug checklist**:
-        1.  Verify the exact path and permissions of the Chromium executable PM2 is trying to use.
-        2.  Run  (or the path to the puppeteer chrome executable) on the user's server to see exactly which libraries are missing from the system's perspective.
-        3.  Consider an alternative to  or a different version that might have different puppeteer dependencies.
-        4.  As a last resort, suggest running the application inside a Docker container that has all the correct dependencies pre-installed.
-    -   **Why fix this issue and what will be achieved with the fix?**: The entire bot functionality is offline until this is resolved. It is the highest priority.
+        1.  Verify the server is running and there are no startup errors in the supervisor logs (==> /var/log/supervisor/whatsapp_bot.err.log <==
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+/app/server.js:2121
+const notifications = require('./src/ai_agent_v1/notifications');
+      ^
+
+SyntaxError: Identifier 'notifications' has already been declared
+    at wrapSafe (node:internal/modules/cjs/loader:1464:18)
+    at Module._compile (node:internal/modules/cjs/loader:1495:20)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+    at node:internal/main/run_main_module:28:49
+
+Node.js v20.19.6
+/app/server.js:2121
+const notifications = require('./src/ai_agent_v1/notifications');
+      ^
+
+SyntaxError: Identifier 'notifications' has already been declared
+    at wrapSafe (node:internal/modules/cjs/loader:1464:18)
+    at Module._compile (node:internal/modules/cjs/loader:1495:20)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+    at node:internal/main/run_main_module:28:49
+
+Node.js v20.19.6
+/app/server.js:2121
+const notifications = require('./src/ai_agent_v1/notifications');
+      ^
+
+SyntaxError: Identifier 'notifications' has already been declared
+    at wrapSafe (node:internal/modules/cjs/loader:1464:18)
+    at Module._compile (node:internal/modules/cjs/loader:1495:20)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+    at node:internal/main/run_main_module:28:49
+
+Node.js v20.19.6
+/app/server.js:2121
+const notifications = require('./src/ai_agent_v1/notifications');
+      ^
+
+SyntaxError: Identifier 'notifications' has already been declared
+    at wrapSafe (node:internal/modules/cjs/loader:1464:18)
+    at Module._compile (node:internal/modules/cjs/loader:1495:20)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+    at node:internal/main/run_main_module:28:49
+
+Node.js v20.19.6
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+
+==> /var/log/supervisor/whatsapp_bot.out.log <==
+[Startup] Settings restored from .env: enabled
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3050
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: openaiKey, botName, ownerName, salaryCurrency, enabled
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3050
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3050
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized).
+        2.  Check the browser's developer console on the portal page for any new JavaScript errors.
+        3.  The API previously returned an error  (Invalid link). Manually test the portal API endpoint  with a valid token to confirm it returns the correct client data.
+    -   **Why fix this issue and what will be achieved with the fix?**: The client portal, a core part of the application, is currently unusable.
+    -   **Status**: IN PROGRESS
+    -   **Is recurring issue?**: N
+    -   **Should Test frontend/backend/both after fix?**: Both
+    -   **Blocked on other issue**: None. This is the current primary blocker.
+
+-   **Issue 2: CRITICAL: WhatsApp bot fails to initialize on the user's live server.**
+    -   **Attempted fixes**: This is a long-standing issue. Previous attempts included re-installing the VPS, installing numerous dependencies, and forcing Puppeteer to use a specific Chromium path. None worked. The error is .
+    -   **Next debug checklist**:
+        1.  Run  on the Chromium executable that Puppeteer is trying to use on the user's server to get a definitive list of missing libraries.
+        2.  Consider suggesting the user run the application inside a Docker container with all Puppeteer dependencies pre-installed. This is a more robust solution than managing system libraries on the host.
+        3.  Research alternative  versions or forks that may use a different, more compatible version of Puppeteer.
+    -   **Why fix this issue and what will be achieved with the fix?**: The entire WhatsApp bot functionality, which is the heart of the application, is offline. Fixing this will restore the application's primary purpose.
     -   **Status**: BLOCKED
     -   **Is recurring issue?**: Y
     -   **Should Test frontend/backend/both after fix?**: Backend
     -   **Blocked on other issue**: This is the main blocker for the entire application.
 
--   **Issue 2: The bot incorrectly rejects a valid PIN after it has been reset.**
-    -   **Attempted fixes**: None in this session. This is a carry-over from the previous fork.
+-   **Issue 3: The bot incorrectly rejects a valid PIN after it has been reset.**
+    -   **Attempted fixes**: None. This is a carry-over issue.
     -   **Next debug checklist**:
-        1.  Review the logic in  for the  endpoint.
-        2.  Review the PIN verification logic in  and .
-    -   **Why fix this issue and what will be achieved with the fix?**: The PIN reset feature is a core security/usability function that is currently unreliable.
+        1.  Review the PIN reset logic in  ( and the new portal endpoint ).
+        2.  Review the PIN verification logic used by the bot in  or .
+    -   **Why fix this issue and what will be achieved with the fix?**: The PIN reset feature is unreliable.
     -   **Status**: NOT STARTED
     -   **Is recurring issue?**: Y
     -   **Should Test frontend/backend/both after fix?**: Backend
-    -   **Blocked on other issue**: Issue 1.
-
--   **Issue 3: Bot personality settings (e.g., currency) are not being applied correctly.**
-    -   **Attempted fixes**: The agent moved all personality settings from a JSON file to the  file and updated the code to read from there as a default. It also made the UI write back to the  file.
-    -   **Next debug checklist**:
-        1.  Once the bot is working (Issue 1 is fixed), verify if the bot's replies use the currency defined in  in the  file.
-        2.  Trace how the settings are loaded from  and passed to the  module.
-    -   **Why fix this issue and what will be achieved with the fix?**: This will allow the user to customize the bot's responses as intended.
-    -   **Status**: USER VERIFICATION PENDING
-    -   **Is recurring issue?**: Y
-    -   **Should Test frontend/backend/both after fix?**: Backend (bot logic)
-    -   **Blocked on other issue**: Issue 1.
+    -   **Blocked on other issue**: Issue 2.
 
 **In progress Task List**:
-- None.
+-   **Task 1: Live Chat Implementation**
+    -   **Where to resume**: The feature's code is complete, but it was introduced just before the server started crashing. Once the portal loading issue is fixed, this new chat feature needs to be tested end-to-end to ensure messages flow correctly between the client portal and the admin dashboard.
+    -   **What will be achieved with this?**: A real-time chat system for clients to communicate directly with administrators.
+    -   **Status**: IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?**: Both
+    -   **Blocked on something**: Issue 1 (Portal loading screen).
 
 **Upcoming and Future Tasks**
 -   **Future Tasks**:
-    -   **Task 1: Add Audit Log for PIN Resets (P2)**: Create a log to track which admin reset a client's PIN and when, for security and accountability. (From previous handoff, not started).
+    -   **Task 1: Add Audit Log for PIN Resets (P2)**: Create a log to track which admin reset a client's PIN and when, for security and accountability.
 
 **Completed work in this session**
--   **Full Server Re-installation**: Guided the user through formatting their VPS and re-installing Node.js, Nginx, PM2, and SSL from scratch.
--   **Persistent Data Solution**: Solved data loss on updates by adding the  directory to , making local JSON files the persistent source of truth.
--   **Persistent Configuration Solution**: Moved all critical settings to  and modified the backend so the Admin UI can update this file, making configuration persistent across updates.
--   **Feature: Salary Receipt Upload**: Fully implemented a system for admins to upload multiple receipts per client, viewable in the client portal, with automatic WhatsApp notifications.
--   **Feature: Dynamic OpenRouter Models**: Replaced the static model list with a dynamic one fetched from the OpenRouter API, complete with a search bar.
--   **Feature: Separate WhatsApp/Contact Phones**: Implemented separate fields in the UI, backend, and database for contact and WhatsApp numbers.
--   **Bugfix: Google Sheet Sync**: Fixed multiple issues with Google Sheet sync, including handling empty names and issues with sheet name encoding. Removed the manual import button to focus on auto-sync.
--   **Bugfix: AI Provider Logic**: Fixed a bug where the bot would only use OpenAI for replies, ignoring the OpenRouter setting.
--   **Bugfix: Deployment Issues**: Resolved numerous deployment problems for the user, including usage: git [-v | --version] [-h | --help] [-C <path>] [-c <name>=<value>]
-           [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]
-           [-p | --paginate | -P | --no-pager] [--no-replace-objects] [--bare]
-           [--git-dir=<path>] [--work-tree=<path>] [--namespace=<name>]
-           [--super-prefix=<path>] [--config-env=<name>=<envvar>]
-           <command> [<args>]
-
-These are common Git commands used in various situations:
-
-start a working area (see also: git help tutorial)
-   clone     Clone a repository into a new directory
-   init      Create an empty Git repository or reinitialize an existing one
-
-work on the current change (see also: git help everyday)
-   add       Add file contents to the index
-   mv        Move or rename a file, a directory, or a symlink
-   restore   Restore working tree files
-   rm        Remove files from the working tree and from the index
-
-examine the history and state (see also: git help revisions)
-   bisect    Use binary search to find the commit that introduced a bug
-   diff      Show changes between commits, commit and working tree, etc
-   grep      Print lines matching a pattern
-   log       Show commit logs
-   show      Show various types of objects
-   status    Show the working tree status
-
-grow, mark and tweak your common history
-   branch    List, create, or delete branches
-   commit    Record changes to the repository
-   merge     Join two or more development histories together
-   rebase    Reapply commits on top of another base tip
-   reset     Reset current HEAD to the specified state
-   switch    Switch branches
-   tag       Create, list, delete or verify a tag object signed with GPG
-
-collaborate (see also: git help workflows)
-   fetch     Download objects and refs from another repository
-   pull      Fetch from and integrate with another repository or a local branch
-   push      Update remote refs along with associated objects
-
-'git help -a' and 'git help -g' list available subcommands and some
-concept guides. See 'git help <command>' or 'git help <concept>'
-to read about a specific subcommand or concept.
-See 'git help git' for an overview of the system. conflicts, corrupted JSON files, and Nginx's file upload size limit.
--   **Architectural Clarification**: Investigated and confirmed the project uses a hybrid database system (JSON for the bot, Prisma/Postgres for an accounting module).
+-   **Persistent Settings Fix**: Fully implemented and debugged the system to save UI settings to  and correctly load them on startup.
+-   **Port Change**: Changed the application port to  as per the user's request.
+-   **Client Portal Overhaul**:
+    -   Displayed all custom client fields in the portal.
+    -   Enabled clients to edit their own profile data, including custom fields.
+    -   Added a feature to show/hide the client's PIN and regenerate it from the portal.
+-   **Smart Agent Implementation**: Replaced the old keyword-based bot logic with a new  that uses an LLM to understand all dialects and respond intelligently.
+-   **Notification System**: Implemented a full-stack feature for admins to send broadcast or targeted notifications to clients.
+-   **Support & Knowledge Systems**: Created a support ticket system and a knowledge base to handle common user queries efficiently.
+-   **Live Chat System**: Implemented a full-stack, real-time chat feature between clients and admins (currently blocked).
+-   **Admin Dashboard UX**:
+    -   Implemented drag-and-drop for receipt uploads.
+    -   Implemented a smart search that opens the receipt upload modal automatically.
+-   **Bug Fixes**:
+    -   Fixed a  error on the usage/consumption page.
+    -   Fixed a portal access bug for clients with Arabic agency names.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
 -   **Backend**: Node.js, Express.js
--   **Frontend**: Vanilla JavaScript, Server-Side Rendered HTML, CSS
--   **WhatsApp Integration**: , Puppeteer
--   **Database**: JSON files (primary for bot), PostgreSQL + Prisma (for accounting module)
--   **AI**: OpenAI API, OpenRouter.ai API
--   **Deployment**: User's VPS, , Nginx, Certbot (SSL)
+-   **Frontend**: Vanilla JavaScript, Server-Side Rendered HTML, CSS (with polling for live updates)
+-   **WhatsApp Integration**: , Puppeteer (currently broken)
+-   **Database**: JSON files for all application data.
+-   **AI**: OpenRouter.ai API (primary), direct LLM prompting for conversation.
+-   **Deployment**: User's VPS, , Nginx.
 
 **key DB schema**
 -   ****: 
 -   ****: 
-
-**changes in tech stack**
--   Configuration has been centralized into the  file instead of .
--   Deployment is now managed by a robust  for .
+-   ****: 
+-   ****: 
+-   ****: 
+-   ****: 
 
 **All files of reference**
--   : Heavily modified to add receipt APIs, dynamic settings logic, and startup file checks.
--   : Modified to add receipt management UI, remove manual Google Sheet import, and implement dynamic OpenRouter model list.
--   : Modified to display uploaded receipts to clients.
--   : Patched to correctly use the selected AI provider (OpenRouter/OpenAI).
--   : Rewritten to support multiple receipts per client.
--   : Attempts were made to modify this to fix Puppeteer issues.
--   : Now the central location for all persistent configuration.
--   : Updated to ignore the  directory.
--   : New file created to ensure stable  deployment.
+-   **/app/server.js**: Heavily modified to add APIs for settings, notifications, tickets, knowledge base, live chat, and PIN regeneration. **This file is very large and needs refactoring.**
+-   **/app/public/portal.html**: Heavily modified for client profile editing, PIN management, notifications, and live chat UI.
+-   **/app/public/ai-dashboard.html**: Heavily modified to add UIs for all new backend systems (notifications, tickets, knowledge base, live chat) and UX improvements (drag & drop).
+-   **/app/src/ai_agent_v1/index.js**: Modified to use the new .
+-   **New Files Created**:
+    -   
+    -   
+    -   
+    -   
+    -   
+
+**Areas that need refactoring**:
+-   ****: This file is now over 2,300 lines long and handles routing for every feature. It should be broken down into modular router files (e.g., , ).
+-   ** & **: These are monolithic HTML files containing hundreds of lines of embedded CSS and thousands of lines of JavaScript. The logic should be extracted into separate  and  files for maintainability.
+
+**key api endpoints**
+-   : (GET/POST) Manage application settings.
+-   : (GET/PUT) Manage client profile from the portal.
+-   : (GET/POST) View and regenerate client PIN.
+-   : (GET/POST) Client-side live chat.
+-   : (GET) Admin-side live chat dashboard.
+-   : (GET/POST/DELETE) Manage notifications.
+-   : (GET/PUT) Manage support tickets.
+-   : (GET/POST/PUT/DELETE) Manage knowledge base.
 
 **Critical Info for New Agent**
--   **THE #1 BLOCKER IS THE PUPPETEER INITIALIZATION FAILURE ON THE USER'S VPS.** The error is . Do not waste time on other features until this is resolved. The user's server is a fresh Ubuntu 22.04 install. All previous attempts to install dependencies or change the executable path have failed. You need a new strategy.
--   The data persistence model is now stable: all user-generated data lives in  which is in . The code now automatically creates this directory and necessary files on startup if they don't exist.
--   The configuration model is also stable: key settings are in  and are loaded on startup. The admin UI writes back to this file, so changes are persistent.
--   The user is technical and can run commands, but requires very clear, single, copy-pastable commands for complex operations (usage: git [-v | --version] [-h | --help] [-C <path>] [-c <name>=<value>]
-           [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]
-           [-p | --paginate | -P | --no-pager] [--no-replace-objects] [--bare]
-           [--git-dir=<path>] [--work-tree=<path>] [--namespace=<name>]
-           [--super-prefix=<path>] [--config-env=<name>=<envvar>]
-           <command> [<args>]
+-   **IMMEDIATE BLOCKER:** The client portal is stuck on loading. Your first task is to investigate and fix the server. Start by checking the supervisor logs (==> /var/log/supervisor/whatsapp_bot.err.log <==
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+/app/server.js:2121
+const notifications = require('./src/ai_agent_v1/notifications');
+      ^
 
-These are common Git commands used in various situations:
+SyntaxError: Identifier 'notifications' has already been declared
+    at wrapSafe (node:internal/modules/cjs/loader:1464:18)
+    at Module._compile (node:internal/modules/cjs/loader:1495:20)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+    at node:internal/main/run_main_module:28:49
 
-start a working area (see also: git help tutorial)
-   clone     Clone a repository into a new directory
-   init      Create an empty Git repository or reinitialize an existing one
+Node.js v20.19.6
+/app/server.js:2121
+const notifications = require('./src/ai_agent_v1/notifications');
+      ^
 
-work on the current change (see also: git help everyday)
-   add       Add file contents to the index
-   mv        Move or rename a file, a directory, or a symlink
-   restore   Restore working tree files
-   rm        Remove files from the working tree and from the index
+SyntaxError: Identifier 'notifications' has already been declared
+    at wrapSafe (node:internal/modules/cjs/loader:1464:18)
+    at Module._compile (node:internal/modules/cjs/loader:1495:20)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+    at node:internal/main/run_main_module:28:49
 
-examine the history and state (see also: git help revisions)
-   bisect    Use binary search to find the commit that introduced a bug
-   diff      Show changes between commits, commit and working tree, etc
-   grep      Print lines matching a pattern
-   log       Show commit logs
-   show      Show various types of objects
-   status    Show the working tree status
+Node.js v20.19.6
+/app/server.js:2121
+const notifications = require('./src/ai_agent_v1/notifications');
+      ^
 
-grow, mark and tweak your common history
-   branch    List, create, or delete branches
-   commit    Record changes to the repository
-   merge     Join two or more development histories together
-   rebase    Reapply commits on top of another base tip
-   reset     Reset current HEAD to the specified state
-   switch    Switch branches
-   tag       Create, list, delete or verify a tag object signed with GPG
+SyntaxError: Identifier 'notifications' has already been declared
+    at wrapSafe (node:internal/modules/cjs/loader:1464:18)
+    at Module._compile (node:internal/modules/cjs/loader:1495:20)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+    at node:internal/main/run_main_module:28:49
 
-collaborate (see also: git help workflows)
-   fetch     Download objects and refs from another repository
-   pull      Fetch from and integrate with another repository or a local branch
-   push      Update remote refs along with associated objects
+Node.js v20.19.6
+/app/server.js:2121
+const notifications = require('./src/ai_agent_v1/notifications');
+      ^
 
-'git help -a' and 'git help -g' list available subcommands and some
-concept guides. See 'git help <command>' or 'git help <concept>'
-to read about a specific subcommand or concept.
-See 'git help git' for an overview of the system., server management).
--   When providing the user with commands for their server, assume the project is at .
+SyntaxError: Identifier 'notifications' has already been declared
+    at wrapSafe (node:internal/modules/cjs/loader:1464:18)
+    at Module._compile (node:internal/modules/cjs/loader:1495:20)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+    at node:internal/main/run_main_module:28:49
+
+Node.js v20.19.6
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+[BOT] Initialize error: Error: Browser was not found at the configured executablePath (/usr/bin/chromium)
+    at ChromeLauncher.launch (/app/node_modules/whatsapp-web.js/node_modules/puppeteer-core/lib/cjs/puppeteer/node/BrowserLauncher.js:90:19)
+    at async Client.initialize (/app/node_modules/whatsapp-web.js/src/Client.js:331:23)
+
+==> /var/log/supervisor/whatsapp_bot.out.log <==
+[Startup] Settings restored from .env: enabled
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3050
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: openaiKey, botName, ownerName, salaryCurrency, enabled
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3050
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3050
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized
+[Startup] .env file loaded
+Server running on port 3000
+[RegisteredClients] Index rebuilt successfully
+[Startup] Settings restored from .env: salaryCurrency, salaryFooter, salaryTemplate, welcomeMessage, enabled, aiProvider, openaiKey, openrouterKey, openrouterModel, modelChat, modelStt, modelTts, voiceTts, trustedSessionMinutes, agencyPercent, botName, ownerName, dialect, clientGender, friendliness, enableVoiceReplies, adminContact
+[Startup] Data directory verified
+[AI Agent] Initialized) for startup errors. The previous agent attempted a fix for a duplicate  statement, but the user's report indicates the problem persists.
+-   **THE #1 LONG-TERM BLOCKER IS THE PUPPETEER INITIALIZATION FAILURE ON THE USER'S VPS.** The error is . The entire WhatsApp bot is non-functional until this is resolved. This should be prioritized after the portal is accessible again. A Docker-based solution is likely the most reliable path forward.
+-   The codebase has grown significantly complex. The , , and  files are extremely large. After fixing the critical blockers, proposing a refactoring plan to the user is highly recommended for future stability and development speed.
 
 **documents and test reports created in this job**
--   
--   
+-    (updated)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: My bot personality settings (like currency) are not working.
-2.  **Agent**: Investigates, finds data files might be missing.
-3.  **User**: Can you make the data folders be created automatically?
-4.  **Agent**: Implements a fix to create data folders on startup.
-5.  **User**: My settings are still lost on every update.
-6.  **Agent**: Implements a major improvement to move settings to .
-7.  **User**: I want to change settings from the UI, not the terminal.
-8.  **Agent**: Implements a further improvement to make the UI write back to the  file.
-9.  **User**: Acknowledges the fix and asks for final commands.
-10. **Agent**: Provides the final  and  commands for the user to apply the latest changes.
+1.  **User**: Bot doesn't understand questions well and speaks formal Arabic. Wants it to be a true AI that understands all dialects.
+2.  **Agent**: Implements a new  to use an LLM for all messages.
+3.  **User**: Asks for live chat, ability for clients to see/reset their PIN, drag-and-drop file uploads, and a better client search flow.
+4.  **Agent**: Implements all requested features.
+5.  **User**: Asks for a live chat system, similar to WhatsApp, between the client portal and the admin dashboard.
+6.  **Agent**: Implements the full-stack live chat feature.
+7.  **User**: (BUG REPORT) The portal page is stuck on the loading screen and never opens.
+8.  **Agent**: Investigates and finds a server crash due to a duplicate  statement in .
+9.  **Agent**: Attempts to fix the crash by removing the duplicate line and restarting the server.
+10. **(No user response yet after the fix attempt)**
 
 **Project Health Check:**
--   **Broken**: The core functionality of the WhatsApp bot is non-operational on the user's live server due to the critical Puppeteer error.
+-   **Broken**:
+    -   The client portal is currently inaccessible (stuck on loading).
+    -   The core WhatsApp bot functionality is non-operational on the user's live server due to the critical Puppeteer error.
 
 **3rd Party Integrations**
--   **OpenAI**: For AI chat.
--   **OpenRouter.ai**: Alternative AI provider, supports 300+ models.
+-   **OpenAI**: Used for the Smart Agent AI.
+-   **OpenRouter.ai**: Alternative AI provider.
 -   **whatsapp-web.js**: Library for WhatsApp integration (currently broken).
--   **Google Sheets API**: Used via a public CSV export link for automatic data synchronization.
+-   **Google Sheets API**: Used via a public CSV export link.
 
 **Testing status**
 -   **Testing agent used after significant changes**: NO
 -   **Troubleshoot agent used after agent stuck in loop**: NO
 -   **Test files created**: None.
--   **Known regressions**: The entire WhatsApp bot is not initializing on the user's server.
+-   **Known regressions**: The client portal became inaccessible after the live chat feature was added.
 
 **Credentials to test flow:**
--   **Admin Login**: Accessing  should grant admin access. No authentication is implemented.
+-   **Admin Login**: Accessing  should grant admin access (no auth).
+-   **Client Portal**: A valid client token is required to access . Tokens can be generated by the bot (when it's working) or potentially found in server logs or data files.
 
 **What agent forgot to execute**
--   The agent was unable to solve the critical Puppeteer dependency issue (), which is the primary blocker.
--   The long-standing incorrect PIN rejection bug was not addressed, as the agent was focused on the server re-installation and the critical bot initialization failure.</analysis>
+-   The agent did not verify that the fix for the server crash actually resolved the user's portal stuck on loading issue. The agent restarted the server but did not perform a follow-up test.
+-   The original critical blocker ( Puppeteer error) from the initial handoff was not addressed in this session, as the agent prioritized a large number of new feature requests from the user.</analysis>
