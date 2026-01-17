@@ -3516,15 +3516,12 @@
       if (!name) return;
 
       try {
-        globalLookups.agencies = globalLookups.agencies || [];
-        if (!globalLookups.agencies.includes(name)) {
-          globalLookups.agencies.push(name);
-          await api('POST', '/api/ai/lookups', globalLookups);
-          showAlert('تم إضافة الوكالة');
-          document.getElementById('newAgencyName').value = '';
-          renderLookupLists();
-          renderLookupSelects();
-        }
+        await api('POST', '/api/ai/lookups/agency', { name });
+        showAlert('تم إضافة الوكالة');
+        document.getElementById('newAgencyName').value = '';
+        await loadLookups();
+        renderLookupLists();
+        renderLookupSelects();
       } catch (err) {
         showAlert(err.message, 'error');
       }
@@ -3533,9 +3530,9 @@
     window.deleteAgency = async function(name) {
       if (!confirm(`حذف الوكالة "${name}"؟`)) return;
       try {
-        globalLookups.agencies = (globalLookups.agencies || []).filter(a => a !== name);
-        await api('POST', '/api/ai/lookups', globalLookups);
+        await api('DELETE', `/api/ai/lookups/agency/${encodeURIComponent(name)}`);
         showAlert('تم حذف الوكالة');
+        await loadLookups();
         renderLookupLists();
         renderLookupSelects();
       } catch (err) {
@@ -3548,16 +3545,12 @@
       if (!name) return;
 
       try {
-        globalLookups.countries = globalLookups.countries || [];
-        const exists = globalLookups.countries.some(c => (typeof c === 'object' ? c.name : c) === name);
-        if (!exists) {
-          globalLookups.countries.push({ name, cities: [] });
-          await api('POST', '/api/ai/lookups', globalLookups);
-          showAlert('تم إضافة الدولة');
-          document.getElementById('newCountryName').value = '';
-          renderLookupLists();
-          renderLookupSelects();
-        }
+        await api('POST', '/api/ai/lookups/country', { name });
+        showAlert('تم إضافة الدولة');
+        document.getElementById('newCountryName').value = '';
+        await loadLookups();
+        renderLookupLists();
+        renderLookupSelects();
       } catch (err) {
         showAlert(err.message, 'error');
       }
@@ -3566,9 +3559,9 @@
     window.deleteCountry = async function(name) {
       if (!confirm(`حذف الدولة "${name}"؟`)) return;
       try {
-        globalLookups.countries = (globalLookups.countries || []).filter(c => (typeof c === 'object' ? c.name : c) !== name);
-        await api('POST', '/api/ai/lookups', globalLookups);
+        await api('DELETE', `/api/ai/lookups/country/${encodeURIComponent(name)}`);
         showAlert('تم حذف الدولة');
+        await loadLookups();
         renderLookupLists();
         renderLookupSelects();
       } catch (err) {
