@@ -53,9 +53,17 @@ async function loadUsage() {
     if (usageCache === null) {
         try {
             usageCache = await fs.readJSON(USAGE_FILE);
+            // Ensure log array exists
+            if (!usageCache.log || !Array.isArray(usageCache.log)) {
+                usageCache.log = [];
+            }
         } catch (err) {
             usageCache = createEmptyUsage();
         }
+    }
+    // Always ensure log exists
+    if (!usageCache.log || !Array.isArray(usageCache.log)) {
+        usageCache.log = [];
     }
     return usageCache;
 }
