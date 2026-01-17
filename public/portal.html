@@ -688,6 +688,32 @@
         </div>
       </div>
 
+      <!-- PIN Card -->
+      <div class="card">
+        <div class="card-header">
+          <h2>🔐 الرمز السري</h2>
+        </div>
+        <div style="text-align: center; padding: 20px;">
+          <div id="pinDisplay" style="font-size: 2rem; font-weight: bold; letter-spacing: 8px; color: #00d4ff; margin-bottom: 16px;">******</div>
+          <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn btn-secondary" onclick="togglePinVisibility()">👁️ إظهار/إخفاء</button>
+            <button class="btn btn-warning" onclick="regeneratePin()">🔄 طلب رمز جديد</button>
+          </div>
+          <p style="color: #888; font-size: 0.85rem; margin-top: 12px;">⚠️ احفظي هذا الرمز ولا تعطيه لأحد</p>
+        </div>
+      </div>
+
+      <!-- Chat with Admin Card -->
+      <div class="card">
+        <div class="card-header">
+          <h2>💬 تواصلي مع الإدارة</h2>
+        </div>
+        <div style="padding: 10px 0;">
+          <textarea id="chatMessage" rows="3" placeholder="اكتبي رسالتك هنا... (استفسار، شكوى، طلب تعديل...)" style="width: 100%; padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; resize: vertical;"></textarea>
+          <button class="btn btn-primary" onclick="sendChatMessage()" style="width: 100%; margin-top: 10px;">📤 إرسال</button>
+        </div>
+      </div>
+
       <!-- Salaries Card -->
       <div class="card">
         <div class="card-header">
