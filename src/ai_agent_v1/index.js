@@ -253,105 +253,71 @@ async function handleLinkedClient(message, linkedClient, messageText, isVoice) {
     const analysis = await analyzer.analyzeMessage(messageText, linkedClient.profile, []);
     console.log('[AI Agent] Analysis:', JSON.stringify(analysis, null, 2));
 
-    // Handle intents
+    // Check if PIN attempt first
+    if (analysis.isPinAttempt && analysis.pinValue) {
+        await handlePinAttempt(message, linkedClient, analysis.pinValue, isVoice);
+        return;
+    }
+
+    // For linked clients, use Smart AI Agent for natural conversation
+    if (linkedClient.linkedClientId) {
+        await handleSmartConversation(message, linkedClient, messageText, isVoice);
+        return;
+    }
+
+    // For unlinked clients, guide them to link their account
     switch (analysis.intent) {
         case 'GREETING':
-            const welcomeBack = await reply.generateReply({ 
-                type: 'WELCOME_BACK', 
-                context: { clientName: linkedClient.profile?.fullName } 
+            const welcomeReply = await reply.generateReply({ 
+                type: 'GREETING_UNLINKED', 
+                context: {} 
             });
-            await sendReply(message, welcomeBack, isVoice);
-            break;
-
-        case 'ASK_SALARY':
-            // Check subType for timing or complaint
-            if (analysis.subType === 'timing') {
-                const timingReply = await reply.generateReply({ type: 'SALARY_TIMING', context: {} });
-                await sendReply(message, timingReply, isVoice);
-            } else if (analysis.subType === 'complaint') {
-                const complaintReply = await reply.generateReply({ type: 'SALARY_COMPLAINT', context: {} });
-                await sendReply(message, complaintReply, isVoice);
-            } else {
-                await handleSalaryRequest(message, linkedClient, isVoice);
-            }
-            break;
-
-        case 'ASK_PROFILE':
-            await handleProfileRequest(message, linkedClient, isVoice);
-            break;
-
-        case 'UPDATE_PROFILE':
-            await handleProfileUpdate(message, linkedClient, analysis, isVoice);
-            break;
-
-        case 'FORGOT_PIN':
-            const forgotReply = await reply.generateReply({ type: 'FORGOT_PIN', context: {} });
-            await sendReply(message, forgotReply, isVoice);
-            break;
-
-        case 'COMPLAINT':
-            const complaintGeneral = await reply.generateReply({ 
-                type: 'COMPLAINT', 
-                context: { userMessage: messageText } 
-            });
-            await sendReply(message, complaintGeneral, isVoice);
-            break;
-
-        case 'GRATITUDE':
-            const thanksReply = await reply.generateReply({ type: 'GRATITUDE_RESPONSE', context: {} });
-            await sendReply(message, thanksReply, isVoice);
-            break;
-
-        case 'CHITCHAT':
-            const chitchatReply = await reply.generateReply({ 
-                type: 'CHITCHAT', 
-                context: { userMessage: messageText } 
-            });
-            await sendReply(message, chitchatReply, isVoice);
-            break;
-
-        case 'OFF_TOPIC':
-            const offTopicReply = await reply.generateReply({ 
-                type: 'OFF_TOPIC', 
-                context: { userMessage: messageText } 
-            });
-            await sendReply(message, offTopicReply, isVoice);
-            break;
-
-        case 'ASK_PORTAL_LINK':
-            await handlePortalLinkRequest(message, linkedClient, isVoice);
-            break;
-
-        // === NEW INTENTS ===
-        
-        case 'SALARY_DELAY':
-            await handleSalaryDelayQuery(message, linkedClient, isVoice);
-            break;
-
-        case 'SALARY_AMOUNT':
-            await handleSalaryAmountQuery(message, linkedClient, isVoice);
-            break;
-
-        case 'RECEIPT_STATUS':
-            await handleReceiptStatusQuery(message, linkedClient, isVoice);
-            break;
-
-        case 'SUPPORT_REQUEST':
-            await handleSupportRequest(message, linkedClient, messageText, isVoice);
+            await sendReply(message, welcomeReply, isVoice);
             break;
 
         default:
-            // First, check knowledge base for matching answer
-            const kbMatch = await knowledgeBase.findMatch(messageText);
-            if (kbMatch) {
-                await handleKnowledgeBaseResponse(message, linkedClient, kbMatch, isVoice);
-            } else if (analysis.needsAdminHelp) {
-                // Create support ticket for complex issues
-                await handleSupportRequest(message, linkedClient, messageText, isVoice);
+            // Check if they're providing ID
+            if (analysis.extracted.ids && analysis.extracted.ids.length > 0) {
+                await handleIdProvided(message, linkedClient, analysis.extracted.ids[0], isVoice);
             } else {
-                // Natural AI response
-                await handleGeneralQuery(message, linkedClient, messageText, isVoice);
+                const askIdReply = await reply.generateReply({ 
+                    type: 'ASK_ID', 
+                    context: {} 
+                });
+                await sendReply(message, askIdReply, isVoice);
             }
+    }
+}
+
+/**
+ * Handle smart AI conversation for linked clients
+ */
+async function handleSmartConversation(message, linkedClient, messageText, isVoice) {
+    try {
+        // Get full client context
+        const clientContext = await smartAgent.getClientContext(linkedClient);
+        
+        console.log('[AI Agent] Smart conversation for:', clientContext.fullName);
+        
+        // Generate AI response
+        const result = await smartAgent.generateSmartResponse(messageText, clientContext);
+        
+        console.log('[AI Agent] Smart response:', result.reply.substring(0, 100) + '...');
+        
+        // Handle any actions
+        if (result.action) {
+            await smartAgent.handleAction(result.action, message.from, clientContext, messageText);
+        }
+        
+        // Send reply
+        await sendReply(message, result.reply, isVoice);
+        
+    } catch (err) {
+        console.error('[AI Agent] Smart conversation error:', err);
+        
+        // Fallback to simple response
+        const errorReply = 'عذراً حبيبتي، حصل خطأ. جربي مرة تانية أو تواصلي مع الإدارة 💕';
+        await sendReply(message, errorReply, isVoice);
     }
 }
 
