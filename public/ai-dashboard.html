@@ -2533,9 +2533,18 @@
     // =====================================================
     async function loadLinkedClients() {
       try {
-        const clients = await api('GET', '/api/ai/clients');
+        const result = await api('GET', '/api/ai/clients');
         const tbody = document.querySelector('#linkedClientsTable tbody');
         const mobile = document.getElementById('linkedClientsMobile');
+        
+        // Convert object to array if needed
+        let clients = Array.isArray(result) ? result : Object.entries(result).map(([id, data]) => ({
+          whatsappId: id,
+          phone: data.profile?.phone || id.replace('@lid', ''),
+          name: data.profile?.fullName || data.name || 'عميل',
+          status: data.status,
+          lastSeen: data.lastActivity
+        }));
         
         if (!clients.length) {
           tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">لا يوجد عملاء مربوطين</td></tr>';
@@ -2545,9 +2554,9 @@
 
         tbody.innerHTML = clients.map(c => `
           <tr>
-            <td>${c.phone || '-'}</td>
+            <td>${c.phone || c.whatsappId || '-'}</td>
             <td>${c.name || '-'}</td>
-            <td><span class="badge badge-success">متصل</span></td>
+            <td><span class="badge badge-${c.status === 'complete' ? 'success' : 'warning'}">${c.status === 'complete' ? 'مكتمل' : 'قيد التسجيل'}</span></td>
             <td>${c.lastSeen ? new Date(c.lastSeen).toLocaleString('ar') : '-'}</td>
           </tr>
         `).join('');
@@ -2555,17 +2564,17 @@
         mobile.innerHTML = clients.map(c => `
           <div class="mobile-card">
             <div class="mobile-card-header">
-              <div class="mobile-card-title">${c.name || c.phone}</div>
-              <span class="badge badge-success">متصل</span>
+              <div class="mobile-card-title">${c.name || c.phone || 'عميل'}</div>
+              <span class="badge badge-${c.status === 'complete' ? 'success' : 'warning'}">${c.status === 'complete' ? 'مكتمل' : 'قيد التسجيل'}</span>
             </div>
             <div class="mobile-card-row">
               <span class="mobile-card-label">واتساب</span>
-              <span class="mobile-card-value">${c.phone || '-'}</span>
+              <span class="mobile-card-value">${c.phone || c.whatsappId || '-'}</span>
             </div>
           </div>
         `).join('');
       } catch (err) {
-        showAlert('فشل تحميل العملاء المربوطين: ' + err.message, 'error');
+        console.error('Failed to load linked clients:', err);
       }
     }
 
