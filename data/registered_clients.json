@@ -96,36 +96,5 @@
     "customFields": {},
     "createdAt": "2026-01-16T10:56:42.178Z",
     "updatedAt": "2026-01-16T10:56:42.178Z"
-  },
-  "6780c4d3-9caf-4ce0-8a79-eef2ab0c2bed": {
-    "key": "6780c4d3-9caf-4ce0-8a79-eef2ab0c2bed",
-    "ids": [
-      "TEST123"
-    ],
-    "fullName": "اختبار الحقول الجديدة",
-    "phone": "00963111222333",
-    "country": null,
-    "city": null,
-    "address": null,
-    "agencyName": "Main",
-    "customFields": {},
-    "createdAt": "2026-01-16T23:56:34.702Z",
-    "updatedAt": "2026-01-16T23:56:34.702Z"
-  },
-  "bb264a39-2895-4300-bc8c-6fc27b3f0b72": {
-    "key": "bb264a39-2895-4300-bc8c-6fc27b3f0b72",
-    "ids": [
-      "TEST456"
-    ],
-    "fullName": "اختبار 2",
-    "phone": "111222333",
-    "whatsappPhone": "999888777",
-    "country": null,
-    "city": null,
-    "address": null,
-    "agencyName": "Main",
-    "customFields": {},
-    "createdAt": "2026-01-17T00:07:16.301Z",
-    "updatedAt": "2026-01-17T00:07:16.301Z"
   }
 }
