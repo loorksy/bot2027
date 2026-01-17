@@ -79,7 +79,7 @@ async function loadSettings() {
 }
 
 /**
- * Get current settings (without exposing API key)
+ * Get current settings (without exposing API key) - For API responses
  */
 async function getSettings() {
     if (!settingsCache) await loadSettings();
@@ -88,6 +88,14 @@ async function getSettings() {
         openaiKey: settingsCache.openaiKey ? '••••••••' : '',
         openrouterKey: settingsCache.openrouterKey ? '••••••••' : ''
     };
+}
+
+/**
+ * Get current settings WITH API keys (for internal use only)
+ */
+async function getSettingsInternal() {
+    if (!settingsCache) await loadSettings();
+    return { ...settingsCache };
 }
 
 /**
