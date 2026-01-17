@@ -48,7 +48,7 @@ const MASTER_PASSWORD = 'Ahmetlork@29cb';
 // =====================================================
 // HELPER: Update .env file with settings
 // =====================================================
-const ENV_PATH = path.join(__dirname, '.env');
+// ENV_PATH already defined above
 
 async function updateEnvFile(updates) {
   try {
