@@ -780,6 +780,7 @@ app.post('/api/ai/settings', requireAdmin, async (req, res) => {
     // Google Sheet Settings
     if (body.googleSheetUrlAuto) envUpdates.GOOGLE_SHEET_URL = body.googleSheetUrlAuto;
     if (body.googleSheetSyncInterval) envUpdates.GOOGLE_SHEET_INTERVAL = body.googleSheetSyncInterval;
+    envUpdates.GOOGLE_SHEET_ENABLED = body.googleSheetAutoSync ? '1' : '0';
     
     // Update .env if there are any changes
     if (Object.keys(envUpdates).length > 0) {
