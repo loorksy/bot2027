@@ -1237,14 +1237,18 @@ async function performGoogleSheetSync() {
 
     console.log('[Google Sheet Sync] Fetching:', exportUrl);
 
-    const response = await fetch(exportUrl);
+    const fetch = (await import('node-fetch')).default;
+    const response = await fetch(exportUrl, { redirect: 'follow' });
     if (!response.ok) {
-      throw new Error('Failed to fetch sheet');
+      throw new Error(`Failed to fetch sheet: ${response.status}`);
     }
 
     const csvContent = await response.text();
-    if (csvContent.trim().startsWith('<!DOCTYPE') || csvContent.trim().startsWith('<html')) {
-      throw new Error('Sheet not accessible');
+    console.log('[Google Sheet Sync] Response length:', csvContent.length, 'chars');
+    
+    if (csvContent.trim().startsWith('<!DOCTYPE') || csvContent.trim().startsWith('<html') || csvContent.trim().startsWith('<HTML')) {
+      console.log('[Google Sheet Sync] Got HTML instead of CSV:', csvContent.substring(0, 200));
+      throw new Error('Sheet not accessible - check sharing settings');
     }
 
     const data = csvParse(csvContent, {
