@@ -1283,6 +1283,42 @@
             </div>
           </div>
         </div>
+
+        <!-- Receipts Modal -->
+        <div id="receiptsModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
+          <div style="background: #1e293b; border-radius: 16px; padding: 24px; max-width: 700px; width: 95%; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <h3 id="receiptsModalTitle" style="margin: 0; color: #fff;">🧾 إيصالات العميل</h3>
+              <button onclick="closeReceiptsModal()" style="background: transparent; border: none; color: #fff; font-size: 24px; cursor: pointer;">&times;</button>
+            </div>
+            
+            <!-- Upload Section -->
+            <div style="background: rgba(236, 72, 153, 0.1); padding: 16px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(236, 72, 153, 0.2);">
+              <h4 style="margin: 0 0 12px 0; color: #ec4899;">📤 رفع إيصال جديد</h4>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;">
+                <div style="flex: 1; min-width: 200px;">
+                  <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: #888;">اختر ملف</label>
+                  <input type="file" id="receiptFile" style="width: 100%; padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: white;">
+                </div>
+                <div style="flex: 1; min-width: 150px;">
+                  <label style="display: block; margin-bottom: 6px; font-size: 0.85rem; color: #888;">ملاحظة (اختياري)</label>
+                  <input type="text" id="receiptDescription" placeholder="مثال: راتب شهر يناير" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: white;">
+                </div>
+                <button id="uploadReceiptBtn" onclick="uploadReceipt()" class="btn btn-primary" style="padding: 10px 20px; background: #ec4899; white-space: nowrap;">📤 رفع</button>
+              </div>
+              <small style="color: #888; display: block; margin-top: 8px;">✅ سيتم إرسال إشعار تلقائي للعميل على الواتساب</small>
+            </div>
+
+            <!-- Receipts List -->
+            <div>
+              <h4 style="margin: 0 0 12px 0; color: #fff;">📁 الإيصالات المرفوعة</h4>
+              <div id="receiptsList" style="min-height: 100px;">
+                <div style="text-align: center; padding: 20px; color: #888;">جاري التحميل...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
           <input type="text" id="searchRegClientInput" placeholder="🔍 بحث عن عميل (الاسم، الهاتف، ID)..."
             style="flex: 1; min-width: 200px; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; color: white;">
