@@ -1832,6 +1832,120 @@
       }
     });
 
+    // =====================================================
+    // NOTIFICATIONS MANAGEMENT
+    // =====================================================
+
+    async function loadNotifications() {
+      try {
+        const notifications = await api('GET', '/api/ai/notifications');
+        const container = document.getElementById('notificationsList');
+        
+        if (!notifications || notifications.length === 0) {
+          container.innerHTML = '<p style="color: #666; text-align: center;">لا توجد إشعارات مرسلة</p>';
+          return;
+        }
+        
+        const typeLabels = {
+          'info': '📢 إعلان',
+          'success': '✅ خبر سعيد',
+          'warning': '⚠️ تنبيه',
+          'celebration': '🎉 تهنئة'
+        };
+        
+        container.innerHTML = notifications.map(n => {
+          const date = new Date(n.createdAt).toLocaleDateString('ar', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          
+          const targetText = n.targetClients.includes('all') ? 'جميع العملاء' : `${n.targetClients.length} عميل`;
+          const readCount = n.readBy ? n.readBy.length : 0;
+          
+          return `
+            <div class="admin-notif-item ${n.type}">
+              <div class="admin-notif-header">
+                <span class="admin-notif-title">${typeLabels[n.type] || n.type} - ${n.title}</span>
+                <span class="admin-notif-meta">${date}</span>
+              </div>
+              <div class="admin-notif-message">${n.message}</div>
+              <div class="admin-notif-stats">
+                <span>👥 المستهدفين: ${targetText}</span>
+                <span>👁️ قرأها: ${readCount}</span>
+              </div>
+              <div class="admin-notif-actions">
+                <button class="btn btn-danger btn-sm" onclick="deleteNotification('${n.id}')">🗑️ حذف</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+      } catch (err) {
+        showAlert('فشل تحميل الإشعارات: ' + err.message, 'error');
+      }
+    }
+
+    async function deleteNotification(id) {
+      if (!confirm('هل تريد حذف هذا الإشعار؟')) return;
+      
+      try {
+        await api('DELETE', `/api/ai/notifications/${id}`);
+        showAlert('تم حذف الإشعار');
+        loadNotifications();
+      } catch (err) {
+        showAlert('فشل الحذف: ' + err.message, 'error');
+      }
+    }
+
+    // Notification form submit
+    document.getElementById('notificationForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const title = document.getElementById('notifTitle').value.trim();
+      const message = document.getElementById('notifMessage').value.trim();
+      const type = document.getElementById('notifType').value;
+      const target = document.getElementById('notifTarget').value;
+      
+      try {
+        await api('POST', '/api/ai/notifications', {
+          title,
+          message,
+          type,
+          targetClients: target === 'all' ? ['all'] : [target]
+        });
+        
+        showAlert('تم إرسال الإشعار بنجاح! 🎉');
+        document.getElementById('notificationForm').reset();
+        loadNotifications();
+      } catch (err) {
+        showAlert('فشل الإرسال: ' + err.message, 'error');
+      }
+    });
+
+    // Load clients for notification target dropdown
+    async function loadNotificationTargets() {
+      try {
+        const clients = await api('GET', '/api/ai/registered-clients');
+        const select = document.getElementById('notifTarget');
+        
+        // Keep "all" option
+        select.innerHTML = '<option value="all">جميع العملاء</option>';
+        
+        // Add individual clients
+        Object.values(clients).forEach(c => {
+          const option = document.createElement('option');
+          option.value = c.key;
+          option.textContent = c.fullName || c.key;
+          select.appendChild(option);
+        });
+      } catch (err) {
+        console.error('Failed to load notification targets:', err);
+      }
+    }
+
     // Load clients
     async function loadClients() {
       try {
