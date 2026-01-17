@@ -43,9 +43,11 @@ function generateToken() {
 
 /**
  * Check if client is from main agency (eligible for portal)
+ * Now allows ALL clients to access the portal
  */
 function isMainAgency(agencyName) {
-    return MAIN_AGENCIES.includes(agencyName);
+    // Allow all clients to access portal
+    return true;
 }
 
 /**
