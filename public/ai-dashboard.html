@@ -2579,11 +2579,22 @@
 
     async function loadChats() {
       try {
-        const chats = await api('GET', '/api/ai/chats');
+        const result = await api('GET', '/api/ai/chats');
         const container = document.getElementById('chatsList');
         
+        // Handle both formats: {chats: [...]} or direct object
+        let chatsData = result.chats || result;
+        if (Array.isArray(chatsData)) {
+          // Convert array to object format
+          const chatsObj = {};
+          chatsData.forEach(chat => {
+            chatsObj[chat.clientKey] = chat;
+          });
+          chatsData = chatsObj;
+        }
+        
         let unreadTotal = 0;
-        const chatEntries = Object.entries(chats);
+        const chatEntries = Object.entries(chatsData);
         
         if (!chatEntries.length) {
           container.innerHTML = '<div class="empty-state"><p>لا توجد محادثات</p></div>';
