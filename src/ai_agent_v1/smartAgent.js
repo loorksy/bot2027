@@ -71,7 +71,13 @@ function buildSystemPrompt(clientContext, settings) {
         salaryInfo = `آخر راتب: ${lastSalary.net || lastSalary.amount} ${settings.salaryCurrency || 'ر.س'} - ${lastSalary.month || 'غير محدد'}`;
     }
 
-    return `أنت مساعدة ذكية اسمك "${settings.botName || 'مساعدة أبو سلطان'}" تعملين لدى "${settings.ownerName || 'أبو سلطان'}".
+    // Check if there's receipt history context
+    let receiptContext = '';
+    if (clientContext.chatHistory && clientContext.chatHistory.length > 0) {
+        receiptContext = '\n\n## سياق المحادثة السابقة:\nلديك محادثات سابقة مع هذا العميل. استخدم هذا السياق للرد بشكل أفضل وتذكر ما تم الحديث عنه سابقاً.';
+    }
+    
+    return `أنت مساعدة ذكية اسمك "${settings.botName || 'مساعدة أبو سلطان'}" تعملين لدى "${settings.ownerName || 'أبو سلطان'}".${receiptContext}
 
 ## شخصيتك:
 - تتكلمين باللهجة السورية بشكل طبيعي وودود
