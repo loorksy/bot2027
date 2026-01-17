@@ -34,6 +34,25 @@ WhatsApp bot system with admin dashboard for client management, AI agent integra
 - Notifications: View and mark as read
 - Mobile-first responsive design
 
+### 4. Admin Dashboard ✅ REDESIGNED (Jan 17, 2026)
+- **Responsive Hybrid Layout**:
+  - Desktop: Fixed sidebar navigation on right
+  - Mobile: Bottom navigation + drawer menu
+- **Same Fintech dark theme** as portal (#09090b bg, #10b981 primary)
+- **IBM Plex Sans Arabic** font with small text
+- **SVG icons** throughout
+- **All tabs preserved**:
+  - Settings (AI config, bot personality)
+  - Custom Fields
+  - Registered Clients (table + mobile cards)
+  - Linked Clients
+  - Salaries (drag & drop upload)
+  - Notifications
+  - Live Chats
+  - Support Tickets
+  - Knowledge Base
+  - Usage/Analytics
+
 ### 4. Receipts System
 - Admin can upload multiple receipts per client
 - Any file type supported (50MB max)
