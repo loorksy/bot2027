@@ -3348,7 +3348,7 @@
       if (!currentReceiptsClientKey) return;
       
       try {
-        const receipts = await api('GET', `/api/receipts/client/${currentReceiptsClientKey}`);
+        const receipts = await api('GET', `/api/ai/clients/${currentReceiptsClientKey}/receipts`);
         const container = document.getElementById('receiptsList');
         
         if (!receipts.length) {
@@ -3372,7 +3372,7 @@
           `;
         }).join('');
       } catch (err) {
-        showAlert('فشل تحميل الإيصالات', 'error');
+        document.getElementById('receiptsList').innerHTML = '<div class="empty-state"><p>لا توجد إيصالات</p></div>';
       }
     }
 
