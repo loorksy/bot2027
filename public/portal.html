@@ -703,14 +703,30 @@
         </div>
       </div>
 
-      <!-- Chat with Admin Card -->
+      <!-- Live Chat Card -->
       <div class="card">
         <div class="card-header">
-          <h2>💬 تواصلي مع الإدارة</h2>
+          <h2>💬 الدردشة مع الإدارة <span id="chatUnreadBadge" class="unread-badge" style="display: none;">0</span></h2>
+          <button class="btn btn-secondary btn-sm" onclick="loadChatMessages()">🔄</button>
         </div>
-        <div style="padding: 10px 0;">
-          <textarea id="chatMessage" rows="3" placeholder="اكتبي رسالتك هنا... (استفسار، شكوى، طلب تعديل...)" style="width: 100%; padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; resize: vertical;"></textarea>
-          <button class="btn btn-primary" onclick="sendChatMessage()" style="width: 100%; margin-top: 10px;">📤 إرسال</button>
+        <div id="chatContainer" style="height: 350px; display: flex; flex-direction: column;">
+          <!-- Messages Area -->
+          <div id="chatMessages" style="flex: 1; overflow-y: auto; padding: 16px; background: rgba(0,0,0,0.2); border-radius: 12px; margin-bottom: 12px;">
+            <div style="text-align: center; color: #888; padding: 40px 0;">
+              <div style="font-size: 2rem; margin-bottom: 8px;">💬</div>
+              <p>ابدأي محادثة مع الإدارة</p>
+            </div>
+          </div>
+          
+          <!-- Input Area -->
+          <div style="display: flex; gap: 10px;">
+            <input type="text" id="chatInput" placeholder="اكتبي رسالتك..." 
+              style="flex: 1; padding: 12px; border-radius: 25px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white;"
+              onkeypress="if(event.key==='Enter') sendLiveChatMessage()">
+            <button class="btn btn-primary" onclick="sendLiveChatMessage()" style="border-radius: 25px; padding: 12px 24px;">
+              إرسال
+            </button>
+          </div>
         </div>
       </div>
 
