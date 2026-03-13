@@ -4,26 +4,147 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>تسجيل الدخول</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #09090b;
+      --surface: #18181b;
+      --border: #27272a;
+      --primary: #10b981;
+      --text: #e4e4e7;
+      --text-muted: #a1a1aa;
+      --danger: #ef4444;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'IBM Plex Sans Arabic', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      direction: rtl;
+    }
+
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .login-card h1 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .login-card .subtitle {
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-bottom: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .form-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus {
+      border-color: var(--primary);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: var(--primary);
+      color: white;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: #0d9668;
+      transform: translateY(-1px);
+    }
+
+    .error-text {
+      color: var(--danger);
+      font-size: 12px;
+      min-height: 18px;
+      margin-bottom: 12px;
+    }
+
+    .logo-area {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(16, 185, 129, 0.1);
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+  </style>
 </head>
-<body class="login-page">
-  <div class="login-wrapper">
-    <div class="login-card standalone">
-      <h1>تسجيل الدخول</h1>
-      <p class="muted">الرجاء إدخال بيانات حسابك</p>
-      <form class="field-grid" action="/login" method="POST">
-        <div class="field">
-          <label for="login-email">البريد الإلكتروني</label>
-          <input type="email" id="login-email" name="email" required />
-        </div>
-        <div class="field">
-          <label for="login-password">كلمة المرور</label>
-          <input type="password" id="login-password" name="password" required />
-        </div>
-        <div id="login-error" class="error-text"></div>
-        <button type="submit" class="primary">دخول</button>
-      </form>
+<body>
+  <div class="login-card">
+    <div class="logo-area">
+      <div class="logo-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+      </div>
     </div>
+    <h1>تسجيل الدخول</h1>
+    <p class="subtitle">الرجاء إدخال بيانات حسابك</p>
+    <form action="/login" method="POST">
+      <div class="form-group">
+        <label class="form-label" for="login-email">البريد الإلكتروني</label>
+        <input class="form-input" type="email" id="login-email" name="email" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="login-password">كلمة المرور</label>
+        <input class="form-input" type="password" id="login-password" name="password" required />
+      </div>
+      <div id="login-error" class="error-text"></div>
+      <button type="submit" class="btn">دخول</button>
+    </form>
   </div>
   <script>
     const params = new URLSearchParams(window.location.search);
