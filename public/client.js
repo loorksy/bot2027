@@ -564,16 +564,11 @@ function bindForwardingControls() {
 
 function showToast(message) {
   if (!message) return;
-  const toast = document.createElement('div');
-  toast.className = 'toast';
-  toast.textContent = message;
-  document.body.appendChild(toast);
-  // Allow CSS transition
-  requestAnimationFrame(() => toast.classList.add('visible'));
-  setTimeout(() => {
-    toast.classList.remove('visible');
-    setTimeout(() => toast.remove(), 250);
-  }, 2000);
+  const container = document.getElementById('alertContainer');
+  if (container) {
+    container.innerHTML = `<div class="alert alert-success">${message}</div>`;
+    setTimeout(() => container.innerHTML = '', 3000);
+  }
 }
 
 function copyList(list) {
@@ -624,7 +619,7 @@ function renderGroups(groups) {
     const item = document.createElement('div');
     item.className = 'group-item';
     item.innerHTML = `<label>${g.name}</label><label class="switch"><input type="checkbox" value="${g.id}" ${g.selected ? 'checked' : ''
-      }/><span class="slider"></span></label>`;
+      }/><span class="switch-slider"></span></label>`;
     container.appendChild(item);
   });
   updateForwardTargetOptions(groups);
