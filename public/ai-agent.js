@@ -59,9 +59,9 @@ async function aiApi(method, url, data = null) {
 // =====================================================
 // SETTINGS
 // =====================================================
-async function loadSettings() {
-  try {
-    const settings = await aiApi('GET', '/api/ai/settings');
+async function loadAiSettings() {
+      try {
+        const settings = await aiApi('GET', '/api/ai/settings');
     document.getElementById('aiEnabled').checked = settings.enabled;
     document.getElementById('openaiKey').value = settings.openaiKey || '';
     document.getElementById('modelChat').value = settings.modelChat || 'gpt-4o-mini';
@@ -1693,26 +1693,25 @@ window.deleteCountry = async function(name) {
 // INITIALIZATION
 // =====================================================
 // Socket.IO setup for real-time chat
-let socket;
-
-function initSocket() {
-  socket = io();
+let aiSocket;
+    
+function initAiSocket() {
+      aiSocket = io();
   
   // Listen for new chat messages
-  socket.on('newMessage', (data) => {
+  aiSocket.on('newMessage', (data) => {
     console.log('New message received:', data);
-    loadChats(); // Reload chats to show new message
+    loadChats();
   });
   
-  // Handle connection errors
-  socket.on('connect_error', (err) => {
+  aiSocket.on('connect_error', (err) => {
     console.error('Socket connection error:', err);
   });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  initSocket();
-  loadSettings();
+  initAiSocket();
+  loadAiSettings();
   loadPeriods();
   loadRegisteredClients();
   loadLinkedClients();
