@@ -18,10 +18,10 @@ const api = {
   },
 };
 
-const socket = io('/', { withCredentials: true, autoConnect: false });
-const isDashboard = window.location.pathname.includes('index.html') || window.location.pathname === '/';
-const isBulk = window.location.pathname.includes('bulk.html');
-const isAdminPage = window.location.pathname.includes('admin');
+const botSocket = io('/', { withCredentials: true, autoConnect: false });
+const isDashboard = true;
+const isBulk = true;
+const isAdminPage = true;
 const isLoginPage = window.location.pathname.includes('login');
 const MASTER_EMAIL = 'loorksy@gmail.com';
 let statusState = { connected: false, running: false, linkState: 'not_linked', bulk: {}, lastChecked: {}, forward: {} };
@@ -177,22 +177,36 @@ function renderStatus(status) {
     disconnected: 'bad',
     not_linked: 'bad',
   };
-  setStatusPill('connected-pill', statusState.connected ? 'متصل' : 'غير متصل', statusState.connected ? 'ok' : 'bad');
-  setStatusPill('running-pill', statusState.running ? 'يعمل' : 'متوقف', statusState.running ? 'ok' : 'bad');
-  setStatusPill('link-pill', linkLabelMap[statusState.linkState] || 'غير مرتبط', linkClassMap[statusState.linkState] || 'bad');
+
+  // New unified status cards
+  const connEl = document.getElementById('status-connected');
+  if (connEl) {
+    connEl.className = 'status-pill-card ' + (statusState.connected ? 'ok' : 'bad');
+    connEl.querySelector('.status-pill-value').textContent = statusState.connected ? 'متصل' : 'غير متصل';
+  }
+  const linkEl = document.getElementById('status-linked');
+  if (linkEl) {
+    linkEl.className = 'status-pill-card ' + (linkClassMap[statusState.linkState] || 'bad');
+    linkEl.querySelector('.status-pill-value').textContent = linkLabelMap[statusState.linkState] || 'غير مرتبط';
+  }
+  const runEl = document.getElementById('status-running');
+  if (runEl) {
+    runEl.className = 'status-pill-card ' + (statusState.running ? 'ok' : 'bad');
+    runEl.querySelector('.status-pill-value').textContent = statusState.running ? 'يعمل' : 'متوقف';
+  }
+
   const qrBtn = document.getElementById('qr-btn');
   if (qrBtn) {
     const disableQr = statusState.linkState === 'ready';
     qrBtn.disabled = disableQr;
     const modal = document.getElementById('qr-modal');
     if (disableQr) {
-      modal?.classList.add('hidden');
-    } else if (statusState.linkState === 'qr' && modal?.classList.contains('hidden')) {
-      // Auto-show QR if we are in QR state but modal is closed (e.g. refresh)
+      modal?.classList.remove('active');
+    } else if (statusState.linkState === 'qr' && !modal?.classList.contains('active')) {
       api.request('/api/qr').then(res => {
         if (res.qr && document.getElementById('qr-image')) {
           document.getElementById('qr-image').src = res.qr;
-          modal.classList.remove('hidden');
+          modal.classList.add('active');
         }
       });
     }
@@ -285,18 +299,18 @@ async function saveForwardSettings() {
 }
 
 function initSocket() {
-  socket.on('status', renderStatus);
-  socket.on('log', (msg) => addLog(msg));
-  socket.on('qr', (qr) => {
+  botSocket.on('status', renderStatus);
+  botSocket.on('log', (msg) => addLog(msg));
+  botSocket.on('qr', (qr) => {
     const modal = document.getElementById('qr-modal');
     const img = document.getElementById('qr-image');
     if (img) img.src = qr;
-    if (modal && statusState.linkState !== 'ready') modal.classList.remove('hidden');
+    if (modal && statusState.linkState !== 'ready') modal.classList.add('active');
   });
-  socket.on('bulk:update', renderBulkStatus);
-  socket.on('backlog:update', renderBacklog);
-  socket.on('interaction:log', renderInteractionLogs);
-  socket.on('connect_error', (err) => {
+  botSocket.on('bulk:update', renderBulkStatus);
+  botSocket.on('backlog:update', renderBacklog);
+  botSocket.on('interaction:log', renderInteractionLogs);
+  botSocket.on('connect_error', (err) => {
     if (err && err.message === 'UNAUTHORIZED') {
       showLoginOverlay('الرجاء تسجيل الدخول');
     }
@@ -304,7 +318,7 @@ function initSocket() {
 }
 
 function bindCommon() {
-  document.getElementById('qr-close')?.addEventListener('click', () => document.getElementById('qr-modal').classList.add('hidden'));
+  // QR modal close is handled inline in the new unified dashboard
 }
 
 function bindLoginPage() {
@@ -385,18 +399,12 @@ async function startApp() {
   if (appInitialized) return;
   appInitialized = true;
   initSocket();
-  socket.connect();
+  botSocket.connect();
   const initialStatus = await api.request('/api/status');
   renderStatus(initialStatus);
-  if (isDashboard) {
-    await initDashboard();
-  }
-  if (isBulk) {
-    await initBulk();
-  }
-  if (isAdminPage) {
-    await initAdmin();
-  }
+  await initDashboard();
+  await initBulk();
+  await initAdmin();
   if (currentUser?.permissions?.can_view_logs) {
     const logs = await api.request('/api/logs');
     if (!logs.error) renderInteractionLogs(logs);
@@ -451,8 +459,8 @@ async function initDashboard() {
 }
 
 function bindDashboard() {
-  document.getElementById('start-btn').addEventListener('click', () => api.request('/api/start', { method: 'POST' }));
-  document.getElementById('stop-btn').addEventListener('click', () => api.request('/api/stop', { method: 'POST' }));
+  document.getElementById('start-btn')?.addEventListener('click', () => api.request('/api/start', { method: 'POST' }));
+  document.getElementById('stop-btn')?.addEventListener('click', () => api.request('/api/stop', { method: 'POST' }));
 
   const qrBtn = document.getElementById('qr-btn');
   if (qrBtn) {
@@ -463,14 +471,14 @@ function bindDashboard() {
         const modal = document.getElementById('qr-modal');
         const img = document.getElementById('qr-image');
         if (img) img.src = res.qr;
-        if (modal) modal.classList.remove('hidden');
+        if (modal) modal.classList.add('active');
       } else {
         addLog('No QR available yet');
       }
     });
   }
 
-  document.getElementById('save-clients').addEventListener('click', async () => {
+  document.getElementById('save-clients')?.addEventListener('click', async () => {
     const rawText = document.getElementById('clients-text').value;
     await api.request('/api/clients', { method: 'POST', body: JSON.stringify({ rawText }) });
     loadNameLists(
@@ -482,14 +490,14 @@ function bindDashboard() {
     );
     addLog('Clients saved');
   });
-  document.getElementById('clear-clients').addEventListener('click', async () => {
+  document.getElementById('clear-clients')?.addEventListener('click', async () => {
     await api.request('/api/clients/clear', { method: 'POST' });
     resetNameLists();
     await loadClients();
     addLog('Clients cleared');
   });
 
-  document.getElementById('save-settings').addEventListener('click', async () => {
+  document.getElementById('save-settings')?.addEventListener('click', async () => {
     const payload = {
       rpm: Number(document.getElementById('rpm').value) || 20,
       cooldownSeconds: Number(document.getElementById('cooldown').value) || 3,
@@ -505,36 +513,36 @@ function bindDashboard() {
     addLog('Settings saved');
   });
 
-  document.getElementById('fetch-groups').addEventListener('click', async () => {
+  document.getElementById('fetch-groups')?.addEventListener('click', async () => {
     const groups = await api.request('/api/groups');
     if (handleApiError(groups, 'fetch groups')) return;
     renderGroups(groups);
   });
 
-  document.getElementById('save-groups').addEventListener('click', async () => {
+  document.getElementById('save-groups')?.addEventListener('click', async () => {
     const ids = Array.from(document.querySelectorAll('.group-item input:checked')).map((i) => i.value);
     await api.request('/api/groups', { method: 'POST', body: JSON.stringify({ ids }) });
     addLog('Groups saved');
   });
 
-  document.getElementById('backlog-check').addEventListener('click', async () => {
+  document.getElementById('backlog-check')?.addEventListener('click', async () => {
     const payload = buildBacklogPayload();
     const result = await api.request('/api/backlog/check', { method: 'POST', body: JSON.stringify(payload) });
     if (handleApiError(result, 'backlog check')) return;
     renderBacklog(result);
   });
 
-  document.getElementById('backlog-process').addEventListener('click', async () => {
+  document.getElementById('backlog-process')?.addEventListener('click', async () => {
     const payload = buildBacklogPayload();
     const result = await api.request('/api/backlog/process', { method: 'POST', body: JSON.stringify(payload) });
     if (handleApiError(result, 'backlog process')) return;
     renderBacklog(result);
   });
 
-  document.getElementById('copy-pending').addEventListener('click', () => copyList([...pendingNames]));
-  document.getElementById('copy-interacted').addEventListener('click', () => copyList(interactedEntries));
-  document.getElementById('copy-skipped').addEventListener('click', () => copyLog('logs'));
-  document.getElementById('clear-skipped').addEventListener('click', () => clearLog());
+  document.getElementById('copy-pending')?.addEventListener('click', () => copyList([...pendingNames]));
+  document.getElementById('copy-interacted')?.addEventListener('click', () => copyList(interactedEntries));
+  document.getElementById('copy-skipped')?.addEventListener('click', () => copyLog('logs'));
+  document.getElementById('clear-skipped')?.addEventListener('click', () => clearLog());
 
   const hoursRange = document.getElementById('backlog-hours');
   if (hoursRange) hoursRange.addEventListener('input', updateHoursLabel);
@@ -556,16 +564,11 @@ function bindForwardingControls() {
 
 function showToast(message) {
   if (!message) return;
-  const toast = document.createElement('div');
-  toast.className = 'toast';
-  toast.textContent = message;
-  document.body.appendChild(toast);
-  // Allow CSS transition
-  requestAnimationFrame(() => toast.classList.add('visible'));
-  setTimeout(() => {
-    toast.classList.remove('visible');
-    setTimeout(() => toast.remove(), 250);
-  }, 2000);
+  const container = document.getElementById('alertContainer');
+  if (container) {
+    container.innerHTML = `<div class="alert alert-success">${message}</div>`;
+    setTimeout(() => container.innerHTML = '', 3000);
+  }
 }
 
 function copyList(list) {
@@ -616,7 +619,7 @@ function renderGroups(groups) {
     const item = document.createElement('div');
     item.className = 'group-item';
     item.innerHTML = `<label>${g.name}</label><label class="switch"><input type="checkbox" value="${g.id}" ${g.selected ? 'checked' : ''
-      }/><span class="slider"></span></label>`;
+      }/><span class="switch-slider"></span></label>`;
     container.appendChild(item);
   });
   updateForwardTargetOptions(groups);
@@ -738,13 +741,13 @@ function openEditModal(user) {
   document.getElementById('edit-lists').checked = !!perms.can_manage_lists;
   document.getElementById('edit-forward').checked = !!perms.can_manage_forwarding;
   document.getElementById('edit-logs').checked = !!perms.can_view_logs;
-  document.getElementById('edit-modal').classList.remove('hidden');
+  document.getElementById('edit-modal').classList.add('active');
 }
 
 function closeEditModal() {
   editingUser = null;
   document.getElementById('edit-user-form')?.reset();
-  document.getElementById('edit-modal')?.classList.add('hidden');
+  document.getElementById('edit-modal')?.classList.remove('active');
 }
 
 function bindAdmin() {
@@ -877,23 +880,9 @@ function analyzeNotifications() {
 }
 
 function bindBulk() {
-  const qrBtn = document.getElementById('qr-btn');
-  if (qrBtn) {
-    qrBtn.addEventListener('click', async () => {
-      if (statusState.linkState === 'ready') return;
-      const res = await api.request('/api/qr');
-      if (res.qr) {
-        const modal = document.getElementById('qr-modal');
-        const img = document.getElementById('qr-image');
-        if (img) img.src = res.qr;
-        if (modal) modal.classList.remove('hidden');
-      }
-    });
-  }
+  document.getElementById('bulk-analyze')?.addEventListener('click', analyzeNotifications);
 
-  document.getElementById('bulk-analyze').addEventListener('click', analyzeNotifications);
-
-  document.getElementById('bulk-start').addEventListener('click', async () => {
+  document.getElementById('bulk-start')?.addEventListener('click', async () => {
     const mode = document.getElementById('bulk-parse-mode').value;
     const messages = parseNotifications(document.getElementById('bulk-messages').value, mode);
     const groupId = document.getElementById('bulk-group').value;
@@ -902,9 +891,9 @@ function bindBulk() {
     await api.request('/api/bulk/start', { method: 'POST', body: JSON.stringify({ groupId, messages, delaySeconds, rpm }) });
   });
 
-  document.getElementById('bulk-pause').addEventListener('click', () => api.request('/api/bulk/pause', { method: 'POST' }));
-  document.getElementById('bulk-resume').addEventListener('click', () => api.request('/api/bulk/resume', { method: 'POST' }));
-  document.getElementById('bulk-stop').addEventListener('click', () => api.request('/api/bulk/stop', { method: 'POST' }));
+  document.getElementById('bulk-pause')?.addEventListener('click', () => api.request('/api/bulk/pause', { method: 'POST' }));
+  document.getElementById('bulk-resume')?.addEventListener('click', () => api.request('/api/bulk/resume', { method: 'POST' }));
+  document.getElementById('bulk-stop')?.addEventListener('click', () => api.request('/api/bulk/stop', { method: 'POST' }));
 }
 
 function updateHoursLabel() {
